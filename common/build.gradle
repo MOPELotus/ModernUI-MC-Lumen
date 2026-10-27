@@ -98,3 +98,13 @@ tasks.register('checkFontVariant', JavaExec) {
     mainClass = 'icyllis.modernui.mc.test.FontVariantCheck'
 }
 check.dependsOn checkFontVariant
+
+['ClampingScrollView'].each { checkName ->
+    def checkTask = tasks.register("check${checkName}", JavaExec) {
+        group = 'verification'
+        dependsOn testClasses
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = "icyllis.modernui.mc.test.${checkName}Check"
+    }
+    check.dependsOn checkTask
+}
