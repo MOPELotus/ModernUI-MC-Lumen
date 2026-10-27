@@ -46,6 +46,7 @@ public final class MiSansSetup extends Fragment {
         title.setText("ModernUI Lumen · 安装 MiSans 字体");
         title.setTextSize(26);
         title.setTextColor(0xffeeeeee);
+        title.setGravity(Gravity.CENTER);
         layout.addView(title);
         TextView status = new TextView(ctx);
         status.setText("缺少所需字体，请下载后重启客户端。\n将从小米官网下载四套字体，安装期间请勿关闭游戏。\n点击“下载”即表示同意 MiSans 字体知识产权许可协议。\n临时显示字体：思源黑体（SIL OFL）。");
