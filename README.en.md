@@ -85,7 +85,9 @@ Final JARs are in each loader’s `build/libs/`:
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
 
-See [font editions and builds](docs/font-editions.en.md). Compatible Gradle project/task names remain `ModernUI-Fabric`, `ModernUI-NeoForge` and `ModernUI-Forge`; retaining historical Forge code does not add a Forge maintenance target. Builds and ordinary branch pushes do not automatically publish Releases, and this version does not imply publication to upstream’s Maven repository.
+See [font editions and builds](docs/font-editions.en.md). Compatible Gradle project/task names remain `ModernUI-Fabric`, `ModernUI-NeoForge` and `ModernUI-Forge`; retaining historical Forge code does not add a Forge maintenance target. This version does not imply publication to upstream’s Maven repository.
+
+This branch has no GitHub Actions build/release workflow; the commands above build locally.
 
 This branch: Minecraft 26.1 family (build target 26.1.2).
 

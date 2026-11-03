@@ -85,7 +85,9 @@ earlyWindowControl = false
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
 
-详见[字体版本与构建说明](docs/font-editions.md)。Gradle 项目/任务兼容名称仍为 `ModernUI-Fabric`、`ModernUI-NeoForge`、`ModernUI-Forge`；保留历史 Forge 代码不表示新增 Forge 维护目标。构建或普通分支推送不会自动发布 Release，本仓库版本也不表示已发布至上游 Maven 仓库。
+详见[字体版本与构建说明](docs/font-editions.md)。Gradle 项目/任务兼容名称仍为 `ModernUI-Fabric`、`ModernUI-NeoForge`、`ModernUI-Forge`；保留历史 Forge 代码不表示新增 Forge 维护目标。本仓库版本不表示已发布至上游 Maven 仓库。
+
+本分支未配置 GitHub Actions 构建/发行工作流；上面的命令用于本地构建。
 
 本分支：Minecraft 26.1 系列（构建目标 26.1.2）。
 
