@@ -42,6 +42,7 @@
     "MixinVulkanImage",
     "MixinVulkanImageUpload",
     "MixinVulkanPipelineLifecycle",
+    "MixinVulkanShutdownOrder",
     "MixinVulkanRenderer",
     "AccessVulkanDevice",
     "MixinVulkanDrawBuffersLifecycle"

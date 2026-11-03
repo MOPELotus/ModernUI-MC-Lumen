@@ -124,6 +124,27 @@ check.dependsOn checkPackMetadata
     check.dependsOn checkTask
 }
 
+tasks.register('checkVulkanShutdownOrder', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.VulkanShutdownOrderCheck'
+    doFirst {
+        def compileJars = configurations.compileClasspath.files.findAll { it.name.endsWith('.jar') }
+        def vulkanJar = compileJars.find { it.name.toLowerCase(java.util.Locale.ROOT).contains('vulkanmod') }
+        def minecraftJar = compileJars.find { jar ->
+            new java.util.jar.JarFile(jar).withCloseable { archive ->
+                archive.getJarEntry('net/minecraft/client/Minecraft.class') != null
+            }
+        }
+        if (vulkanJar == null || minecraftJar == null) {
+            throw new GradleException('Missing actual VulkanMod or Minecraft JAR for shutdown-order verification')
+        }
+        setArgs([vulkanJar.absolutePath, minecraftJar.absolutePath])
+    }
+}
+check.dependsOn checkVulkanShutdownOrder
+
 tasks.register('checkClampingScrollView', JavaExec) {
     group = 'verification'
     dependsOn testClasses
