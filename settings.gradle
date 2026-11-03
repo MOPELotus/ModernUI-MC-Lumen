@@ -19,7 +19,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'ModernUI-MC'
+rootProject.name = 'ModernUI-MC-Lumen'
 
 include 'common'
 

@@ -27,7 +27,7 @@ public final class MiSansSetup extends Fragment {
         // Do not replace that screen with a fragment that has already finished.
         if (!required || !mc.isRunning() || mc.gui.overlay() != null) return;
         if (screen == null) {
-            screen = new SimpleScreen(new MiSansSetup(), null, null, Component.literal("安装 MiSans")) {
+            screen = new SimpleScreen(new MiSansSetup(), null, null, Component.literal("ModernUI Lumen · 安装 MiSans")) {
                 @Override public void onClose() {}
                 @Override public void onBackPressed() {}
             };
@@ -43,7 +43,7 @@ public final class MiSansSetup extends Fragment {
         layout.setPadding(32, 24, 32, 24);
         layout.setBackground(new ColorDrawable(0xff181b22));
         TextView title = new TextView(ctx);
-        title.setText("安装 MiSans 字体");
+        title.setText("ModernUI Lumen · 安装 MiSans 字体");
         title.setTextSize(26);
         title.setTextColor(0xffeeeeee);
         title.setGravity(Gravity.CENTER);

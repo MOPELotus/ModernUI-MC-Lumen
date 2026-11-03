@@ -1,13 +1,13 @@
-# 普通版与 MiSans 版
+# ModernUI Lumen：普通版与 MiSans 版
 
 两版都保留当前 Minecraft 移植、走马灯低速抖动、裁剪和输入修复。
 
 | 版本 | 普通版 | MiSans 版 | 每次构建总数 |
 | --- | --- | --- | --- |
 | Minecraft 26.3 | Fabric、NeoForge | Fabric、NeoForge | 4 |
-| Minecraft 26.2 | Fabric、Forge、NeoForge | Fabric、Forge、NeoForge | 6 |
+| Minecraft 26.2 | Fabric、NeoForge | Fabric、NeoForge | 4 |
 
-模组版本为 `3.13.0.9`，不再带 `-marquee.1`。普通版文件名以 `-universal.jar` 结尾；MiSans 版以 `-universal-misans.jar` 结尾，模组列表显示为 `Modern UI (MiSans)`。两版的模组 ID 都是 `modernui`，每次只安装其中一版，切换时替换原 JAR。
+模组版本为 `3.13.0.10`，不再带 `-marquee.1`。JAR 名称格式为 `ModernUI-Lumen-{Loader}-{Minecraft}-{Version}-universal[-misans].jar`。普通版文件名以 `-universal.jar` 结尾；MiSans 版以 `-universal-misans.jar` 结尾，模组列表显示为 `ModernUI Lumen (MiSans)`。两版的模组 ID 都是 `modernui`，每次只安装其中一版，切换时替换原 JAR。
 
 ## 功能和配置
 
@@ -37,7 +37,7 @@
 
 ## 构建与取包
 
-GitHub Actions 的 **Build and Release** 每次按普通版、MiSans 版分别执行 `clean build`，运行回归检查并检查最终 JAR 的版本、配置文件名、安装器隔离和加载器配对，合并上传到 `modernui-mc-release-jars` artifact。普通分支推送只产出 artifact；标签或显式填写 release tag 才会发布 GitHub Release。
+GitHub Actions 的 **Build and Release** 每次按普通版、MiSans 版分别执行 `clean build`，运行回归检查并检查最终 JAR 的版本、配置文件名、安装器隔离和加载器配对，合并上传到 `modernui-lumen-release-jars` artifact。普通分支推送只产出 artifact；标签或显式填写 release tag 才会发布 GitHub Release。
 
 本地单版构建（JDK 25）：
 

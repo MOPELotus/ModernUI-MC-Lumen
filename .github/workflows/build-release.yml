@@ -56,19 +56,19 @@ jobs:
             ./gradlew --no-daemon clean build -Pfont_variant="$variant"
             suffix=universal
             if [[ "$variant" == misans ]]; then suffix=universal-misans; fi
-            for loader in fabric forge neoforge; do
-              jars=("$loader"/build/libs/*-"$suffix".jar)
+            for loader in fabric neoforge; do
+              jars=("$loader"/build/libs/ModernUI-Lumen-*-"$suffix".jar)
               [[ ${#jars[@]} -eq 1 && -f "${jars[0]}" ]]
               cp -- "${jars[0]}" release/
             done
           done
-          python3 scripts/check-release-variants.py release fabric forge neoforge
+          python3 scripts/check-release-variants.py release fabric neoforge
           ls -lh release
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: modernui-mc-release-jars
+          name: modernui-lumen-release-jars
           path: release/*.jar
           if-no-files-found: error
 
