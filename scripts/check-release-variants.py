@@ -25,6 +25,15 @@ for loader in loaders:
         with zipfile.ZipFile(Path(output) / name) as jar:
             entries = set(jar.namelist())
             assert jar.testzip() is None, name
+            if loader == 'neoforge':
+                # Nested compiler JARs bypass FML's Mixin-transforming loader.
+                assert 'icyllis/arc3d/compiler/spirv/SPIRVCodeGenerator.class' in entries, name
+                assert not any('arc3d-compiler' in entry and entry.endswith('.jar')
+                               for entry in entries), name
+                mixin = 'icyllis/modernui/mc/mixin/MixinSPIRVCodeGenerator.class'
+                assert mixin in entries, name
+                config = json.loads(jar.read('mixins.modernui-neoforge.json'))
+                assert 'MixinSPIRVCodeGenerator' in config['client'], name
             manifest = jar.read('META-INF/MANIFEST.MF').decode().replace('\r\n ', '')
             assert re.search(rf'^ModernUI-Font-Variant: {variant}\r?$', manifest, re.M), name
             for title in ('Specification-Title', 'Implementation-Title'):
