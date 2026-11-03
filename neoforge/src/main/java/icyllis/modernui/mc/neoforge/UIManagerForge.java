@@ -19,7 +19,6 @@
 package icyllis.modernui.mc.neoforge;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import icyllis.arc3d.opengl.GLDevice;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
@@ -169,34 +168,37 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        GLDevice device = (GLDevice) Core.requireImmediateContext().getDevice();
-        if (textureMap != null && device.getCaps().hasDSASupport()) {
+        boolean queryOpenGLTextures = RendererDebugInfo.dump(pw,
+                Core.requireImmediateContext().getDevice());
+        if (textureMap != null) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
             int textureAtlases = 0;
             int atlasSprites = 0;
             for (var texture : textureMap.values()) {
-                try {
-                    int tex = TEXTURE_ID.getInt(texture);
-                    if (GL45C.glIsTexture(tex)) {
-                        int internalFormat = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_INTERNAL_FORMAT);
-                        long width = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_WIDTH);
-                        long height = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_HEIGHT);
-                        int maxLevel = GL45C.glGetTextureParameteri(tex, GL45C.GL_TEXTURE_MAX_LEVEL);
-                        int bpp = switch (internalFormat) {
-                            case GL45C.GL_R8, GL45C.GL_RED -> 1;
-                            case GL45C.GL_RG8, GL45C.GL_RG -> 2;
-                            case GL45C.GL_RGB8, GL45C.GL_RGBA8, GL45C.GL_RGB, GL45C.GL_RGBA -> 4;
-                            default -> 0;
-                        };
-                        long size = width * height * bpp;
-                        if (maxLevel > 0) {
-                            size = ((size - (size >> ((maxLevel + 1) << 1))) << 2) / 3;
+                if (queryOpenGLTextures) {
+                    try {
+                        int tex = TEXTURE_ID.getInt(texture);
+                        if (GL45C.glIsTexture(tex)) {
+                            int internalFormat = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_INTERNAL_FORMAT);
+                            long width = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_WIDTH);
+                            long height = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_HEIGHT);
+                            int maxLevel = GL45C.glGetTextureParameteri(tex, GL45C.GL_TEXTURE_MAX_LEVEL);
+                            int bpp = switch (internalFormat) {
+                                case GL45C.GL_R8, GL45C.GL_RED -> 1;
+                                case GL45C.GL_RG8, GL45C.GL_RG -> 2;
+                                case GL45C.GL_RGB8, GL45C.GL_RGBA8, GL45C.GL_RGB, GL45C.GL_RGBA -> 4;
+                                default -> 0;
+                            };
+                            long size = width * height * bpp;
+                            if (maxLevel > 0) {
+                                size = ((size - (size >> ((maxLevel + 1) << 1))) << 2) / 3;
+                            }
+                            gpuSize += size;
                         }
-                        gpuSize += size;
+                    } catch (Exception ignored) {
                     }
-                } catch (Exception ignored) {
                 }
 
                 if (texture instanceof DynamicTexture dynamicTexture) {
@@ -234,7 +236,11 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             pw.print(", DynamicTextures=" + dynamicTextures);
             pw.print(", Atlases=" + textureAtlases);
             pw.print(", Sprites=" + atlasSprites);
-            pw.print(", GPUMemory=" + TextUtils.binaryCompact(gpuSize) + " (" + gpuSize + " bytes)");
+            if (queryOpenGLTextures) {
+                pw.print(", GPUMemory=" + TextUtils.binaryCompact(gpuSize) + " (" + gpuSize + " bytes)");
+            } else {
+                pw.print(", GPUMemory=unavailable (requires OpenGL direct state access)");
+            }
             pw.println(", CPUMemory=" + TextUtils.binaryCompact(cpuSize) + " (" + cpuSize + " bytes)");
         }
     }
