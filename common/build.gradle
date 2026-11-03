@@ -21,6 +21,7 @@ dependencies {
     compileOnly 'org.spongepowered:mixin:0.8.7'
     compileOnly 'org.ow2.asm:asm-tree:9.8'
     testImplementation 'org.ow2.asm:asm-tree:9.8'
+    testImplementation 'org.ow2.asm:asm-commons:9.8'
     testRuntimeOnly 'org.spongepowered:mixin:0.8.7'
 
     implementation("dev.icyllis:modernui-core:${core_version}")
@@ -109,3 +110,22 @@ check.dependsOn checkFontVariant
     }
     check.dependsOn checkTask
 }
+
+tasks.register('checkWindowMode', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.WindowModeCheck'
+    doFirst {
+        def minecraftJar = configurations.compileClasspath.files.find { jar ->
+            jar.name.endsWith('.jar') && new java.util.jar.JarFile(jar).withCloseable { archive ->
+                archive.getJarEntry('net/minecraft/client/Minecraft.class') != null
+            }
+        }
+        if (minecraftJar == null) throw new GradleException('Missing actual Minecraft JAR for window transition verification')
+        def targets = [minecraftJar.absolutePath]
+        if (project.hasProperty('window_runtime_jar')) targets.add(project.property('window_runtime_jar'))
+        setArgs(targets)
+    }
+}
+check.dependsOn checkWindowMode
