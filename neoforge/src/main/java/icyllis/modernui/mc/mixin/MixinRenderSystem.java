@@ -24,6 +24,7 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.VulkanModIntegration;
+import icyllis.modernui.mc.neoforge.VulkanModBootstrap;
 import net.minecraft.util.TimeSource;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
@@ -51,6 +52,7 @@ public class MixinRenderSystem {
 
     @Inject(method = "initRenderer", at = @At("TAIL"), remap = false)
     private static void onInitRenderer(int debugLevel, boolean debugSync, CallbackInfo ci) {
+        boolean vulkan = VulkanModBootstrap.detectVulkanMod();
         Core.initialize();
         ContextOptions options = new ContextOptions();
         String value = ModernUIClient.getBootstrapProperty(ModernUIClient.BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL);
@@ -62,7 +64,7 @@ public class MixinRenderSystem {
             options.mAllowGLSPIRV = Boolean.parseBoolean(value);
         }
         options.mDriverBugWorkarounds = ModernUIClient.getGpuDriverBugWorkarounds();
-        if (ModernUIMod.isVulkanModLoaded()) {
+        if (vulkan) {
             if (!Core.initVulkan(VulkanModIntegration.wrapContext(), options)) {
                 throw new IllegalStateException("Unable to initialize the VulkanMod UI renderer");
             }

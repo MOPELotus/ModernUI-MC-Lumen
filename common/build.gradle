@@ -123,3 +123,13 @@ tasks.register('checkWindowModeTransition', JavaExec) {
     }
 }
 check.dependsOn checkWindowModeTransition
+
+// Verifies the NeoForge renderer before mod construction, with native boundaries replaced.
+tasks.register('checkVulkanBootstrap', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses, ':ModernUI-NeoForge:compileJava'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.VulkanBootstrapCheck'
+    workingDir rootProject.projectDir
+}
+check.dependsOn checkVulkanBootstrap
