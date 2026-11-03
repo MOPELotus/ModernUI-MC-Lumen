@@ -18,6 +18,7 @@
     "MixinGameRenderer",
     "MixinGameRendererEXT",
     "MixinReforgedPresentSemaphores",
+    "MixinReforgedVulkanShutdown",
     "MixinInventoryScreen",
     "MixinKeyboardHandler",
     "MixinLevelRendererDBG",

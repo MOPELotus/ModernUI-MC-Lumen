@@ -10,6 +10,7 @@ version = "${minecraft_version}-${mod_version}" as String
 
 configurations {
     shadow
+    reforgedShutdownAudit
 }
 
 loom {
@@ -52,6 +53,9 @@ dependencies {
     implementation project(':common')
     compileOnly("org.lwjgl:lwjgl-vulkan:${lwjgl_version}")
     testCompileOnly("org.lwjgl:lwjgl-vulkan:${lwjgl_version}")
+    testImplementation 'org.ow2.asm:asm:9.8'
+    testImplementation 'org.ow2.asm:asm-tree:9.8'
+    reforgedShutdownAudit('maven.modrinth:vulkanmod-reforged:qsEMQHT9') { transitive = false }
 
     // Keep the compiler in the game module so its SPIR-V mixin is applied.
     ["dev.icyllis:arc3d-compiler",
@@ -96,6 +100,15 @@ dependencies {
 
     shadow ':ModernUI-Fonts-5.0'
 }
+
+tasks.register('checkReforgedShutdownCompat', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.neoforge.ReforgedShutdownCompatCheck'
+    doFirst { setArgs([configurations.reforgedShutdownAudit.singleFile.absolutePath]) }
+}
+check.dependsOn checkReforgedShutdownCompat
 
 tasks.withType(JavaCompile).configureEach {
     source(project(":common").sourceSets.main.allSource)
