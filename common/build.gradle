@@ -146,3 +146,16 @@ tasks.register('checkVulkanUploadSynchronization', JavaExec) {
     }
 }
 check.dependsOn checkVulkanUploadSynchronization
+
+// Matches UI completion to Reforged's acquired-frame GameRenderer invocation.
+tasks.register('checkVulkanFrameLifecycle', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses, ':ModernUI-NeoForge:compileJava'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.VulkanFrameLifecycleCheck'
+    workingDir rootProject.projectDir
+    if (project.hasProperty('vulkan_frame_negative_jar')) {
+        args project.property('vulkan_frame_negative_jar')
+    }
+}
+check.dependsOn checkVulkanFrameLifecycle

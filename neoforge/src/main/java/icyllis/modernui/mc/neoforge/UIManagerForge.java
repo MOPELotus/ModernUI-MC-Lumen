@@ -300,7 +300,16 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
 
     @SubscribeEvent
     void onRenderFramePost(@Nonnull RenderFrameEvent.Post event) {
-        super.onRenderTick(/*isEnd*/ true);
+        if (!ModernUIMod.isVulkanModLoaded()) {
+            super.onRenderTick(/*isEnd*/ true);
+        }
+    }
+
+    /** Reforged may skip GameRenderer while NeoForge still publishes Frame.Post. */
+    public static void onVulkanRenderFrameEnd() {
+        if (ModernUIMod.isVulkanModLoaded()) {
+            ((UIManagerForge) UIManager.getInstance()).onRenderTick(/*isEnd*/ true);
+        }
     }
 
     @SubscribeEvent
