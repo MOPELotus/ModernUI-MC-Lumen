@@ -126,3 +126,19 @@ tasks.register('checkWindowModeTransition', JavaExec) {
     }
 }
 check.dependsOn checkWindowModeTransition
+
+// Programmatic system-family selection must retain custom file/directory identifiers.
+tasks.register('checkPreferredFontIdentifier', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.PreferredFontIdentifierCheck'
+    workingDir rootProject.projectDir
+    if (project.hasProperty('preferred_font_old_candidate')) {
+        args project.property('preferred_font_old_candidate')
+        if (project.hasProperty('preferred_font_test_file')) {
+            args project.property('preferred_font_test_file')
+        }
+    }
+}
+check.dependsOn checkPreferredFontIdentifier
