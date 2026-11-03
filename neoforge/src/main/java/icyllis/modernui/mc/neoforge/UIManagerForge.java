@@ -322,12 +322,9 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
 
     private void invalidateLevelGeometry() {
         if (minecraft.level != null) {
-            minecraft.levelRenderer.invalidateCompiledGeometry(
-                    minecraft.level,
-                    minecraft.options,
-                    minecraft.gameRenderer.mainCamera(),
-                    minecraft.getBlockColors()
-            );
+            // FOV changes invalidate visibility, not the compiled world geometry.
+            minecraft.levelRenderer.sectionOcclusionGraph().invalidate();
+            minecraft.levelRenderer.cloudRenderer().markForRebuild();
         }
     }
 
