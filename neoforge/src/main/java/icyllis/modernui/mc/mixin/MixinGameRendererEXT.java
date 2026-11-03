@@ -11,6 +11,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** Complete Vulkan UI work only inside Reforged's acquired-frame render call. */
 @Mixin(GameRenderer.class)
 public abstract class MixinGameRendererEXT {
+    @Inject(method = "render(Lnet/minecraft/client/DeltaTracker;Z)V", at = @At("HEAD"))
+    private void onRenderFrameStart(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
+        UIManagerForge.onVulkanRenderFrameStart();
+    }
+
     @Inject(method = "render(Lnet/minecraft/client/DeltaTracker;Z)V", at = @At("RETURN"))
     private void onRenderFrameEnd(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
         UIManagerForge.onVulkanRenderFrameEnd();

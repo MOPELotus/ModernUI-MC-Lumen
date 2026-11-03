@@ -26,6 +26,7 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.lifecycle.LifecycleOwner;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessNativeImage;
+import icyllis.modernui.mc.text.TextRenderType;
 import icyllis.modernui.mc.ui.CenterFragment2;
 import icyllis.modernui.text.TextUtils;
 import net.minecraft.client.KeyMapping;
@@ -296,6 +297,15 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     @SubscribeEvent
     void onRenderFramePre(@Nonnull RenderFrameEvent.Pre event) {
         super.onRenderTick(/*isEnd*/ false);
+    }
+
+    /** Reforged cancels vanilla UI shader preloading before the text mixin's tail. */
+    public static void onVulkanRenderFrameStart() {
+        if (ModernUIMod.isVulkanModLoaded() && ModernUIMod.isTextEngineEnabled()) {
+            // The first render follows Vulkan/device and mod API initialization.
+            // This is idempotent when vanilla preloading already initialized them.
+            TextRenderType.preloadShaders();
+        }
     }
 
     @SubscribeEvent

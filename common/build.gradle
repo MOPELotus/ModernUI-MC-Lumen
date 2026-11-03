@@ -159,3 +159,19 @@ tasks.register('checkVulkanFrameLifecycle', JavaExec) {
     }
 }
 check.dependsOn checkVulkanFrameLifecycle
+
+tasks.register('checkVulkanTextShaderPreload', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses, ':ModernUI-NeoForge:compileJava'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.VulkanTextShaderPreloadCheck'
+    workingDir rootProject.projectDir
+    doFirst {
+        def arguments = configurations.vulkanApiAudit.files.collect { it.absolutePath }
+        if (project.hasProperty('vulkan_text_negative_jar')) {
+            arguments.add(project.property('vulkan_text_negative_jar'))
+        }
+        setArgs(arguments)
+    }
+}
+check.dependsOn checkVulkanTextShaderPreload
