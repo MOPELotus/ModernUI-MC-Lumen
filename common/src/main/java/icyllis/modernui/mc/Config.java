@@ -460,6 +460,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        ((IModernWindow) (Object) window).modernUI_MC$updateFullscreenIfChanged();
                         GLFW.glfwRestoreWindow(window.getWindow());
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
@@ -480,6 +481,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        ((IModernWindow) (Object) window).modernUI_MC$updateFullscreenIfChanged();
                         GLFW.glfwRestoreWindow(window.getWindow());
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
@@ -489,6 +491,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        ((IModernWindow) (Object) window).modernUI_MC$updateFullscreenIfChanged();
                         GLFW.glfwRestoreWindow(window.getWindow());
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
@@ -498,6 +501,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        ((IModernWindow) (Object) window).modernUI_MC$updateFullscreenIfChanged();
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
                         GLFW.glfwRestoreWindow(window.getWindow());
@@ -506,6 +510,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        ((IModernWindow) (Object) window).modernUI_MC$updateFullscreenIfChanged();
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
                         GLFW.glfwRestoreWindow(window.getWindow());

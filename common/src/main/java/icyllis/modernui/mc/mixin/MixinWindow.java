@@ -19,8 +19,10 @@
 package icyllis.modernui.mc.mixin;
 
 import com.mojang.blaze3d.platform.*;
+import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.MathUtil;
+import icyllis.modernui.mc.IModernWindow;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.MuiModApi;
@@ -28,6 +30,7 @@ import icyllis.modernui.util.DisplayMetrics;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Platform;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.*;
@@ -37,7 +40,43 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import javax.annotation.Nullable;
 
 @Mixin(Window.class)
-public abstract class MixinWindow {
+public abstract class MixinWindow implements IModernWindow {
+
+    @Shadow private boolean fullscreen;
+    @Shadow private boolean actuallyFullscreen;
+    @Shadow private boolean vsync;
+    @Shadow @Final private WindowEventHandler eventHandler;
+
+    @Shadow
+    private void setMode() {
+        throw new AssertionError();
+    }
+
+    @Shadow
+    private void refreshFramebufferSize() {
+        throw new AssertionError();
+    }
+
+    @Shadow
+    public abstract void updateVsync(boolean enabled);
+
+    @Override
+    public void modernUI_MC$updateFullscreenIfChanged() {
+        if (fullscreen != actuallyFullscreen) {
+            actuallyFullscreen = fullscreen;
+            RenderSystem.assertOnRenderThread();
+            try {
+                setMode();
+                // The regular frame flip may otherwise deliver this callback later.
+                refreshFramebufferSize();
+                eventHandler.resizeDisplay();
+                updateVsync(vsync);
+            } catch (Exception exception) {
+                ModernUIMod.LOGGER.error("Couldn't toggle fullscreen", exception);
+            }
+        }
+    }
+
 
     @Shadow
     private double guiScale;
