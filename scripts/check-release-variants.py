@@ -60,7 +60,7 @@ for loader in loaders:
             assert jar.read('icyllis/modernui/mc/FontVariant.class').find(
                     f'client-{variant}.toml'.encode()) >= 0, name
             mixins = json.loads(jar.read(f'mixins.modernui-{loader}.json'))
-            for mixin in ('MixinSPIRVCodeGenerator', 'MixinVulkanDeviceManager',
+            for mixin in ('MixinSoundEngine', 'MixinSPIRVCodeGenerator', 'MixinVulkanDeviceManager',
                           'MixinVulkanImage', 'MixinVulkanRenderer',
                           'MixinGpuBufferPoolAddress', 'MixinParcelBufferFree',
                           'MixinVulkanBindingBufferFree', 'MixinVulkanLongBufferFree',

@@ -84,13 +84,24 @@ tasks.register('checkFontVariant', JavaExec) {
 }
 check.dependsOn checkFontVariant
 
-['TooltipUniform', 'GlfwInput', 'SpirvArrayLayout', 'VulkanDepthBarrier', 'VulkanSurface', 'VulkanAcquire', 'PackMetadata', 'ClampingScrollView', 'LwjglAbi', 'VulkanContextLifecycle', 'VulkanGpuOwnership', 'VulkanPipelineLifecycle', 'VulkanImageUploadBarrier', 'VulkanEncoderOwnership'].each { checkName ->
+['WindowVolume', 'TooltipUniform', 'GlfwInput', 'SpirvArrayLayout', 'VulkanDepthBarrier', 'VulkanSurface', 'VulkanAcquire', 'PackMetadata', 'ClampingScrollView', 'LwjglAbi', 'VulkanContextLifecycle', 'VulkanGpuOwnership', 'VulkanPipelineLifecycle', 'VulkanImageUploadBarrier', 'VulkanEncoderOwnership'].each { checkName ->
     def checkTask = tasks.register("check${checkName}", JavaExec) {
         group = 'verification'
         dependsOn testClasses
         classpath = sourceSets.test.runtimeClasspath
         mainClass = "icyllis.modernui.mc.test.${checkName}Check"
         systemProperty 'modernui.projectRoot', rootProject.projectDir.absolutePath
+        if (checkName == 'WindowVolume') {
+            doFirst {
+                def neoProject = rootProject.findProject(':ModernUI-NeoForge')
+                if (neoProject == null) return // Honor explicitly Fabric-only builds.
+                def neoJars = neoProject.configurations.compileClasspath.files.findAll {
+                    it.name.startsWith('neoforge-') && it.name.contains('minecraft-merged') && it.name.endsWith('.jar')
+                }
+                if (neoJars.empty) throw new GradleException('Missing actual mapped NeoForge game JAR for audio API verification')
+                setArgs(neoJars.collect { it.absolutePath })
+            }
+        }
         if (checkName in ['VulkanDepthBarrier', 'VulkanSurface', 'VulkanAcquire', 'VulkanGpuOwnership', 'VulkanPipelineLifecycle', 'VulkanImageUploadBarrier', 'VulkanEncoderOwnership']) {
             doFirst {
                 def vulkanJars = configurations.compileClasspath.files.findAll {

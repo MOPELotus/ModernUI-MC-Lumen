@@ -33,7 +33,6 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.joml.Matrix3x2f;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.openal.AL10;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -91,6 +90,7 @@ public enum BlurHandler {
     private boolean mHasScreen;
 
     private float mVolumeMultiplier = 1;
+    private boolean mGlobalVolumeControl;
 
     /**
      * Use blur shader in game renderer post-processing.
@@ -206,7 +206,10 @@ public enum BlurHandler {
         } else {
             targetVolumeMultiplier = sMasterVolumeInactive;
         }
-        if (mVolumeMultiplier != targetVolumeMultiplier) {
+        boolean volumeChanged = mVolumeMultiplier != targetVolumeMultiplier;
+        boolean modeChanged = mGlobalVolumeControl != sGlobalVolumeControl;
+        mGlobalVolumeControl = sGlobalVolumeControl;
+        if (volumeChanged) {
             // fade down is slower, 1 second = 20 ticks
             if (mVolumeMultiplier < targetVolumeMultiplier) {
                 mVolumeMultiplier = Math.min(
@@ -219,12 +222,21 @@ public enum BlurHandler {
                         targetVolumeMultiplier
                 );
             }
-            if (sGlobalVolumeControl) {
-                AL10.alListenerf(AL10.AL_GAIN, mVolumeMultiplier);
-            } else {
-                minecraft.getSoundManager().updateCategoryVolume(SoundSource.MASTER, mVolumeMultiplier);
-            }
         }
+        if (volumeChanged || modeChanged) {
+            // Refresh every channel even when only the control mode changes.
+            // SoundEngine also restores the listener gain, after checking loaded.
+            minecraft.getSoundManager().refreshCategoryVolume(SoundSource.MASTER);
+        }
+    }
+
+    public float getListenerVolumeMultiplier() {
+        // Since 1.21.9 user MASTER is already included in each channel volume.
+        return sGlobalVolumeControl ? mVolumeMultiplier : 1.0f;
+    }
+
+    public float getChannelVolumeMultiplier() {
+        return sGlobalVolumeControl ? 1.0f : mVolumeMultiplier;
     }
 
     // INTERNAL HOOK
