@@ -121,8 +121,12 @@ public final class ReforgedShutdownCompatCheck {
                         || annotation(mixin.invisibleAnnotations, "Lorg/spongepowered/asm/mixin/Pseudo;") != null,
                 "optional Reforged mixin is @Pseudo");
         AnnotationNode target = anyAnnotation(mixin, "Lorg/spongepowered/asm/mixin/Mixin;");
+        // Mixin ClassInfo.forName normalizes binary names to internal names;
+        // Loom may already store the internal form in the remapped artifact.
+        Object targets = target == null ? null : value(target, "targets");
         require(target != null && Objects.equals(value(target, "remap"), false)
-                        && Objects.equals(value(target, "targets"), List.of(VULKAN.replace('/', '.'))),
+                        && targets instanceof List<?> names && names.size() == 1
+                        && names.getFirst() instanceof String name && name.replace('.', '/').equals(VULKAN),
                 "mixin exact optional upstream target and remap=false");
         MethodNode wait = annotatedMethod(mixin, "Lorg/spongepowered/asm/mixin/injection/Redirect;");
         AnnotationNode redirect = anyAnnotation(wait, "Lorg/spongepowered/asm/mixin/injection/Redirect;");
