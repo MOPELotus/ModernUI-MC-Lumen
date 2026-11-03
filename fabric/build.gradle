@@ -146,6 +146,7 @@ shadowJar {
 }
 
 remapJar {
+    archiveBaseName.set(project.name.replace('ModernUI-', 'ModernUI-Lumen-'))
     dependsOn(shadowJar)
     inputFile.set(shadowJar.archiveFile)
     archiveClassifier.set(rootProject.fontVariant == "misans" ? "universal-misans" : "universal")
