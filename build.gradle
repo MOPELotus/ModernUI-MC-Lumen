@@ -61,9 +61,9 @@ subprojects {
         it.options.release.set(25)
     }
 
-    tasks.withType(Jar).configureEach {
-        if (project.name in ['ModernUI-Fabric', 'ModernUI-NeoForge', 'ModernUI-Forge']) {
-            archiveBaseName.set(project.name.replace('ModernUI-', 'ModernUI-Lumen-'))
+    tasks.withType(Jar).configureEach { archiveTask ->
+        if (archiveTask.project.name in ['ModernUI-Fabric', 'ModernUI-NeoForge', 'ModernUI-Forge']) {
+            archiveTask.archiveBaseName.set(archiveTask.project.name.replace('ModernUI-', 'ModernUI-Lumen-'))
         }
         manifest.attributes('ModernUI-Font-Variant': rootProject.fontVariant)
         if (rootProject.fontVariant == 'standard') {
