@@ -75,7 +75,7 @@ earlyWindowControl = false
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
 
-CI 构建两版并上传 `modernui-lumen-release-jars` artifact。普通分支推送不会发布 Release；标签和发行仍需单独的发布指令。Gradle 项目/任务名与 Maven 坐标保持兼容，本 Fork 不宣称新版已发布到上游 Maven。
+CI 构建两版并上传 `modernui-lumen-release-jars` artifact。普通分支推送不会发布 Release；推送标签或手动运行工作流并填写 release tag 时会创建或更新 Release。Gradle 项目/任务名与 Maven 坐标保持兼容，本 Fork 不宣称新版已发布到上游 Maven。
 
 ## 验证边界
 

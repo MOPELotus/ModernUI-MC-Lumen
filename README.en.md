@@ -75,7 +75,7 @@ Final JARs are in each loader's `build/libs/`:
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
 
-CI builds both editions and uploads `modernui-lumen-release-jars`. Normal branch pushes do not publish a Release; tags and releases require a separate publishing instruction. Gradle project/task names and Maven coordinates remain compatible. This fork does not claim that its new version is published to upstream Maven.
+CI builds both editions and uploads `modernui-lumen-release-jars`. Normal branch pushes do not publish a Release. Pushing a tag, or manually running the workflow with a release tag, creates or updates a Release. Gradle project/task names and Maven coordinates remain compatible. This fork does not claim that its new version is published to upstream Maven.
 
 ## Validation limits
 
