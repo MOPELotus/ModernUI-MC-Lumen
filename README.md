@@ -125,7 +125,9 @@ If the file does not exist yet, create `config/fml.toml` with that line, or star
 
 On 26.2, the early screen creates an OpenGL window that cannot be reused as a Vulkan surface (`GLFW_NO_API` / error 65540). Minecraft 26.3 / FML 12 uses a different SDL window handoff, so that GLFW explanation does not apply.
 
-For NeoForge 26.3.0.101 / FML 12.0.12, OpenGL also requires `earlyWindowControl = false` in the tested Linux/NVIDIA 580.178.04 environment. The default early loading screen triggers an NVIDIA driver crash there, independently reproduced with no ModernUI installed; disabling it allows world loading and normal exit. The precise upstream cause and behavior on other drivers remain unconfirmed. This setting is an upstream compatibility requirement, not a ModernUI option, and changing it alone does not establish that all rendering or UI checks have passed.
+For NeoForge 26.3.0.101 / FML 12.0.12, also set `earlyWindowControl = false` for OpenGL and native Vulkan in the tested Linux/NVIDIA 580.178.04 environment (Tesla T10). With the early window enabled, OpenGL can crash in the NVIDIA driver at startup, while native Vulkan leaves the early screen's `ScreenSize UBO` and `shared_error` GPU buffers unclosed at shutdown. Both issues were independently reproduced without ModernUI installed. The OpenGL crash's precise upstream cause and behavior on other drivers remain unconfirmed.
+
+Disabling the early window is the verified compatibility condition for the tested ModernUI native Vulkan UI flow, normal exit and zero Vulkan validation errors on that configuration. This setting is an upstream compatibility requirement, not a ModernUI option, and does not by itself establish that every feature or a different driver/configuration has passed testing.
 
 ### License
 * Modern UI for Minecraft
