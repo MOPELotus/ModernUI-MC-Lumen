@@ -53,6 +53,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation 'org.ow2.asm:asm-tree:9.8'
     minecraft "com.mojang:minecraft:${minecraft_version}"
     forgeUserdev "net.neoforged:neoforge:${neoforge_version}:userdev"
 
@@ -139,6 +140,15 @@ tasks.withType(ProcessResources).configureEach {
 test {
     failOnNoDiscoveredTests = false
 }
+
+tasks.register('checkZoomVisibility', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.ZoomVisibilityCheck'
+}
+check.dependsOn checkZoomVisibility
+
 
 loom.nestJars(
         tasks.named("shadowJar", Jar),
