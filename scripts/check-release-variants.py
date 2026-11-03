@@ -55,7 +55,13 @@ for loader in loaders:
                     'sources': 'https://github.com/MOPELotus/ModernUI-MC-Lumen'}, name
             else:
                 path = 'META-INF/neoforge.mods.toml' if loader == 'neoforge' else 'META-INF/mods.toml'
-                meta = tomllib.loads(jar.read(path).decode())['mods'][0]
+                document = tomllib.loads(jar.read(path).decode())
+                if loader == 'neoforge' and mc == '26.3':
+                    assert document['loaderVersion'] == '[12,)', name
+                    dependencies = document['dependencies']['modernui']
+                    assert any(d['modId'] == 'neoforge' and d['versionRange'] == '[26.3.0.101,)'
+                               for d in dependencies), name
+                meta = document['mods'][0]
                 ident, actual_version, display = meta['modId'], meta['version'], meta['displayName']
                 assert meta['authors'] == 'BloCamLimb, MOPELotus', name
                 assert meta['displayURL'] == 'https://github.com/MOPELotus/ModernUI-MC-Lumen', name

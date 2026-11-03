@@ -160,6 +160,18 @@ tasks.register('checkVulkanPipelineCleanup', JavaExec) {
 }
 check.dependsOn checkVulkanPipelineCleanup
 
+tasks.register('checkConfigRegistration', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.ConfigRegistrationCheck'
+    args rootProject.fontVariant
+    if (project.hasProperty('native_fml_runtime_jar')) {
+        args project.property('native_fml_runtime_jar')
+    }
+}
+check.dependsOn checkConfigRegistration
+
 
 loom.nestJars(
         tasks.named("shadowJar", Jar),

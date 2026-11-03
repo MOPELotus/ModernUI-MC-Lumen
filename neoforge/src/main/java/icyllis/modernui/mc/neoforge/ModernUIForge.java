@@ -76,7 +76,8 @@ public final class ModernUIForge extends ModernUIMod {
         sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
 
-        modContainer.registerConfig(ModConfig.Type.COMMON, ConfigImpl.COMMON_SPEC,
+        // FML 12 renamed the unsynced configuration loaded on both sides to LOCAL.
+        modContainer.registerConfig(ModConfig.Type.LOCAL, ConfigImpl.COMMON_SPEC,
                 ModernUI.NAME_CPT + "/common.toml");
         modEventBus.addListener(
                 (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadCommon(event.getConfig())

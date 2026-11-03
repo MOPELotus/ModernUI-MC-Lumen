@@ -138,7 +138,7 @@ This is an upstream early-window compatibility requirement, not a ModernUI optio
 
 ### Building ModernUI Lumen
 
-Use the JDK required by the selected branch; `master` (Minecraft 26.3) uses **JDK 25**. The Gradle wrapper and dependencies in this checkout are the build source of truth. The default platforms are Fabric and NeoForge.
+Use the JDK required by the selected branch; `master` (Minecraft 26.3) uses **JDK 25**. The Gradle wrapper and dependencies in this checkout are the build source of truth. The default platforms are Fabric and NeoForge. Minecraft 26.3 NeoForge builds require NeoForge **26.3.0.101 or later** with FML 12; older 26.3 beta builds use an incompatible configuration API.
 
 ```sh
 ./gradlew clean build -Pfont_variant=standard
