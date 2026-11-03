@@ -175,3 +175,13 @@ tasks.register('checkVulkanTextShaderPreload', JavaExec) {
     }
 }
 check.dependsOn checkVulkanTextShaderPreload
+
+tasks.register('checkVulkanPresentSemaphore', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses, ':ModernUI-NeoForge:compileJava'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.VulkanPresentSemaphoreCheck'
+    workingDir rootProject.projectDir
+    doFirst { setArgs(configurations.vulkanApiAudit.files.collect { it.absolutePath }) }
+}
+check.dependsOn checkVulkanPresentSemaphore

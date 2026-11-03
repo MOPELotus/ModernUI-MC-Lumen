@@ -17,6 +17,7 @@
     "MixinEditBox",
     "MixinGameRenderer",
     "MixinGameRendererEXT",
+    "MixinReforgedPresentSemaphores",
     "MixinInventoryScreen",
     "MixinKeyboardHandler",
     "MixinLevelRendererDBG",
