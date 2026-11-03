@@ -113,17 +113,19 @@ The report covers Fabric on 26.3; other Minecraft versions and loaders have not 
 `"RELOADING"`，保存并重启游戏即可规避：保留首次加载屏幕，仅隐藏后续资源重载屏幕。
 这是已反馈有效的配置规避方案；初始化时序原因仍属推测，尚无代码修复或其他版本、加载器的验证结论。
 
-### Native Vulkan on NeoForge 26.2
+### NeoForge early-window compatibility
 
-With the current NeoForge/FancyModLoader early loading screen, native Vulkan requires disabling the early window before starting the game. In the selected game instance's `config/fml.toml`, set this existing top-level key (outside any TOML section), then save and restart:
+Before using Minecraft 26.2's native Vulkan backend with FML 11.0.16, disable the upstream early loading window. In the selected game instance's `config/fml.toml`, set this top-level key (outside any TOML section), then save and restart:
 
 ```toml
 earlyWindowControl = false
 ```
 
-If the file does not exist yet, create `config/fml.toml` with that line, or start the instance once with OpenGL and then edit its generated file. Add `--graphicsBackend VULKAN` to the launcher's **game arguments** to select Minecraft's native Vulkan backend; use `--graphicsBackend OPENGL` to select OpenGL. These are Minecraft game arguments, not JVM arguments. Native Vulkan on 26.2 does not require VulkanMod.
+If the file does not exist yet, create `config/fml.toml` with that line, or start the instance once with OpenGL and then edit its generated file. Add `--graphicsBackend VULKAN` to the launcher's **game arguments** to select Minecraft's native Vulkan backend; use `--graphicsBackend OPENGL` to select OpenGL. These are Minecraft game arguments, not JVM arguments. Native Vulkan on 26.2 / 26.3 does not require VulkanMod.
 
-This is an upstream early-window compatibility requirement, not a ModernUI option. The current early screen creates an OpenGL window that cannot be reused as a Vulkan surface; with the default early window enabled, native Vulkan can fail before reaching the title screen (`GLFW_NO_API` / error 65540 on 26.2). OpenGL does not require disabling the early window. This requirement is confirmed for Minecraft 26.2 with FML 11.0.16. Minecraft 26.3 / FML 12 uses a different SDL window handoff that creates the requested backend window and disposes of the early window; it does not require this 26.2 workaround. The configuration change alone does not establish that rendering or UI validation has passed.
+On 26.2, the early screen creates an OpenGL window that cannot be reused as a Vulkan surface (`GLFW_NO_API` / error 65540). Minecraft 26.3 / FML 12 uses a different SDL window handoff, so that GLFW explanation does not apply.
+
+For NeoForge 26.3.0.101 / FML 12.0.12, OpenGL also requires `earlyWindowControl = false` in the tested Linux/NVIDIA 580.178.04 environment. The default early loading screen triggers an NVIDIA driver crash there, independently reproduced with no ModernUI installed; disabling it allows world loading and normal exit. The precise upstream cause and behavior on other drivers remain unconfirmed. This setting is an upstream compatibility requirement, not a ModernUI option, and changing it alone does not establish that all rendering or UI checks have passed.
 
 ### License
 * Modern UI for Minecraft
