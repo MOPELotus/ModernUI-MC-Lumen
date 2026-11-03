@@ -84,13 +84,24 @@ tasks.register('checkFontVariant', JavaExec) {
 }
 check.dependsOn checkFontVariant
 
-['PreferredFontIdentifier', 'WindowVolume', 'TooltipUniform', 'GlfwInput', 'VulkanDepthBarrier', 'PackMetadata', 'VulkanSurface', 'ClampingScrollView', 'VulkanAcquire', 'LwjglAbi', 'VulkanContextLifecycle', 'VulkanGpuOwnership', 'VulkanPipelineLifecycle', 'VulkanImageUploadBarrier', 'VulkanEncoderOwnership'].each { checkName ->
+['WindowModeTransition', 'PreferredFontIdentifier', 'WindowVolume', 'TooltipUniform', 'GlfwInput', 'VulkanDepthBarrier', 'PackMetadata', 'VulkanSurface', 'ClampingScrollView', 'VulkanAcquire', 'LwjglAbi', 'VulkanContextLifecycle', 'VulkanGpuOwnership', 'VulkanPipelineLifecycle', 'VulkanImageUploadBarrier', 'VulkanEncoderOwnership'].each { checkName ->
     def checkTask = tasks.register("check${checkName}", JavaExec) {
         group = 'verification'
         dependsOn testClasses
         classpath = sourceSets.test.runtimeClasspath
         mainClass = "icyllis.modernui.mc.test.${checkName}Check"
         systemProperty 'modernui.projectRoot', rootProject.projectDir.absolutePath
+        if (checkName == 'WindowModeTransition') {
+            dependsOn ':ModernUI-Fabric:compileJava', ':ModernUI-NeoForge:compileJava'
+            workingDir rootProject.projectDir
+            doFirst {
+                def neoJars = project(':ModernUI-NeoForge').configurations.compileClasspath.files.findAll {
+                    it.name.startsWith('neoforge-') && it.name.contains('minecraft-merged') && it.name.endsWith('.jar')
+                }
+                if (neoJars.size() != 1) throw new GradleException('Expected the actual mapped NeoForge game JAR for window verification')
+                setArgs(neoJars.collect { it.absolutePath })
+            }
+        }
         if (checkName == 'WindowVolume') {
             doFirst {
                 def neoProject = rootProject.findProject(':ModernUI-NeoForge')
