@@ -55,7 +55,7 @@ jobs:
             suffix=universal
             if [[ "$variant" == misans ]]; then suffix=universal-misans; fi
             for loader in fabric neoforge; do
-              jars=("$loader"/build/libs/*-"$suffix".jar)
+              jars=("$loader"/build/libs/ModernUI-Lumen-*-"$suffix".jar)
               [[ ${#jars[@]} -eq 1 && -f "${jars[0]}" ]]
               cp -- "${jars[0]}" release/
             done
@@ -66,7 +66,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: modernui-mc-release-jars
+          name: modernui-lumen-release-jars
           path: release/*.jar
           if-no-files-found: error
 

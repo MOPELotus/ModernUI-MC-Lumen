@@ -21,22 +21,34 @@ for loader in loaders:
     for misans in (False, True):
         variant = 'misans' if misans else 'standard'
         suffix = '-misans' if misans else ''
-        name = f'ModernUI-{label}-{mc}-{version}-universal{suffix}.jar'
+        name = f'ModernUI-Lumen-{label}-{mc}-{version}-universal{suffix}.jar'
         expected.add(name)
         with zipfile.ZipFile(Path(output) / name) as jar:
             entries = set(jar.namelist())
             assert jar.testzip() is None, name
             manifest = jar.read('META-INF/MANIFEST.MF').decode().replace('\r\n ', '')
             assert re.search(rf'^ModernUI-Font-Variant: {variant}\r?$', manifest, re.M), name
+            for title in ('Specification-Title', 'Implementation-Title'):
+                assert re.search(rf'^{title}: ModernUI-Lumen-{label}\r?$', manifest, re.M), (name, title)
+            if 'pack.mcmeta' in entries:
+                assert json.loads(jar.read('pack.mcmeta'))['pack']['description'] == 'ModernUI Lumen for Minecraft', name
             if loader == 'fabric':
                 meta = json.loads(jar.read('fabric.mod.json'))
                 ident, actual_version, display = meta['id'], meta['version'], meta['name']
+                assert meta['authors'] == ['BloCamLimb', 'MOPELotus'], name
+                assert meta['contact'] == {
+                    'homepage': 'https://github.com/MOPELotus/ModernUI-MC-Lumen',
+                    'issues': 'https://github.com/MOPELotus/ModernUI-MC-Lumen/issues',
+                    'sources': 'https://github.com/MOPELotus/ModernUI-MC-Lumen'}, name
             else:
                 path = 'META-INF/neoforge.mods.toml' if loader == 'neoforge' else 'META-INF/mods.toml'
                 meta = tomllib.loads(jar.read(path).decode())['mods'][0]
                 ident, actual_version, display = meta['modId'], meta['version'], meta['displayName']
+                assert meta['authors'] == 'BloCamLimb, MOPELotus', name
+                assert meta['displayURL'] == 'https://github.com/MOPELotus/ModernUI-MC-Lumen', name
+            assert 'not an official upstream release' in meta['description'], name
             assert (ident, actual_version, display) == ('modernui', version,
-                    'Modern UI (MiSans)' if misans else 'Modern UI'), name
+                    'ModernUI Lumen (MiSans)' if misans else 'ModernUI Lumen'), name
             for cls in ('MiSansInstaller', 'MiSansSetup'):
                 assert (f'icyllis/modernui/mc/{cls}.class' in entries) == misans, (name, cls)
             if not misans:
