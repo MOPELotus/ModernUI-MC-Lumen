@@ -116,6 +116,7 @@ public abstract class UIManager implements LifecycleOwner {
     private final Thread mUiThread;
     private volatile Looper mLooper;
     private volatile boolean mRunning;
+    private volatile boolean mShutdownRequested;
 
     // the view root impl
     protected volatile ViewRootImpl mRoot;
@@ -148,6 +149,7 @@ public abstract class UIManager implements LifecycleOwner {
     protected boolean mClearNextMainTarget = false;
     protected boolean mAlwaysClearMainTarget = false;
     private long mLastPurgeNanos;
+    private VulkanModIntegration.Layer mVulkanLayer;
 
     protected final TooltipRenderer mTooltipRenderer = new TooltipRenderer();
 
@@ -191,18 +193,18 @@ public abstract class UIManager implements LifecycleOwner {
             }
         });
 
+        mRunning = true;
         mUiThread = new Thread(this::run, "UI thread");
         mUiThread.start();
         // integrated with Minecraft
         AudioManager.getInstance().initialize(/*integrated*/ true);
-
-        mRunning = true;
     }
 
     @RenderThread
     public static void initializeRenderer() {
         Core.checkRenderThread();
-        if (ModernUIMod.sDevelopment || DEBUG) {
+        if (Core.requireImmediateContext().getDevice() instanceof GLDevice
+                && (ModernUIMod.sDevelopment || DEBUG)) {
             Core.glSetupDebugCallback();
         }
         Objects.requireNonNull(sInstance);
@@ -466,6 +468,23 @@ public abstract class UIManager implements LifecycleOwner {
         mRoot.mHandler.postDelayed(mLooper::quitSafely, 60);
     }
 
+    private void requestShutdown() {
+        if (mShutdownRequested) {
+            ViewRootImpl root = mRoot;
+            if (root != null) root.cancelPendingFrame();
+            return;
+        }
+        mShutdownRequested = true;
+        mRunning = false;
+        ViewRootImpl root = mRoot;
+        if (root != null) {
+            root.mHandler.post(this::finish);
+            root.cancelPendingFrame();
+        } else if (mLooper != null) {
+            mLooper.quitSafely();
+        }
+    }
+
     private void scheduleHoverMoveForScroll() {
         mRoot.mHandler.removeCallbacks(mSyntheticHoverMove);
         mRoot.mHandler.postDelayed(mSyntheticHoverMove, 60);
@@ -507,11 +526,16 @@ public abstract class UIManager implements LifecycleOwner {
             float y = (float) (mouseHandler.ypos() *
                     window.getHeight() / window.getScreenHeight());
             int mods = 0;
-            if (Screen.hasControlDown()) {
-                mods |= KeyEvent.META_CTRL_ON;
+            if (InputConstants.isKeyDown(window.getWindow(), GLFW_KEY_LEFT_CONTROL) ||
+                    InputConstants.isKeyDown(window.getWindow(), GLFW_KEY_RIGHT_CONTROL)) {
+                mods |= KeyEvent.META_CONTROL_ON;
             }
             if (Screen.hasShiftDown()) {
                 mods |= KeyEvent.META_SHIFT_ON;
+            }
+            if (InputConstants.isKeyDown(window.getWindow(), GLFW_KEY_LEFT_SUPER) ||
+                    InputConstants.isKeyDown(window.getWindow(), GLFW_KEY_RIGHT_SUPER)) {
+                mods |= KeyEvent.META_SUPER_ON;
             }
             MotionEvent event = MotionEvent.obtain(now, MotionEvent.ACTION_SCROLL,
                     x, y, mods);
@@ -521,7 +545,12 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
+    public static int normalizeModifiers(int mods) {
+        return mods & (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL | GLFW_MOD_ALT | GLFW_MOD_SUPER);
+    }
+
     public void onPostMouseInput(int button, int action, int mods) {
+        mods = normalizeModifiers(mods);
         // We should ensure (overlay == null && screen != null)
         // and the screen must be a mui screen
         if (minecraft.getOverlay() == null && mScreen != null) {
@@ -557,12 +586,14 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public void onKeyPress(int keyCode, int scanCode, int mods) {
+        mods = normalizeModifiers(mods);
         KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_DOWN, keyCode, 0,
                 mods, scanCode, 0);
         mRoot.enqueueInputEvent(keyEvent);
     }
 
     public void onKeyRelease(int keyCode, int scanCode, int mods) {
+        mods = normalizeModifiers(mods);
         KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_UP, keyCode, 0,
                 mods, scanCode, 0);
         mRoot.enqueueInputEvent(keyEvent);
@@ -886,8 +917,12 @@ public abstract class UIManager implements LifecycleOwner {
         ImageProxy surface = frameTask.getRight();
 
         if (recording != null) {
-            oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
-            oldProgram = GL33C.glGetInteger(GL33C.GL_CURRENT_PROGRAM);
+            if (context.getDevice() instanceof GLDevice) {
+                oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
+                oldProgram = GL33C.glGetInteger(GL33C.GL_CURRENT_PROGRAM);
+            } else {
+                VulkanModIntegration.beforeSubmit(mVulkanLayer);
+            }
             boolean added = context.addTask(recording);
             recording.close();
             if (!added) {
@@ -895,50 +930,62 @@ public abstract class UIManager implements LifecycleOwner {
             }
         }
 
-        ((GLDevice) context.getDevice()).flushRenderCalls();
+        if (context.getDevice() instanceof GLDevice device) device.flushRenderCalls();
 
         if (recording != null) {
             context.submit();
-            GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
-            GL33C.glBindVertexArray(oldVertexArray);
-            GL33C.glUseProgram(oldProgram);
+            if (context.getDevice() instanceof GLDevice) {
+                GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
+                GL33C.glBindVertexArray(oldVertexArray);
+                GL33C.glUseProgram(oldProgram);
+            }
         } else {
             context.checkForFinishedWork();
         }
 
         BufferUploader.invalidate();
 
-        // force changing Blaze3D state
-        for (int i = 0; i <= 3; i++) {
-            GL33C.glBindSampler(i, 0);
-        }
-        GL33C.glDisable(GL33C.GL_STENCIL_TEST);
-        RenderSystem.disableScissor();
-        GL33C.glDisable(GL33C.GL_SCISSOR_TEST);
-        RenderSystem.defaultBlendFunc();
-        GL33C.glBlendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
-        RenderSystem.enableBlend();
-        GL33C.glEnable(GL33C.GL_BLEND);
-        RenderSystem.blendEquation(GL33C.GL_FUNC_ADD);
-        GL33C.glBlendEquation(GL33C.GL_FUNC_ADD);
-        RenderSystem.disableDepthTest();
-        GL33C.glDisable(GL33C.GL_DEPTH_TEST);
-        RenderSystem.depthFunc(GL33C.GL_LEQUAL);
-        GL33C.glDepthFunc(GL33C.GL_LEQUAL);
-        RenderSystem.depthMask(true);
-        GL33C.glDepthMask(true);
-        for (int i = 3; i >= 0; i--) {
-            RenderSystem.activeTexture(GL33C.GL_TEXTURE0 + i);
-            RenderSystem.bindTexture(0);
-        }
-        GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
-        RenderSystem.disableCull();
-        RenderSystem.lineWidth(1);
+        if (context.getDevice() instanceof GLDevice) {
+            // force changing Blaze3D state
+            for (int i = 0; i <= 3; i++) {
+                GL33C.glBindSampler(i, 0);
+            }
+            GL33C.glDisable(GL33C.GL_STENCIL_TEST);
+            RenderSystem.disableScissor();
+            GL33C.glDisable(GL33C.GL_SCISSOR_TEST);
+            RenderSystem.defaultBlendFunc();
+            GL33C.glBlendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
+            RenderSystem.enableBlend();
+            GL33C.glEnable(GL33C.GL_BLEND);
+            RenderSystem.blendEquation(GL33C.GL_FUNC_ADD);
+            GL33C.glBlendEquation(GL33C.GL_FUNC_ADD);
+            RenderSystem.disableDepthTest();
+            GL33C.glDisable(GL33C.GL_DEPTH_TEST);
+            RenderSystem.depthFunc(GL33C.GL_LEQUAL);
+            GL33C.glDepthFunc(GL33C.GL_LEQUAL);
+            RenderSystem.depthMask(true);
+            GL33C.glDepthMask(true);
+            for (int i = 3; i >= 0; i--) {
+                RenderSystem.activeTexture(GL33C.GL_TEXTURE0 + i);
+                RenderSystem.bindTexture(0);
+            }
+            GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
+            RenderSystem.disableCull();
+            RenderSystem.lineWidth(1);
 
-        int width = minecraft.getWindow().getWidth();
-        int height = minecraft.getWindow().getHeight();
+            int width = minecraft.getWindow().getWidth();
+            int height = minecraft.getWindow().getHeight();
 
-        RenderSystem.viewport(0, 0, width, height);
+            RenderSystem.viewport(0, 0, width, height);
+
+        } else {
+            RenderSystem.disableScissor();
+            RenderSystem.enableBlend();
+            RenderSystem.disableDepthTest();
+            RenderSystem.depthMask(true);
+            RenderSystem.disableCull();
+            RenderSystem.viewport(0, 0, mWindow.getWidth(), mWindow.getHeight());
+        }
 
         if (surface != null) {
             if (surface.getImage() instanceof @RawPtr GLTexture layer) {
@@ -970,6 +1017,14 @@ public abstract class UIManager implements LifecycleOwner {
                     GL33C.glBindSampler(0, 0);
                     //sampler.unref();
                 }
+            } else if (surface.getImage() instanceof icyllis.arc3d.vulkan.VulkanImage layer) {
+                if (mVulkanLayer == null || !mVulkanLayer.sameImage(layer)) {
+                    if (mVulkanLayer != null) mVulkanLayer.close();
+                    mVulkanLayer = new VulkanModIntegration.Layer(layer);
+                }
+                RenderSystem.blendFuncSeparate(GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA,
+                        GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA);
+                mVulkanLayer.drawComposite();
             }
         }
         RenderSystem.defaultBlendFunc();
@@ -1115,8 +1170,11 @@ public abstract class UIManager implements LifecycleOwner {
                 GlyphManager.getInstance().compact();
             }
             if (!minecraft.isRunning() && mRunning) {
-                mRunning = false;
-                mRoot.mHandler.post(this::finish);
+                if (mVulkanLayer != null) {
+                    mVulkanLayer.close();
+                    mVulkanLayer = null;
+                }
+                requestShutdown();
                 // later destroy() will be called
             } else if (minecraft.isRunning() && mRunning &&
                     mScreen == null && minecraft.getOverlay() == null) {
@@ -1155,21 +1213,32 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public static void destroy() {
-        // see onRenderTick() above
         LOGGER.debug(MARKER, "Quiting Modern UI");
+        if (sInstance != null) sInstance.requestShutdown();
         BlurHandler.INSTANCE.closeEffect();
         FontResourceManager.getInstance().close();
         ImageStore.getInstance().clear();
-        System.gc();
-        Core.requireImmediateContext().unref();
         if (sInstance != null) {
             AudioManager.getInstance().close();
             try {
-                // in case of GLFW is terminated too early
                 sInstance.mUiThread.join(1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while stopping the UI thread", e);
             }
+            if (sInstance.mUiThread.isAlive()) {
+                throw new IllegalStateException("UI thread did not stop before renderer shutdown");
+            }
+            if (sInstance.mVulkanLayer != null) {
+                sInstance.mVulkanLayer.close();
+                sInstance.mVulkanLayer = null;
+            }
+        }
+        if (ModernUIMod.isVulkanModLoaded()) VulkanModIntegration.drainFrameOps();
+        System.gc();
+        Core.requireImmediateContext().unref();
+        if (ModernUIMod.isVulkanModLoaded()) {
+            VulkanModIntegration.closeContext(sInstance == null ? null : sInstance.mUiThread);
         }
         LOGGER.debug(MARKER, "Quited Modern UI");
     }
@@ -1284,12 +1353,18 @@ public abstract class UIManager implements LifecycleOwner {
             canvas.restoreToCount(1);
             Recording task = Core.requireUiRecordingContext().snap();
             synchronized (mRenderLock) {
+                if (!mRunning) {
+                    task.close();
+                    return;
+                }
                 if (mLastFrameTask != null) {
                     mLastFrameTask.close();
                 }
                 mLastFrameTask = task;
                 try {
-                    mRenderLock.wait();
+                    while (mRunning && mLastFrameTask == task) {
+                        mRenderLock.wait();
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -1302,6 +1377,16 @@ public abstract class UIManager implements LifecycleOwner {
             if (System.nanoTime() - mLastPurgeNanos >= 20_000_000_000L) {
                 mLastPurgeNanos = System.nanoTime();
                 context.performDeferredCleanup(120_000);
+            }
+        }
+
+        private void cancelPendingFrame() {
+            synchronized (mRenderLock) {
+                if (mLastFrameTask != null) {
+                    mLastFrameTask.close();
+                    mLastFrameTask = null;
+                }
+                mRenderLock.notifyAll();
             }
         }
 

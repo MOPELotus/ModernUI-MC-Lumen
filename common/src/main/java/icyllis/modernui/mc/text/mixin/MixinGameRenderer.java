@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.text.mixin;
 
 import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.TextRenderType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
@@ -37,6 +38,11 @@ public class MixinGameRenderer {
     @Inject(method = "preloadUiShader", at = @At("TAIL"))
     private void onPreloadUiShader(ResourceProvider vanillaProvider, CallbackInfo ci) {
         TextRenderType.preloadShaders();
+    }
+
+    @Inject(method = "render", at = @At("TAIL"))
+    private void modernui$finishTextAtlases(CallbackInfo ci) {
+        GlyphManager.getInstance().onEndRenderTick();
     }
 
     @Inject(method = "renderLevel", at = @At("HEAD"))

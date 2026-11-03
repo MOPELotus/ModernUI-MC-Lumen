@@ -1,9 +1,9 @@
 import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
-    id 'dev.architectury.loom' version '1.7-SNAPSHOT'
+    id 'dev.architectury.loom'
     //id 'com.matthewprenger.cursegradle' version '1.4.0'
-    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'com.gradleup.shadow'
 }
 
 version = "${minecraft_version}-${mod_version}" as String
@@ -13,16 +13,14 @@ configurations {
 }
 
 loom {
-    silentMojangMappingsLicense()
     runs {
         data {
-            data()
+            environment("data")
             programArgs "--all", "--mod", "modernui"
             programArgs "--output", file("src/generated").absolutePath
         }
     }
     runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
-    addTaskBeforeRun(":${name}:classes")
 }
 
 repositories {
@@ -52,27 +50,27 @@ dependencies {
     neoForge "net.neoforged:neoforge:${neoforge_version}"
 
     implementation project(':common')
+    compileOnly("org.lwjgl:lwjgl-vulkan:${lwjgl_version}")
+    testCompileOnly("org.lwjgl:lwjgl-vulkan:${lwjgl_version}")
 
-    ["dev.icyllis:arc3d-compiler"].each {
-        implementation(forgeRuntimeLibrary(it + ":${arc3d_version}"))
-        include(it + ":${arc3d_version}")
-    }
-    ["dev.icyllis:arc3d-core",
+    // Keep the compiler in the game module so its SPIR-V mixin is applied.
+    ["dev.icyllis:arc3d-compiler",
+     "dev.icyllis:arc3d-core",
      "dev.icyllis:arc3d-sketch",
      "dev.icyllis:arc3d-engine",
      "dev.icyllis:arc3d-granite",
      "dev.icyllis:arc3d-opengl",
      "dev.icyllis:arc3d-vulkan"].each {
-        implementation(forgeRuntimeLibrary(it + ":${arc3d_version}"))
+        implementation(it + ":${arc3d_version}")
         shadow(it + ":${arc3d_version}") {
             transitive = false
         }
     }
-    implementation(forgeRuntimeLibrary("dev.icyllis:modernui-core:${core_version}"))
+    implementation("dev.icyllis:modernui-core:${core_version}")
     shadow("dev.icyllis:modernui-core:${core_version}") {
         transitive = false
     }
-    implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Markflow:3.12.0")) {
+    implementation("icyllis.modernui:ModernUI-Markflow:3.12.0") {
         exclude group: 'icyllis.modernui'
     }
     shadow("icyllis.modernui:ModernUI-Markflow:3.12.0") {
@@ -111,6 +109,8 @@ sourcesJar {
     from project(":common").sourceSets.main.allSource
 }
 
+test { failOnNoDiscoveredTests = false }
+
 tasks.withType(ProcessResources).configureEach {
     from project(":common").sourceSets.main.resources
 }
@@ -118,6 +118,7 @@ tasks.withType(ProcessResources).configureEach {
 shadowJar {
     archiveClassifier.set("shadow")
     configurations = [project.configurations.shadow]
+    exclude 'module-info.class', 'META-INF/versions/**/module-info.class'
 
     /*dependencies {
         exclude 'icu4j-59.1.jar'
@@ -144,22 +145,19 @@ shadowJar {
 remapJar {
     dependsOn(shadowJar)
     inputFile.set(shadowJar.archiveFile)
-    archiveClassifier.set("universal")
+    archiveClassifier.set(rootProject.fontVariant == "misans" ? "universal-misans" : "universal")
 }
 
-tasks.register('remapMavenJar', RemapJarTask) {
+tasks.register('mavenJar', Jar) {
     dependsOn(jar)
-    inputFile.set(jar.archiveFile)
-    addNestedDependencies = false
-    /*targetNamespace.set("srg") // to srg names
-    remapAccessWidener.set(true)*/
+    with(tasks.jar)
     archiveClassifier.set("maven")
 }
 
 if (project.hasProperty("keystore")) {
-    remapJar.doLast {
+    shadowJar.doLast {
         ant.signjar(
-                jar: remapJar.archiveFile.get(),
+                jar: shadowJar.archiveFile.get(),
                 alias: project.getProperty("keystore_alias"),
                 storepass: project.getProperty("keystore_pass"),
                 keystore: project.getProperty("keystore"),
@@ -172,9 +170,10 @@ if (project.hasProperty("keystore")) {
 
 processResources {
     inputs.property 'version', mod_version
+    inputs.property 'displayName', rootProject.fontVariantDisplayName
 
     filesMatching("META-INF/neoforge.mods.toml") {
-        expand 'version': mod_version
+        expand 'version': mod_version, 'displayName': rootProject.fontVariantDisplayName
     }
 }
 
@@ -195,7 +194,7 @@ jar {
 publishing {
     publications {
         mavenNeoForge(MavenPublication) {
-            artifact(remapMavenJar.archiveFile) {
+            artifact(mavenJar.archiveFile) {
                 builtBy build
             }
             artifact(sourcesJar.archiveFile) {

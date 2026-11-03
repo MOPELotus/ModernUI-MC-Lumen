@@ -38,6 +38,11 @@ public abstract class ModernUIMod {
     public static final String BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD = "modernui_mc_disableEnhancedTextField";
 
     public static volatile boolean sDevelopment;
+    protected static boolean sVulkanModLoaded;
+
+    public static boolean isVulkanModLoaded() {
+        return sVulkanModLoaded;
+    }
     public static volatile boolean sDeveloperMode;
 
     protected static boolean sOptiFineLoaded;

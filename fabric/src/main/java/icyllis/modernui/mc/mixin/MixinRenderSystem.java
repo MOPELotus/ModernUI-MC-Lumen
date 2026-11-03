@@ -23,6 +23,7 @@ import icyllis.arc3d.engine.ContextOptions;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.VulkanModIntegration;
 import icyllis.modernui.mc.fabric.UIManagerFabric;
 import net.minecraft.util.TimeSource;
 import org.lwjgl.opengl.GL;
@@ -62,7 +63,12 @@ public class MixinRenderSystem {
             options.mAllowGLSPIRV = Boolean.parseBoolean(value);
         }
         options.mDriverBugWorkarounds = ModernUIClient.getGpuDriverBugWorkarounds();
-        if (!Core.initOpenGL(options)) {
+        if (ModernUIMod.isVulkanModLoaded()) {
+            if (!Core.initVulkan(VulkanModIntegration.wrapContext(), options)) {
+                throw new IllegalStateException("Unable to initialize the VulkanMod UI renderer");
+            }
+            VulkanModIntegration.configureShaderCaps();
+        } else if (!Core.initOpenGL(options)) {
             Core.glShowCapsErrorDialog();
         }
         UIManagerFabric.initialize();

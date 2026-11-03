@@ -32,6 +32,7 @@ import icyllis.modernui.mc.mixin.AccessOptions;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.fabricmc.api.*;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -212,8 +213,9 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });
 
+        FontVariantConfig.prepare(FabricLoader.getInstance().getConfigDir().resolve(ModernUI.NAME_CPT));
         NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
-                ModernUI.NAME_CPT + "/client.toml");
+                ModernUI.NAME_CPT + "/" + FontVariant.CLIENT_CONFIG_NAME);
         NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
                 ModernUI.NAME_CPT + "/text.toml");
 

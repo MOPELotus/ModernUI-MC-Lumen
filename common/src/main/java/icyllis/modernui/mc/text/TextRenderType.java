@@ -26,6 +26,8 @@ import icyllis.arc3d.core.SharedPtr;
 import icyllis.arc3d.engine.ImmediateContext;
 import icyllis.arc3d.engine.SamplerDesc;
 import icyllis.arc3d.opengl.GLCaps;
+import icyllis.arc3d.opengl.GLDevice;
+import icyllis.modernui.mc.VulkanFontTexture;
 import icyllis.arc3d.opengl.GLSampler;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIMod;
@@ -100,6 +102,7 @@ public class TextRenderType extends RenderType {
      * Texture id to render type map
      */
     private static final Int2ObjectOpenHashMap<TextRenderType> sNormalTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sLinearNormalTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectOpenHashMap<TextRenderType> sSDFFillTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectOpenHashMap<TextRenderType> sSDFStrokeTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectOpenHashMap<TextRenderType> sVanillaTypes = new Int2ObjectOpenHashMap<>();
@@ -212,6 +215,14 @@ public class TextRenderType extends RenderType {
         };
     }
 
+    @Nonnull
+    public static TextRenderType getOrCreate(int texture, int mode, boolean linearSampling) {
+        if (mode == MODE_NORMAL && linearSampling) {
+            return sLinearNormalTypes.computeIfAbsent(texture, TextRenderType::makeLinearNormalType);
+        }
+        return getOrCreate(texture, mode);
+    }
+
     // compatibility
     @Nonnull
     public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode, boolean isBitmapFont) {
@@ -232,9 +243,26 @@ public class TextRenderType extends RenderType {
         }, () -> NORMAL_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
+    @Nonnull
+    private static TextRenderType makeLinearNormalType(int texture) {
+        ensureLinearFontSampler();
+        long[] previousSampler = new long[1];
+        return new TextRenderType("modern_text_normal_linear", 256, () -> {
+            NORMAL_STATES.forEach(RenderStateShard::setupRenderState);
+            RenderSystem.setShaderTexture(0, texture);
+            previousSampler[0] = bindLinearFontSampler(texture);
+        }, () -> {
+            NORMAL_STATES.forEach(RenderStateShard::clearRenderState);
+            restoreFontSampler(texture, previousSampler[0]);
+        });
+    }
+
     private static void ensureLinearFontSampler() {
+        ImmediateContext context = Core.requireImmediateContext();
+        if (!(context.getDevice() instanceof GLDevice)) {
+            return;
+        }
         if (sLinearFontSampler == null) {
-            ImmediateContext context = Core.requireImmediateContext();
             // default state is bilinear
             sLinearFontSampler = (GLSampler) context.getResourceProvider().findOrCreateCompatibleSampler(
                     SamplerDesc.make(SamplerDesc.FILTER_LINEAR, SamplerDesc.MIPMAP_MODE_LINEAR));
@@ -242,19 +270,36 @@ public class TextRenderType extends RenderType {
         }
     }
 
+    private static long bindLinearFontSampler(int texture) {
+        if (!(Core.requireImmediateContext().getDevice() instanceof GLDevice)) {
+            return VulkanFontTexture.pushLinearSampler(texture);
+        }
+        GL33C.glBindSampler(0, sLinearFontSampler.getHandle());
+        return 0;
+    }
+
+    private static void restoreFontSampler(int texture, long previousSampler) {
+        if (!(Core.requireImmediateContext().getDevice() instanceof GLDevice)) {
+            VulkanFontTexture.popSampler(texture, previousSampler);
+        } else {
+            GL33C.glBindSampler(0, 0);
+        }
+    }
+
     @Nonnull
     private static TextRenderType makeSDFFillType(int texture) {
         ensureLinearFontSampler();
+        long[] previousSampler = new long[1];
         TextRenderType renderType = new TextRenderType("modern_text_sdf_fill", 256, () -> {
             SDF_FILL_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GL33C.glBindSampler(0, sLinearFontSampler.getHandle());
+                previousSampler[0] = bindLinearFontSampler(texture);
             }
         }, () -> {
             SDF_FILL_STATES.forEach(RenderStateShard::clearRenderState);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GL33C.glBindSampler(0, 0);
+                restoreFontSampler(texture, previousSampler[0]);
             }
         });
         if (sFirstSDFFillType == null) {
@@ -275,16 +320,17 @@ public class TextRenderType extends RenderType {
     @Nonnull
     private static TextRenderType makeSDFStrokeType(int texture) {
         ensureLinearFontSampler();
+        long[] previousSampler = new long[1];
         TextRenderType renderType = new TextRenderType("modern_text_sdf_stroke", 256, () -> {
             SDF_STROKE_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GL33C.glBindSampler(0, sLinearFontSampler.getHandle());
+                previousSampler[0] = bindLinearFontSampler(texture);
             }
         }, () -> {
             SDF_STROKE_STATES.forEach(RenderStateShard::clearRenderState);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GL33C.glBindSampler(0, 0);
+                restoreFontSampler(texture, previousSampler[0]);
             }
         });
         if (sFirstSDFStrokeType == null) {
@@ -366,6 +412,7 @@ public class TextRenderType extends RenderType {
             sFirstSDFStrokeType = null;
         }
         sNormalTypes.clear();
+        sLinearNormalTypes.clear();
         sSDFFillTypes.clear();
         sSDFStrokeTypes.clear();
         sVanillaTypes.clear();
@@ -425,8 +472,8 @@ public class TextRenderType extends RenderType {
         if (smart) {
             if (!sSmartShadersLoaded) {
                 sSmartShadersLoaded = true;
-                if (((GLCaps) Core.requireImmediateContext()
-                        .getCaps()).getGLSLVersion() >= 400) {
+                if (Core.requireImmediateContext().getCaps() instanceof GLCaps caps &&
+                        caps.getGLSLVersion() >= 400) {
                     var provider = obtainResourceProvider();
                     try {
                         sShaderSDFFillSmart = MuiModApi.get().makeShaderInstance(provider,

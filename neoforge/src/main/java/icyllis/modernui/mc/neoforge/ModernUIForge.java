@@ -32,6 +32,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.data.loading.DatagenModLoader;
 
@@ -75,6 +76,7 @@ public final class ModernUIForge extends ModernUIMod {
             warnSetup("You should remove ReBlurred, Modern UI already includes its features, " +
                     "and Modern UI has better performance than it");
         }
+        sVulkanModLoaded = ModList.get().isLoaded("vulkanmod");
         sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
 
@@ -122,8 +124,9 @@ public final class ModernUIForge extends ModernUIMod {
             if (!DatagenModLoader.isRunningDataGen()) {
                 UIManagerForge.initialize();
             }
+            FontVariantConfig.prepare(FMLPaths.CONFIGDIR.get().resolve(ModernUI.NAME_CPT));
             modContainer.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
-                    ModernUI.NAME_CPT + "/client.toml");
+                    ModernUI.NAME_CPT + "/" + FontVariant.CLIENT_CONFIG_NAME);
             modContainer.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
                     ModernUI.NAME_CPT + "/text.toml");
             FontResourceManager.getInstance();

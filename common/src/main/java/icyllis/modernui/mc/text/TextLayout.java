@@ -19,6 +19,8 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.util.SparseArray;
@@ -249,6 +251,13 @@ public class TextLayout {
         return ++mTimer > lifespan;
     }
 
+    /** Drop raster lookups so glyphs deferred by atlas growth are retried. */
+    void invalidateGlyphs() {
+        mBakedGlyphs = null;
+        mBakedGlyphsForSDF = null;
+        mBakedGlyphsArray = null;
+    }
+
     @Nonnull
     private GLBakedGlyph[] prepareGlyphs(int fontSize) {
         GlyphManager glyphManager = GlyphManager.getInstance();
@@ -350,6 +359,12 @@ public class TextLayout {
             density = mCreatedResLevel;
         }
         final float invDensity = 1.0f / density;
+        boolean linearSampling = false;
+        if (preferredMode == TextRenderType.MODE_NORMAL) {
+            var window = Minecraft.getInstance().getWindow();
+            linearSampling = TextSampling.needsLinear(matrix, RenderSystem.getProjectionMatrix(),
+                    x, top, density, window.getWidth(), window.getHeight());
+        }
         float shadowOffset = 0;
         if (isShadow) {
             shadowOffset = ModernTextRenderer.sShadowOffset;
@@ -383,8 +398,8 @@ public class TextLayout {
             final int bits = flags[i];
             float rx;
             float ry;
-            final float w;
-            final float h;
+            float w;
+            float h;
             final int mode;
             final int texture;
             boolean fakeItalic = false;
@@ -397,8 +412,12 @@ public class TextLayout {
             }
             if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                 var chars = (GlyphManager.FastCharSet) glyph;
+                if (chars.glyphs.isEmpty()) continue;
                 int fastIndex = RANDOM.nextInt(chars.glyphs.size());
                 glyph = chars.glyphs.get(fastIndex);
+            }
+            if (glyph.width <= 0 || glyph.height <= 0) {
+                continue;
             }
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 final float scaleFactor;
@@ -417,8 +436,8 @@ public class TextLayout {
                     isColorEmoji = true;
                 }
                 fakeItalic = (bits & CharacterStyle.ITALIC_MASK) != 0;
-                rx = x + positions[i << 1] + glyph.x * scaleFactor;
-                ry = baseline + positions[i << 1 | 1] + glyph.y * scaleFactor;
+                rx = positions[i << 1] + glyph.x * scaleFactor;
+                ry = sBaselineOffset + positions[i << 1 | 1] + glyph.y * scaleFactor;
                 if (isShadow) {
                     // bitmap font shadow offset is always 1 pixel
                     rx += 1.0f - shadowOffset;
@@ -438,8 +457,8 @@ public class TextLayout {
                 }
             } else {
                 mode = preferredMode;
-                rx = x + positions[i << 1] + glyph.x * invDensity;
-                ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
+                rx = positions[i << 1] + glyph.x * invDensity;
+                ry = sBaselineOffset + positions[i << 1 | 1] + glyph.y * invDensity;
 
                 w = glyph.width * invDensity;
                 h = glyph.height * invDensity;
@@ -449,9 +468,28 @@ public class TextLayout {
                 texture = fontTexture;
             }
             if (preferredMode == TextRenderType.MODE_NORMAL) {
-                // align to screen pixel center in 2D
-                rx = Math.round(rx * density) * invDensity;
-                ry = Math.round(ry * density) * invDensity;
+                // Quantize the fixed layout, never the animated draw origin.
+                rx = TextSampling.place(rx, x, density);
+                ry = TextSampling.place(ry, top, density);
+            } else {
+                rx += x;
+                ry += top;
+            }
+            float u1 = glyph.u1, v1 = glyph.v1, u2 = glyph.u2, v2 = glyph.v2;
+            if (preferredMode == TextRenderType.MODE_NORMAL &&
+                    (bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) == 0) {
+                // Include one transparent atlas texel so bilinear coverage at
+                // outer stems remains inside the quad during fractional motion.
+                float du = (u2 - u1) / glyph.width;
+                float dv = (v2 - v1) / glyph.height;
+                rx -= invDensity;
+                ry -= invDensity;
+                w += 2 * invDensity;
+                h += 2 * invDensity;
+                u1 -= du;
+                v1 -= dv;
+                u2 += du;
+                v2 += dv;
             }
             if (isColorEmoji) {
                 r = 0xff;
@@ -479,7 +517,8 @@ public class TextLayout {
                 prevVanillaDisplayMode = vanillaDisplayMode;
                 builder = source.getBuffer(vanillaDisplayMode != null
                         ? TextRenderType.getOrCreate(texture, vanillaDisplayMode, isBitmapFont)
-                        : TextRenderType.getOrCreate(texture, mode));
+                        : TextRenderType.getOrCreate(texture, mode,
+                                linearSampling && !isColorEmoji && !isBitmapFont));
             }
             float upSkew = 0;
             float downSkew = 0;
@@ -489,19 +528,19 @@ public class TextLayout {
             }
             builder.addVertex(matrix, rx + upSkew, ry, 0)
                     .setColor(r, g, b, a)
-                    .setUv(glyph.u1, glyph.v1)
+                    .setUv(u1, v1)
                     .setLight(packedLight);
             builder.addVertex(matrix, rx + downSkew, ry + h, 0)
                     .setColor(r, g, b, a)
-                    .setUv(glyph.u1, glyph.v2)
+                    .setUv(u1, v2)
                     .setLight(packedLight);
             builder.addVertex(matrix, rx + w + downSkew, ry + h, 0)
                     .setColor(r, g, b, a)
-                    .setUv(glyph.u2, glyph.v2)
+                    .setUv(u2, v2)
                     .setLight(packedLight);
             builder.addVertex(matrix, rx + w + upSkew, ry, 0)
                     .setColor(r, g, b, a)
-                    .setUv(glyph.u2, glyph.v1)
+                    .setUv(u2, v1)
                     .setLight(packedLight);
         }
 
@@ -611,6 +650,7 @@ public class TextLayout {
             } else {
                 if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                     var chars = (GlyphManager.FastCharSet) glyph;
+                    if (chars.glyphs.isEmpty()) continue;
                     int fastIndex = RANDOM.nextInt(chars.glyphs.size());
                     glyph = chars.glyphs.get(fastIndex);
                 }

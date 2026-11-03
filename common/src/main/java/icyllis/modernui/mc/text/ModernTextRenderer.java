@@ -146,8 +146,6 @@ public final class ModernTextRenderer {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
-        // copy the matrix when needed
-        boolean matrixIsCopied = false;
         // compute exact font size and position
         float uniformScale = 1;
         if (sComputeDeviceFontSize &&
@@ -164,13 +162,9 @@ public final class ModernTextRenderer {
                 float projScaleY = Math.abs((projection.m11() * window.getHeight()) / (2.0f * layout.mCreatedResLevel));
                 if (MathUtil.isApproxEqual(projScaleX, projScaleY)) {
                     // uniform scale case
-                    matrix = new Matrix4f(matrix);
-                    matrixIsCopied = true;
-                    // extract the translation vector for snapping to pixel grid
-                    x += matrix.m30() / matrix.m00();
-                    y += matrix.m31() / matrix.m11();
-                    matrix.m30(0);
-                    matrix.m31(0);
+                    // Rasterize at the device density, while leaving the animated
+                    // translation in the draw matrix. Snapping that translation
+                    // independently for every glyph changes spacing while scrolling.
                     // total scale
                     uniformScale = matrix.m00() * projScaleX;
                     if (MathUtil.isApproxEqual(uniformScale, 1)) {
@@ -197,10 +191,7 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             layout.drawText(matrix, source, x, y, r >> 2, g >> 2, b >> 2, a, true,
                     mode, polygonOffset, uniformScale, colorBackground, packedLight);
-            if (!matrixIsCopied) {
-                matrix = new Matrix4f(matrix);
-            }
-            matrix.translate(SHADOW_OFFSET);
+            matrix = new Matrix4f(matrix).translate(SHADOW_OFFSET);
         }
 
         return layout.drawText(matrix, source, x, y, r, g, b, a, false,

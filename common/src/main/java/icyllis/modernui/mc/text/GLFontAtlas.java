@@ -23,6 +23,8 @@ import icyllis.arc3d.engine.*;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.annotation.*;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.mc.VulkanFontTexture;
+import org.lwjgl.system.MemoryUtil;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.text.TextUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -72,6 +74,10 @@ public class GLFontAtlas implements AutoCloseable {
     @SharedPtr
     GLTexture mTexture = null;
 
+    private VulkanFontTexture mVulkanTexture;
+    private FontAtlasPixels mPixels;
+    private final boolean mVulkan;
+
     private final List<Chunk> mChunks = new ArrayList<>();
 
     // current texture size
@@ -79,6 +85,7 @@ public class GLFontAtlas implements AutoCloseable {
     private int mHeight = 0;
 
     private final Rect2i mRect = new Rect2i();
+    private boolean mResizeRequested;
 
     private record Chunk(int x, int y, RectanglePacker packer) {
     }
@@ -105,6 +112,7 @@ public class GLFontAtlas implements AutoCloseable {
     public GLFontAtlas(ImmediateContext context, int maskFormat, int borderWidth,
                        boolean linearSampling) {
         mContext = context;
+        mVulkan = !(context.getDevice() instanceof GLDevice);
         mMaskFormat = maskFormat;
         mBorderWidth = borderWidth;
         // 64MB at most
@@ -138,7 +146,9 @@ public class GLFontAtlas implements AutoCloseable {
     }
 
     public boolean stitch(@NonNull GLBakedGlyph glyph, long pixels) {
-        boolean invalidated = false;
+        if (mResizeRequested) {
+            return false;
+        }
         if (mWidth == 0) {
             resize(); // first init
         }
@@ -156,37 +166,33 @@ public class GLFontAtlas implements AutoCloseable {
             }
         }
         if (!inserted) {
-            // add new chunks
-            invalidated = resize();
-            for (Chunk chunk : mChunks) {
-                if (chunk.packer.addRect(rect)) {
-                    inserted = true;
-                    rect.offset(chunk.x, chunk.y);
-                    break;
-                }
-            }
-        }
-        if (!inserted) {
-            // failed...
-            return invalidated;
+            // Changing texture IDs/UVs while a text batch is still being built
+            // would discard vertices or sample a retired image. Retry next frame.
+            mResizeRequested = true;
+            return false;
         }
 
         // include border
-        int colorType = mMaskFormat == Engine.MASK_FORMAT_ARGB
-                ? ColorInfo.CT_RGBA_8888
-                : ColorInfo.CT_ALPHA_8;
-        int rowBytes = rect.width() * ColorInfo.bytesPerPixel(colorType);
-        boolean res = ((GLDevice) mContext.getDevice()).writePixels(
-                mTexture,
-                rect.x(), rect.y(),
-                rect.width(), rect.height(),
-                colorType,
-                colorType,
-                rowBytes,
-                pixels
-        );
-        if (!res) {
-            LOGGER.warn(GlyphManager.MARKER, "Failed to write glyph pixels");
+        if (mVulkan) {
+            mPixels.write(rect.x(), rect.y(), rect.width(), rect.height(), pixels);
+            mVulkanTexture.upload(rect.x(), rect.y(), rect.width(), rect.height(), pixels);
+        } else {
+            int colorType = mMaskFormat == Engine.MASK_FORMAT_ARGB
+                    ? ColorInfo.CT_RGBA_8888
+                    : ColorInfo.CT_ALPHA_8;
+            int rowBytes = rect.width() * ColorInfo.bytesPerPixel(colorType);
+            boolean res = ((GLDevice) mContext.getDevice()).writePixels(
+                    mTexture,
+                    rect.x(), rect.y(),
+                    rect.width(), rect.height(),
+                    colorType,
+                    colorType,
+                    rowBytes,
+                    pixels
+            );
+            if (!res) {
+                LOGGER.warn(GlyphManager.MARKER, "Failed to write glyph pixels");
+            }
         }
 
         // exclude border
@@ -195,16 +201,27 @@ public class GLFontAtlas implements AutoCloseable {
         glyph.u2 = (float) (rect.right() - mBorderWidth) / mWidth;
         glyph.v2 = (float) (rect.bottom() - mBorderWidth) / mHeight;
 
-        return invalidated;
+        return true;
+    }
+
+    boolean resizeIfRequested() {
+        return mResizeRequested && resize();
     }
 
     private boolean resize() {
-        if (mTexture == null) {
+        mResizeRequested = false;
+        if (mTexture == null && mVulkanTexture == null) {
             // initialize 4 or 16 chunks
             mWidth = mHeight = mMaskFormat == Engine.MASK_FORMAT_A8
                     ? CHUNK_SIZE * 4
                     : CHUNK_SIZE * 2;
-            mTexture = createTexture();
+            if (mVulkan) {
+                mPixels = new FontAtlasPixels(mMaskFormat == Engine.MASK_FORMAT_A8 ? 1 : 4);
+                mPixels.resize(mWidth, mHeight);
+                mVulkanTexture = createVulkanTexture();
+            } else {
+                mTexture = createTexture();
+            }
             for (int x = 0; x < mWidth; x += CHUNK_SIZE) {
                 for (int y = 0; y < mHeight; y += CHUNK_SIZE) {
                     mChunks.add(new Chunk(x, y, RectanglePacker.make(CHUNK_SIZE, CHUNK_SIZE)));
@@ -239,20 +256,36 @@ public class GLFontAtlas implements AutoCloseable {
                 vertical = true;
             }
 
-            // copy to new texture
-            GLTexture newTexture = createTexture();
-            boolean res = ((GLDevice) mContext.getDevice()).copyImage(
-                    mTexture,
-                    0, 0,
-                    newTexture,
-                    0, 0,
-                    oldWidth, oldHeight
-            );
-            if (!res) {
-                LOGGER.warn(GlyphManager.MARKER, "Failed to copy to new texture");
-            }
+            if (mVulkan) {
+                // Preserve each row with its old stride before uploading the
+                // replacement. VM owns both images and retires the old one
+                // after the frame that may still reference its registry ID.
+                mPixels.resize(mWidth, mHeight);
+                VulkanFontTexture next = createVulkanTexture();
+                try {
+                    next.upload(0, 0, mWidth, mHeight, mPixels.address());
+                } catch (RuntimeException | Error failure) {
+                    next.close();
+                    throw failure;
+                }
+                mVulkanTexture.close();
+                mVulkanTexture = next;
+            } else {
+                // copy to new texture
+                GLTexture newTexture = createTexture();
+                boolean res = ((GLDevice) mContext.getDevice()).copyImage(
+                        mTexture,
+                        0, 0,
+                        newTexture,
+                        0, 0,
+                        oldWidth, oldHeight
+                );
+                if (!res) {
+                    LOGGER.warn(GlyphManager.MARKER, "Failed to copy to new texture");
+                }
 
-            mTexture = RefCnt.move(mTexture, newTexture);
+                mTexture = RefCnt.move(mTexture, newTexture);
+            }
 
             if (vertical) {
                 //mTexture.clear(0, 0, mHeight >> 1, mWidth, mHeight >> 1);
@@ -277,6 +310,9 @@ public class GLFontAtlas implements AutoCloseable {
             // we later generate mipmap
         }
 
+        if (mVulkan) {
+            return true;
+        }
         int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
         glBindTexture(GL_TEXTURE_2D, mTexture.getHandle());
 
@@ -307,6 +343,27 @@ public class GLFontAtlas implements AutoCloseable {
         glBindTexture(GL_TEXTURE_2D, boundTexture);
 
         return true;
+    }
+
+    private VulkanFontTexture createVulkanTexture() {
+        boolean linear = mMaskFormat == Engine.MASK_FORMAT_ARGB && mLinearSampling;
+        return VulkanFontTexture.create(mWidth, mHeight, mMaskFormat, mLinearSampling, linear);
+    }
+
+    public int getTextureHandle() {
+        if (mVulkanTexture != null) {
+            mVulkanTexture.generateMipmaps();
+        }
+        return mVulkanTexture != null ? mVulkanTexture.getTextureId() :
+                mTexture != null ? mTexture.getHandle() : 0;
+    }
+
+    public void generateMipmaps() {
+        if (mVulkanTexture != null) {
+            mVulkanTexture.generateMipmaps();
+        } else if (mTexture != null) {
+            ((GLDevice) mContext.getDevice()).generateMipmaps(mTexture);
+        }
     }
 
     private GLTexture createTexture() {
@@ -395,6 +452,10 @@ public class GLFontAtlas implements AutoCloseable {
             }
         } else if (Core.isOnRenderThread()) {
             LOGGER.info(GlyphManager.MARKER, "{}, Glyphs: {}", name, mGlyphs.size());
+            if (mVulkanTexture != null) {
+                dumpVulkanAtlas(path);
+                return;
+            }
             if (mTexture == null)
                 return;
             dumpAtlas((GLCaps) mContext.getCaps(), mTexture,
@@ -403,6 +464,19 @@ public class GLFontAtlas implements AutoCloseable {
                             : Bitmap.Format.GRAY_8,
                     path);
         }
+    }
+
+    private void dumpVulkanAtlas(String path) {
+        Bitmap bitmap = Bitmap.createBitmap(mWidth, mHeight,
+                mMaskFormat == Engine.MASK_FORMAT_ARGB ? Bitmap.Format.RGBA_8888 : Bitmap.Format.GRAY_8);
+        MemoryUtil.memCopy(mPixels.address(), bitmap.getAddress(), mPixels.size());
+        CompletableFuture.runAsync(() -> {
+            try (bitmap) {
+                bitmap.saveToPath(Bitmap.SaveFormat.PNG, 0, Path.of(path));
+            } catch (IOException e) {
+                LOGGER.warn(GlyphManager.MARKER, "Failed to save Vulkan font atlas", e);
+            }
+        });
     }
 
     @RenderThread
@@ -440,6 +514,14 @@ public class GLFontAtlas implements AutoCloseable {
     @Override
     public void close() {
         mTexture = RefCnt.move(mTexture);
+        if (mVulkanTexture != null) {
+            mVulkanTexture.close();
+            mVulkanTexture = null;
+        }
+        if (mPixels != null) {
+            mPixels.close();
+            mPixels = null;
+        }
     }
 
     public int getWidth() {
@@ -455,6 +537,10 @@ public class GLFontAtlas implements AutoCloseable {
     }
 
     public long getMemorySize() {
+        if (mVulkanTexture != null) {
+            long bytes = (long) mWidth * mHeight * (mMaskFormat == Engine.MASK_FORMAT_A8 ? 1 : 4);
+            return mLinearSampling ? bytes * 4 / 3 : bytes;
+        }
         return mTexture != null ? mTexture.getMemorySize() : 0;
     }
 

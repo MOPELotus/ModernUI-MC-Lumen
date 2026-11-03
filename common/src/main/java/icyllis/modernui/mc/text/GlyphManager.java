@@ -20,8 +20,6 @@ package icyllis.modernui.mc.text;
 
 import icyllis.arc3d.engine.Engine;
 import icyllis.arc3d.engine.ImmediateContext;
-import icyllis.arc3d.opengl.GLDevice;
-import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
@@ -118,7 +116,6 @@ public class GlyphManager {
     private GLFontAtlas mFontAtlas;
     private GLFontAtlas mEmojiAtlas;
     private GLFontAtlas mBitmapAtlas;
-    private GLDevice mDevice;
 
     /**
      * Font (with size and style) to int key.
@@ -313,7 +310,6 @@ public class GlyphManager {
                 // we use mipmapping and SDF, so 2px width border around it
                 ImmediateContext context = Core.requireImmediateContext();
                 mFontAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_A8, GLYPH_BORDER, true);
-                mDevice = (GLDevice) context.getDevice();
             }
             GLBakedGlyph glyph = mFontAtlas.getGlyph(key);
             if (glyph != null && glyph.x == Integer.MIN_VALUE) {
@@ -332,7 +328,6 @@ public class GlyphManager {
                 // we assume emoji images have a border, and no additional border
                 ImmediateContext context = Core.requireImmediateContext();
                 mEmojiAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_ARGB, 0, true);
-                mDevice = (GLDevice) context.getDevice();
             }
             GLBakedGlyph glyph = mEmojiAtlas.getGlyph(key);
             if (glyph != null && glyph.x == Integer.MIN_VALUE) {
@@ -354,7 +349,6 @@ public class GlyphManager {
                 if (mBitmapAtlas == null) {
                     ImmediateContext context = Core.requireImmediateContext();
                     mBitmapAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_ARGB, 0, false);
-                    mDevice = (GLDevice) context.getDevice();
                 }
                 GLBakedGlyph glyph = mBitmapAtlas.getGlyph(key);
                 if (glyph != null && glyph.x == Integer.MIN_VALUE) {
@@ -377,18 +371,11 @@ public class GlyphManager {
 
     @RenderThread
     public int getCurrentTexture(int maskFormat) {
-        if (maskFormat == Engine.MASK_FORMAT_A8) {
-            GLTexture texture;
-            if (mFontAtlas != null && (texture = mFontAtlas.mTexture) != null) {
-                mDevice.generateMipmaps(texture);
-                return texture.getHandle();
-            }
-        } else if (maskFormat == Engine.MASK_FORMAT_ARGB) {
-            GLTexture texture;
-            if (mEmojiAtlas != null && (texture = mEmojiAtlas.mTexture) != null) {
-                mDevice.generateMipmaps(texture);
-                return texture.getHandle();
-            }
+        GLFontAtlas atlas = maskFormat == Engine.MASK_FORMAT_A8 ? mFontAtlas :
+                maskFormat == Engine.MASK_FORMAT_ARGB ? mEmojiAtlas : null;
+        if (atlas != null) {
+            atlas.generateMipmaps();
+            return atlas.getTextureHandle();
         }
         return 0;
     }
@@ -407,14 +394,27 @@ public class GlyphManager {
             return 0;
         }
         if (font.fitsInAtlas()) {
-            GLTexture texture;
-            if (mBitmapAtlas != null && (texture = mBitmapAtlas.mTexture) != null) {
-                return texture.getHandle();
+            if (mBitmapAtlas != null) {
+                return mBitmapAtlas.getTextureHandle();
             }
         } else {
             return font.getCurrentTexture();
         }
         return 0;
+    }
+
+    /** Resize only after all Minecraft text batches have been submitted. */
+    public void onEndRenderTick() {
+        resizeAtlas(mFontAtlas, Engine.MASK_FORMAT_A8);
+        resizeAtlas(mEmojiAtlas, Engine.MASK_FORMAT_ARGB);
+        resizeAtlas(mBitmapAtlas, Engine.MASK_FORMAT_ARGB);
+    }
+
+    private void resizeAtlas(GLFontAtlas atlas, int maskFormat) {
+        if (atlas != null && atlas.resizeIfRequested()) {
+            var info = new AtlasInvalidationInfo(maskFormat, true);
+            for (var callback : mAtlasInvalidationCallbacks) callback.accept(info);
+        }
     }
 
     /**
@@ -534,20 +534,19 @@ public class GlyphManager {
         }
         long src = MemoryUtil.memAddress(mImageBuffer.flip());
 
-        boolean invalidated = atlas.stitch(glyph, src);
-        if (invalidated) {
-            var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_A8, true);
-            for (var callback : mAtlasInvalidationCallbacks) {
-                callback.accept(info);
-            }
+        boolean success = atlas.stitch(glyph, src);
+        // Always reset the shared raster buffer, including a deferred resize.
+        mGraphics.clearRect(0, 0, mImage.getWidth(), mImage.getHeight());
+        mImageBuffer.clear();
+        if (!success) {
+            glyph.x = Integer.MIN_VALUE;
+            return null;
         }
         int standardWidth = computeStandardWidth(glyph, font.getSize());
         mFontTable.get(font).mFastCharMap
                 .computeIfAbsent(standardWidth, __ -> new FastCharSet())
                 .glyphs.add(glyph);
 
-        mGraphics.clearRect(0, 0, mImage.getWidth(), mImage.getHeight());
-        mImageBuffer.clear();
         return glyph;
     }
 
@@ -572,12 +571,9 @@ public class GlyphManager {
                 glyph.y = -EMOJI_ASCENT;
                 glyph.width = EMOJI_SIZE;
                 glyph.height = EMOJI_SIZE;
-                boolean invalidated = atlas.stitch(glyph, src);
-                if (invalidated) {
-                    var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, true);
-                    for (var callback : mAtlasInvalidationCallbacks) {
-                        callback.accept(info);
-                    }
+                if (!atlas.stitch(glyph, src)) {
+                    glyph.x = Integer.MIN_VALUE;
+                    return null;
                 }
                 return glyph;
             } else {
@@ -606,15 +602,12 @@ public class GlyphManager {
         // here width and height are in pixels
         glyph.width = (short) font.getSpriteWidth();
         glyph.height = (short) font.getSpriteHeight();
-        boolean invalidated = atlas.stitch(glyph, src);
+        if (!atlas.stitch(glyph, src)) {
+            glyph.x = Integer.MIN_VALUE;
+            return null;
+        }
         // here width and height are scaled
         font.setGlyphMetrics(glyph);
-        if (invalidated) {
-            var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, true);
-            for (var callback : mAtlasInvalidationCallbacks) {
-                callback.accept(info);
-            }
-        }
         BitmapFont.Glyph glyphInfo = font.getGlyph(glyphId);
         assert glyphInfo != null;
         int standardWidth = (int) glyphInfo.advance;

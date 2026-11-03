@@ -141,6 +141,8 @@
   "modernui.center.text.rehashThreshold": "Cache Rehash Threshold",
   "modernui.center.text.minPixelDensityForSDF": "Minimum Pixel Density for SDF/3D Text",
   "modernui.center.text.minPixelDensityForSDF.tooltip": "Control the minimum resolution level for SDF text and text in world, as well as the upper limit for uniformly scaling text. It is recommended to set a larger value on high-resolution monitors, and the effective value will be no lower than the current GUI scale.",
+  "modernui.center.font.fontWeight": "Font Weight",
+  "modernui.center.font.fontWeight.tooltip": "100–900 selects nine MiSans weight presets, from thin to heavy. These preset numbers are not the fonts’ original weight values.",
   "modernui.center.font.firstFont": "Preferred Font Family",
   "modernui.center.font.chooseFont": "Choose a Font",
   "modernui.center.font.openFontFile": "Open a Font File",

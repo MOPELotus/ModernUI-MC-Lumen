@@ -373,6 +373,9 @@ public class TextLayoutEngine extends FontResourceManager
      */
     @RenderThread
     public void invalidateStrikeCache() {
+        mVanillaCache.values().forEach(TextLayout::invalidateGlyphs);
+        mComponentCache.values().forEach(TextLayout::invalidateGlyphs);
+        mFormattedCache.values().forEach(TextLayout::invalidateGlyphs);
         // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
         // for batch rendering, we need to clear any existing TextRenderType instances
         TextRenderType.clear(/*cleanup*/ false);

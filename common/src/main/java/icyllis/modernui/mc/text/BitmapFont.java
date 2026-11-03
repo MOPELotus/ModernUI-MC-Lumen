@@ -26,6 +26,8 @@ import icyllis.arc3d.engine.*;
 import icyllis.arc3d.opengl.*;
 import icyllis.arc3d.sketch.Typeface;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.mc.VulkanFontTexture;
+import org.lwjgl.system.MemoryUtil;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.text.Font;
@@ -43,6 +45,7 @@ import org.lwjgl.opengl.GL33C;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 
@@ -87,6 +90,7 @@ public class BitmapFont implements Font, AutoCloseable {
     // used if mSpriteWidth or mSpriteHeight > MAX_ATLAS_DIMENSION
     @SharedPtr
     private GLTexture mTexture; // lazy init
+    private VulkanFontTexture mVulkanTexture;
     private Int2ObjectOpenHashMap<GLBakedGlyph> mBakedGlyphs;
 
     private final int mAscent;  // positive
@@ -209,6 +213,31 @@ public class BitmapFont implements Font, AutoCloseable {
     private void createTexture() {
         assert mBitmap != null;
         ImmediateContext context = Core.requireImmediateContext();
+        if (!(context.getDevice() instanceof GLDevice)) {
+            VulkanFontTexture next = VulkanFontTexture.create(getTextureWidth(), getTextureHeight(),
+                    Engine.MASK_FORMAT_ARGB, false, false);
+            java.nio.ByteBuffer packed = null;
+            try {
+                long source = mBitmap.getAddress();
+                int rowBytes = Math.multiplyExact(mBitmap.getWidth(), 4);
+                if (mBitmap.getRowBytes() != rowBytes) {
+                    packed = MemoryUtil.memAlloc(Math.multiplyExact(rowBytes, mBitmap.getHeight()));
+                    for (int row = 0; row < mBitmap.getHeight(); row++) {
+                        MemoryUtil.memCopy(source + (long) row * mBitmap.getRowBytes(),
+                                MemoryUtil.memAddress(packed) + (long) row * rowBytes, rowBytes);
+                    }
+                    source = MemoryUtil.memAddress(packed);
+                }
+                next.upload(0, 0, mBitmap.getWidth(), mBitmap.getHeight(), source);
+                mVulkanTexture = next;
+            } catch (RuntimeException | Error failure) {
+                next.close();
+                throw failure;
+            } finally {
+                MemoryUtil.memFree(packed);
+            }
+            return;
+        }
         ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
                 Engine.ImageType.k2D,
                 mBitmap.getColorType(),
@@ -250,7 +279,13 @@ public class BitmapFont implements Font, AutoCloseable {
                         "nothingToDraw: {}, fitsInAtlas: {}, dedicatedTexture: {}",
                 index, mName, getAscent(), getDescent(), mGlyphs.size(),
                 nothingToDraw(), fitsInAtlas(), mTexture);
-        if (path != null && mTexture != null && Core.isOnRenderThread()) {
+        if (path != null && mVulkanTexture != null && Core.isOnRenderThread()) {
+            try {
+                mBitmap.saveToPath(Bitmap.SaveFormat.PNG, 0, java.nio.file.Path.of(path));
+            } catch (IOException e) {
+                LOGGER.warn(GlyphManager.MARKER, "Failed to save Vulkan bitmap font", e);
+            }
+        } else if (path != null && mTexture != null && Core.isOnRenderThread()) {
             GLFontAtlas.dumpAtlas(
                     (GLCaps) Core.requireImmediateContext().getCaps(),
                     mTexture,
@@ -355,7 +390,7 @@ public class BitmapFont implements Font, AutoCloseable {
     public GLBakedGlyph getBakedGlyph(int ch) {
         assert mBitmap != null && mBakedGlyphs != null;
         GLBakedGlyph glyph = mBakedGlyphs.get(ch);
-        if (glyph != null && mTexture == null) {
+        if (glyph != null && mTexture == null && mVulkanTexture == null) {
             createTexture();
         }
         return glyph;
@@ -366,7 +401,11 @@ public class BitmapFont implements Font, AutoCloseable {
      */
     // Render thread only
     public int getCurrentTexture() {
-        return mTexture != null ? mTexture.getHandle() : 0;
+        if (mVulkanTexture != null) {
+            mVulkanTexture.generateMipmaps();
+        }
+        return mVulkanTexture != null ? mVulkanTexture.getTextureId() :
+                mTexture != null ? mTexture.getHandle() : 0;
     }
 
     // positive
@@ -502,6 +541,10 @@ public class BitmapFont implements Font, AutoCloseable {
             mBitmap = null;
         }
         mTexture = RefCnt.move(mTexture);
+        if (mVulkanTexture != null) {
+            mVulkanTexture.close();
+            mVulkanTexture = null;
+        }
     }
 
     public static class Glyph implements GlyphInfo {
