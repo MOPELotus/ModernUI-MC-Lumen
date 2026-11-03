@@ -183,6 +183,14 @@ tasks.register('checkWindowMode', JavaExec) {
 }
 check.dependsOn checkWindowMode
 
+tasks.register('checkPreferredFontIdentifier', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.PreferredFontIdentifierCheck'
+}
+check.dependsOn checkPreferredFontIdentifier
+
 tasks.register('checkClampingScrollView', JavaExec) {
     group = 'verification'
     dependsOn testClasses
