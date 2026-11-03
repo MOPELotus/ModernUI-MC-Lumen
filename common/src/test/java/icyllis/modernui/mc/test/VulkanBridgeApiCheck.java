@@ -70,6 +70,87 @@ public final class VulkanBridgeApiCheck {
   if (!shader.contains("vec2(0,0),vec2(2,0),vec2(0,2)")) throw new AssertionError("Native lower-left UV convention changed");
 
  }
+ static boolean invokes(MethodNode method, String name) {
+  for (var instruction : method.instructions) if (instruction instanceof MethodInsnNode call && call.name.equals(name)) return true;
+  return false;
+ }
+ static int callPosition(MethodNode method, String name) {
+  for (int i = 0; i < method.instructions.size(); i++) if (method.instructions.get(i) instanceof MethodInsnNode call && call.name.equals(name)) return i;
+  throw new AssertionError("Missing call " + method.name + " -> " + name);
+ }
+ static int literalPosition(MethodNode method, String value) {
+  for (int i = 0; i < method.instructions.size(); i++) if (method.instructions.get(i) instanceof LdcInsnNode literal && value.equals(literal.cst)) return i;
+  return -1;
+ }
+ static void nativeTiming(JarFile jar, boolean fabric) throws Exception {
+  var renderer = read(jar, "net/vulkanmod/vulkan/Renderer");
+  if (fabric) {
+   var flush = method(renderer, "flushCmds", "()V");
+   var submit = method(renderer, "submitFrame", "()V");
+   boolean flushAcquire = false, submitAcquire = false;
+   for (var i : flush.instructions) if (i instanceof FieldInsnNode field && field.name.equals("imageAvailableSemaphores")) flushAcquire = true;
+   for (var i : submit.instructions) if (i instanceof FieldInsnNode field && field.name.equals("imageAvailableSemaphores")) submitAcquire = true;
+   if (flushAcquire || !submitAcquire || !invokes(submit, "isAcquired")) throw new AssertionError("Fabric acquire wait contract changed");
+  } else {
+   var flush = method(renderer, "flushCmds", "(Ljava/util/function/Supplier;)Ljava/lang/Object;");
+   if (!invokes(flush, "attachAcquireWait")) throw new AssertionError("Neo scoped flush lost acquire wait");
+  }
+  var image = read(jar, "net/vulkanmod/vulkan/texture/VulkanImage");
+  for (var m : image.methods) if (m.name.equals("readOnlyLayout") && invokes(m, "endRenderPass")) throw new AssertionError("Sampling transition now ends a pass");
+  var pass = read(jar, "net/vulkanmod/vulkan/pass/DefaultMainPass");
+  var rebind = method(pass, "rebindMainTarget", "()V");
+  if (!invokes(rebind, "beginRenderPass") || invokes(rebind, "begin")) throw new AssertionError("Rebind must resume, not begin/clear frame");
+  boolean aux = false;
+  for (var i : rebind.instructions) if (i instanceof FieldInsnNode field && field.name.equals("auxRenderPass") && field.getOpcode() == Opcodes.GETFIELD) aux = true;
+  if (!aux) throw new AssertionError("Rebind lost the auxiliary LOAD pass");
+  var factory = method(pass, "createRenderPasses", fabric ? "()V" : "(Lnet/vulkanmod/vulkan/framebuffer/Framebuffer;)Lnet/vulkanmod/vulkan/pass/DefaultMainPass$Passes;");
+  var frames = new Analyzer<>(new SourceInterpreter()).analyze(pass.name, factory);
+  var ops = new ArrayList<List<String>>();
+  for (int i = 0; i < factory.instructions.size(); i++) if (factory.instructions.get(i) instanceof MethodInsnNode call && call.name.equals("setOps")) {
+   var frame = frames[i];
+   ops.add(List.of(source(frame.getStack(frame.getStackSize() - 2)), source(frame.getStack(frame.getStackSize() - 1))));
+  }
+  if (ops.size() != 4) throw new AssertionError("Expected two frame and two resume attachment policies");
+  check(ops.get(2), List.of("[constant0]", "[constant0]")); // VK_ATTACHMENT_LOAD_OP_LOAD, STORE
+  check(ops.get(3), List.of("[constant0]", "[constant0]"));
+  var target = read(jar, "net/vulkanmod/mixin/render/target/" + (fabric ? "MainTargetMixin" : "RenderTargetMixin"));
+  if (target.methods.stream().noneMatch(m -> invokes(m, "rebindMainTarget"))) throw new AssertionError("Main target binding lost pass resume");
+  if (!fabric && !invokes(method(read(jar, "net/vulkanmod/gl/GlFramebuffer"), "bindFramebuffer", "(II)V"), "rebindMainTarget")) throw new AssertionError("External Neo framebuffer zero lost main target resume");
+  System.out.println((fabric ? "Fabric" : "Neo") + " actual acquire/flush distinction and auxiliary LOAD resume verified");
+ }
+ static ClassNode product(String suffix) throws Exception {
+  try (var input = VulkanBridgeApiCheck.class.getResourceAsStream("/icyllis/modernui/mc/VulkanModIntegration" + suffix + ".class")) {
+   if (input == null) throw new AssertionError("Missing compiled bridge " + suffix);
+   var result = new ClassNode(); new ClassReader(input).accept(result, 0); return result;
+  }
+ }
+ static void beforeSubmitPolicy(ClassNode bridge) {
+  var before = method(bridge, "beforeSubmit", null);
+  if (invokes(before, "flushCmds") || literalPosition(before, "flushCmds") >= 0) throw new AssertionError("Must not submit the current swapchain command buffer");
+  if (callPosition(before, "finishTextureUploads") >= callPosition(before, "vkQueueWaitIdle") || callPosition(before, "vkQueueWaitIdle") >= callPosition(before, "syncToArc3D")) throw new AssertionError("Upload, prior queue reads, and layout handoff order changed");
+ }
+ static void compositePolicy(ClassNode layer) {
+  var draw = method(layer, "drawComposite", "()V");
+  int prepare = callPosition(draw, "prepareForSampling"), target = callPosition(draw, "getMainRenderTarget"), bind = callPosition(draw, "bindWrite"), pipeline = literalPosition(draw, "bindGraphicsPipeline");
+  if (!(prepare < target && target < bind && bind < pipeline)) throw new AssertionError("Sampling -> main target LOAD bind -> native pipeline order changed");
+  var node = draw.instructions.get(bind).getPrevious();
+  while (node.getOpcode() < 0) node = node.getPrevious();
+  if (node.getOpcode() != Opcodes.ICONST_0) throw new AssertionError("Main target must bind without resetting viewport");
+ }
+ static void expectRejected(Runnable check) {
+  try { check.run(); } catch (AssertionError expected) { return; }
+  throw new AssertionError("Regression negative control was accepted");
+ }
+ static void productTiming() throws Exception {
+  beforeSubmitPolicy(product("")); compositePolicy(product("$Layer"));
+  var unsafeFlush = product("");
+  method(unsafeFlush, "beforeSubmit", null).instructions.insert(new LdcInsnNode("flushCmds"));
+  expectRejected(() -> beforeSubmitPolicy(unsafeFlush));
+  var missingResume = product("$Layer");
+  for (var instruction : method(missingResume, "drawComposite", "()V").instructions) if (instruction instanceof MethodInsnNode call && call.name.equals("bindWrite")) call.name = "missingResume";
+  expectRejected(() -> compositePolicy(missingResume));
+  System.out.println("Compiled bridge preserves acquire wait ownership and LOAD resume; both original regression controls rejected");
+ }
  static ClassNode read(JarFile jar,String owner)throws Exception {var c=new ClassNode();try(var in=jar.getInputStream(jar.getJarEntry(owner+".class"))){new ClassReader(in).accept(c,0);}return c;}
  static String source(SourceValue v){var parts=new TreeSet<String>();for(var n:v.insns){if(n instanceof VarInsnNode x)parts.add("local"+x.var);else if(n instanceof IntInsnNode x)parts.add("constant"+x.operand);else if(n instanceof MethodInsnNode x)parts.add("return:"+x.name);else if(n instanceof InsnNode x && x.getOpcode()>=Opcodes.ICONST_M1 && x.getOpcode()<=Opcodes.ICONST_5)parts.add("constant"+(x.getOpcode()-Opcodes.ICONST_0));else parts.add("opcode"+n.getOpcode());}return parts.toString();}
  static List<String> args(MethodNode m,ClassNode owner,String target, String desc)throws Exception{
@@ -86,6 +167,7 @@ public final class VulkanBridgeApiCheck {
    var image=read(jar,"net/vulkanmod/vulkan/texture/VulkanImage");var util=read(jar,"net/vulkanmod/vulkan/texture/ImageUtil");boolean fabric=jar.getEntry("net/vulkanmod/gl/VkGlTexture.class")!=null;
    if (!observedFacades.add(fabric ? "fabric" : "neo")) throw new AssertionError("Need one release per loader");
    contract(jar, fabric);
+   nativeTiming(jar, fabric);
    var entry=method(image,"uploadSubTextureAsync","(IIIIIIIILjava/nio/ByteBuffer;)V");
    MethodNode upload;
    if(fabric){var delegate=args(entry,image,"uploadSubTextureAsync","(IIIIIIIIIJ)V");check(delegate,List.of("[local1]","[constant0]","[local2]","[local3]","[local4]","[local5]","[local6]","[local7]","[local8]","[return:memAddress]"));System.out.println("Fabric entry inserts arrayLayer=0; otherwise all eight input locals preserved: "+delegate);upload=method(image,"uploadSubTextureAsync","(IIIIIIIIIJ)V");}
@@ -111,5 +193,6 @@ public final class VulkanBridgeApiCheck {
    if(staged<0||copied<=staged)throw new AssertionError("Upload is not synchronously staged before GPU copy recording");
    System.out.println("CPU source staged before return/copy command: instructions "+staged+" < "+copied);
   }
+  productTiming();
  }
 }

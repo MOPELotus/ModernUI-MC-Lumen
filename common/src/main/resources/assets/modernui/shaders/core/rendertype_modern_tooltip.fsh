@@ -1,6 +1,6 @@
+#version 150
 // Copyright (C) 2024 BloCamLimb. All rights reserved.
 // Licensed under LGPL-3.0-or-later.
-#version 150
 
 uniform vec4 u_PushData0;
 uniform vec4 u_PushData1;

@@ -132,9 +132,13 @@ public final class VulkanModIntegration {
 
     /** Submit and finish Minecraft's previous use before Arc3D writes the layer again. */
     public static void beforeSubmit(Layer previousLayer) {
-        Object renderer = call(Api.RENDERER, null, "getInstance", new Class<?>[0]);
-        call(Api.RENDERER, renderer, "flushCmds", new Class<?>[0]);
+        // The current frame has not sampled this layer yet. Do not flush its main
+        // command buffer: VulkanMod's flushCmds omits the swapchain acquire semaphore.
+        // Wait only for previously submitted reads on our shared graphics queue.
         finishTextureUploads();
+        Object queue = graphicsQueue();
+        VKUtil._CHECK_(vkQueueWaitIdle((VkQueue) call(queue.getClass(),
+                queue, Api.FABRIC ? "vkQueue" : "queue", new Class<?>[0])));
         if (previousLayer != null) previousLayer.syncToArc3D();
     }
 
@@ -230,6 +234,9 @@ public final class VulkanModIntegration {
         /** Draw the same lower-left texture convention on both pre-GpuDevice distributions. */
         public void drawComposite() {
             prepareForSampling();
+            // Resume the native main target with LOAD semantics after any image
+            // transition ended its pass; beginning the main pass would clear it.
+            net.minecraft.client.Minecraft.getInstance().getMainRenderTarget().bindWrite(false);
             Class<?> pipelines = type(Api.FABRIC
                     ? "net.vulkanmod.render.shader.PipelineManager" : "net.vulkanmod.render.PipelineManager");
             Object pipeline = call(pipelines, null, Api.FABRIC
