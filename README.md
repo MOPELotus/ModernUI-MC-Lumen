@@ -1,180 +1,90 @@
+[CN](README.md) | [EN](README.en.md)
+
 # ModernUI Lumen
 
-**ModernUI Lumen** is MOPELotus’s independently maintained fork of [Modern UI for Minecraft](https://github.com/BloCamLimb/ModernUI-MC), originally created by **BloCamLimb**. It is based on the [ModernUI framework](https://github.com/BloCamLimb/ModernUI) and retains the upstream authors’ credits and licenses. This fork is not an official upstream release.
+**ModernUI Lumen** 是 **MOPELotus** 独立维护的 [Modern UI for Minecraft](https://github.com/BloCamLimb/ModernUI-MC) Fork，原作者为 **BloCamLimb**，基于 [ModernUI Framework](https://github.com/BloCamLimb/ModernUI)。保留上游作者署名和许可证；本项目不是上游官方发行版。
 
-本 Fork 由 **MOPELotus** 维护，原作者为 **BloCamLimb**。当前模组版本为 **3.13.0.10**。游戏内显示名为 **ModernUI Lumen**；MiSans 版显示为 **ModernUI Lumen (MiSans)**。
+当前模组版本：**3.13.0.10**。仓库名为 **ModernUI-MC-Lumen**，游戏内显示 **ModernUI Lumen**，MiSans 版显示 **ModernUI Lumen (MiSans)**。
 
-[Source](https://github.com/MOPELotus/ModernUI-MC-Lumen) · [Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues) · [Releases](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [普通版 / MiSans 版说明](docs/font-editions.md)
+[源码](https://github.com/MOPELotus/ModernUI-MC-Lumen) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues) · [发行页](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [更新记录](changelogs.md)
 
-The mod ID `modernui`, resource namespace, Java packages, API and existing `config/ModernUI/` paths remain unchanged for compatibility. Install one edition at a time, replacing the original JAR.
+## 功能
 
-### Description
-This fork builds on **Modern UI for Minecraft**, a Minecraft mod based on
-[ModernUI Framework](https://github.com/BloCamLimb/ModernUI) (a cross-platform framework to
-build rich desktop applications on top of JDK) and its extensions.  
+为 Minecraft 提供 ModernUI 界面运行环境及开发 API，并增强原版 GUI 的文字排版和渲染：TrueType/OpenType 字体、字体回退、抗锯齿、SDF、Unicode 换行、双向文字和彩色 emoji。具体字形表现仍取决于所用字体与渲染路径。
 
-This project provides ModernUI bootstrap program in Minecraft environment, allowing ModernUI-based applications
-to run *natively* in Minecraft. It also provides Modding API based on Forge/NeoForge/Fabric
-to make powerful Graphical User Interface in Minecraft.
+可配置功能包括背景模糊与动画、圆角/渐变 tooltip、平滑滚动、GUI 缩放、窗口模式、失焦/最小化帧率和音量衰减、背包暂停、文本编辑撤销/重做、聊天 emoji 短码，以及本地音乐播放与频谱。缩放快捷键属于提供该上游扩展的加载器，Fabric 不提供该功能。
 
-This Mod also includes a powerful text layout engine and text rendering system designed for Minecraft.
-This engine allows Minecraft and Mods based on Vanilla GUI system to enjoy a modern text system similar
-to ModernUI framework without modifying their code. It provides appropriate methods for processing Unicode
-text and gives you more readable text in any scale, in 2D/3D. In details:
-* Real-time preview and reload TrueType/OpenType fonts
-* A better font fallback implementation
-* Anti-aliasing text and FreeType font hinting
-* Use improved SDF text rendering in 2D/3D (also use batch rendering)
-* Compute exact font size in device space for native glyph rendering
-* Use Google Noto Color Emoji and support all the Unicode 16.0 Emoji
-* Configurable bidirectional text heuristic algorithm
-* Configurable text shadow and raw font size
-* Unicode line breaking and CSS line-break & word-break
-* Fast, exact and asynchronous Unicode text layout computation
-* Faster and more memory efficient rectangle packing algorithm for glyphs
-* Use real alpha mask texture (1 byte-per-pixel, whereas Minecraft is 4 bpp)
-* Many optimizations for text rendering, multiplying the performance of
-  GUI text rendering, Sign/Glowing Sign text rendering, greatly improving framerate,
-  significantly reducing object allocations and lowering GC pressure.
-* Compatible with OptiFine, Sodium (Rubidium), Iris (Oculus) and many mods
-* Compatible with Minecraft's JSON font definition (bitmap fonts, TTF fonts)
+[普通版与 MiSans 版](docs/font-editions.md) 提供相同的 Minecraft 适配和修复，字体策略不同。每次只安装一版，切换时替换 JAR。模组 ID `modernui`、资源命名空间、Java 包名、公开 API、Maven 坐标及 `config/ModernUI/` 路径保留兼容。
 
-Additionally, this Mod provides many utilities which improve game performance and gaming experience. Currently, we have:
-* Changing screen background color
-* Gaussian blur to screen backdrop image
-* Fade-in animation to screen background
-* More window modes: Fullscreen (borderless), Maximized (borderless)
-* Framerate limit and master volume fading on window inactive (out of focus) and minimized
-* Pausing single-player game when Inventory is open
-* Changing GUI scale option to Slider and providing hint text
-* Playing a "Ding" sound when Minecraft loads and reaches the Main Menu
-* Enabling smooth scrolling in Vanilla's Selection List and Forge's Scroll Panel
-* Pressing "C" to zoom on branches/loaders that provide the upstream zoom extension (not Fabric)
-* Undo/Redo and Unicode word iterator for all text fields
-* Playing local music, allowing to seek and view spectrum
-* Support Discord/Slack/GitHub/IamCal/JoyPixels emoji shortcodes in Chatting
-* A fancy tooltip style
-  + Choose rounded border or normal border (with anti-aliasing)
-  + Add title break and control title line spacing
-  + Center the title line, support RTL layout direction
-  + Exactly position the tooltip to pixel grid (smooth movement)
-  + Change background color and border color (with gradient and animation)
+## 维护分支
 
-You can think of this project as a bridge/service layer, along with several improvements and extensions specifically
-made for Minecraft. Applications (or program fragments) you develop with ModernUI can run independently of Minecraft,
-or inside Minecraft — via this Mod but without any code changes. Other Minecraft Mods based on Minecraft Vanilla
-can also benefit from this Mod.
+下表是维护范围；不代表每个加载器、后端及字体版本组合均已完成运行验收。安装时以所选分支的模组元数据和兼容说明为准。
 
-If you want to develop mods — especially ones with feature-rich interfaces — it's recommended to build on the
-**ModernUI framework** (instead of just putting ModernUI-MC in your mod list). You may also implement a hybrid UI:
-part of it based on ModernUI, and part of it on the Vanilla GUI system (which will be enhanced by ModernUI-MC,
-though these enhancements can be disabled).
-
-### Maintained Minecraft branches
-
-All branches below are maintained by this fork. These are maintenance targets, not a claim that every loader/backend/version combination has passed runtime acceptance. Exact compatibility ranges and current test results are being checked per branch; consult that branch’s metadata and validation notes before installing.
-
-| Branch | Minecraft maintenance target | Status |
+| 分支 | Minecraft 维护范围 | 状态 |
 | --- | --- | --- |
-| `1.21.1` | 1.21–1.21.1 | Maintained |
-| `1.21.8` | 1.21.6–1.21.8 | Maintained |
-| `1.21.9` | 1.21.9 | Maintained |
-| `1.21.10` | 1.21.10 | Maintained |
-| `1.21.11` | 1.21.11 | Maintained |
-| `26.1` | 26.1 family | Maintained |
-| `26.2` | 26.2 | Maintained |
-| `master` | 26.3 | Maintained |
+| `1.21.1` | 1.21–1.21.1 | 维护中 |
+| `1.21.8` | 1.21.6–1.21.8 | 维护中 |
+| `1.21.9` | 1.21.9 | 维护中 |
+| `1.21.10` | 1.21.10 | 维护中 |
+| `1.21.11` | 1.21.11 | 维护中 |
+| `26.1` | 26.1–26.1.2 | 维护中 |
+| `26.2` | 26.2 | 维护中 |
+| `master` | 26.3 | 维护中 |
 
-`master` tracks Minecraft 26.3. Version branches retain their own build toolchains and loader dependencies. A maintenance target does not imply a shared JAR across all listed Minecraft versions.
+`1.21.8` 分支共用适配 1.21.6、1.21.7 和 1.21.8；各分支保留各自工具链与依赖，维护范围不等于所有版本共用一个 JAR。
 
-### Known compatibility issues / 已知兼容性问题
+## 渲染后端和兼容性
 
-#### Remove Reloading Screen — Minecraft 26.3 (Fabric)
+Fabric、NeoForge 均提供 OpenGL 适配。Minecraft 26.2/26.3 使用游戏自带的 Vulkan 后端，无需 VulkanMod；启动器的**游戏参数**使用 `--graphicsBackend VULKAN` 或 `--graphicsBackend OPENGL`，不要放入 JVM 参数。更早版本的 Vulkan 适配取决于对应 Minecraft/加载器是否有兼容的 VulkanMod 包；缺包组合不视为已支持或测试通过。
 
-Players have reported a startup crash with ModernUI and Remove Reloading Screen on Minecraft 26.3 / Fabric
-when Remove Reloading Screen uses `hideOverlays = "ALL"`. The error reports missing shader files even though
-they are present in the ModernUI JAR. In the reported environment, changing the following setting in
-**Remove Reloading Screen's configuration** and restarting the game resolved the crash:
+### NeoForge 早期加载窗口
+
+Minecraft 26.2 / FML 11.0.16 使用原生 Vulkan 时，在实例 `config/fml.toml` 中设置以下顶层键（放在任何 TOML 节外），保存并重启：
+
+```toml
+earlyWindowControl = false
+```
+
+文件不存在时可创建并写入该行，或先用 OpenGL 启动生成配置。26.2 的早期窗口是 OpenGL 窗口，不能直接用作 Vulkan surface（`GLFW_NO_API` / 65540）；26.3 已改用 SDL，不适用同一 GLFW 原因。
+
+在已测试的 Linux / NVIDIA 580.178.04 / Tesla T10 环境，NeoForge **26.3.0.101 / FML 12.0.12** 的 OpenGL 和原生 Vulkan 也需关闭此窗口。开启时，OpenGL 可在 NVIDIA 驱动中启动崩溃；Vulkan 退出时会遗留早期界面的 `ScreenSize UBO` 与 `shared_error` GPU buffer。两者均在未安装 ModernUI 的对照中复现；OpenGL 的准确上游原因及其他驱动表现仍未确定。关闭窗口是该测试配置的兼容条件，不能据此推断全部功能或其他设备已通过。
+
+### Remove Reloading Screen（26.3 / Fabric）
+
+玩家反馈与该模组同时使用且其 `hideOverlays = "ALL"` 时，可能启动崩溃并报告缺失实际存在的着色器。已反馈有效的规避方法是在 **Remove Reloading Screen 的配置**中修改已有的 `[global]` 项并重启：
 
 ```toml
 [global]
     hideOverlays = "RELOADING"
 ```
 
-Edit the existing `hideOverlays` entry under `[global]`; this is not a ModernUI setting.
-`RELOADING` keeps the initial loading overlay visible while hiding subsequent resource reload overlays.
-This is a configuration workaround based on a player's real-client investigation, not a code fix;
-the suspected resource initialization ordering issue has not been confirmed here.
-The report covers Fabric on 26.3; other Minecraft versions and loaders have not been verified for this issue.
+这会保留首次加载屏幕，仅隐藏后续资源重载屏幕。该说明是玩家实机调查的配置规避方案，初始化顺序原因仍属推测，尚无代码修复或其他版本/加载器的验证结论。
 
-**中文：** Minecraft 26.3 / Fabric 同时安装 ModernUI 和 Remove Reloading Screen 时，后者使用
-`hideOverlays = "ALL"` 的配置可能导致启动崩溃，报错为找不到着色器文件，即使 JAR 内实际存在这些文件。
-据玩家实机排查，将 **Remove Reloading Screen 配置**中 `[global]` 下已有的 `hideOverlays` 改为
-`"RELOADING"`，保存并重启游戏即可规避：保留首次加载屏幕，仅隐藏后续资源重载屏幕。
-这是已反馈有效的配置规避方案；初始化时序原因仍属推测，尚无代码修复或其他版本、加载器的验证结论。
+## 构建
 
-### NeoForge early-window compatibility
-
-Before using Minecraft 26.2's native Vulkan backend with FML 11.0.16, disable the upstream early loading window. In the selected game instance's `config/fml.toml`, set this top-level key (outside any TOML section), then save and restart:
-
-```toml
-earlyWindowControl = false
-```
-
-If the file does not exist yet, create `config/fml.toml` with that line, or start the instance once with OpenGL and then edit its generated file. Add `--graphicsBackend VULKAN` to the launcher's **game arguments** to select Minecraft's native Vulkan backend; use `--graphicsBackend OPENGL` to select OpenGL. These are Minecraft game arguments, not JVM arguments. Native Vulkan on 26.2 / 26.3 does not require VulkanMod.
-
-On 26.2, the early screen creates an OpenGL window that cannot be reused as a Vulkan surface (`GLFW_NO_API` / error 65540). Minecraft 26.3 / FML 12 uses a different SDL window handoff, so that GLFW explanation does not apply.
-
-For NeoForge 26.3.0.101 / FML 12.0.12, also set `earlyWindowControl = false` for OpenGL and native Vulkan in the tested Linux/NVIDIA 580.178.04 environment (Tesla T10). With the early window enabled, OpenGL can crash in the NVIDIA driver at startup, while native Vulkan leaves the early screen's `ScreenSize UBO` and `shared_error` GPU buffers unclosed at shutdown. Both issues were independently reproduced without ModernUI installed. The OpenGL crash's precise upstream cause and behavior on other drivers remain unconfirmed.
-
-Disabling the early window is the verified compatibility condition for the tested ModernUI native Vulkan UI flow, normal exit and zero Vulkan validation errors on that configuration. This setting is an upstream compatibility requirement, not a ModernUI option, and does not by itself establish that every feature or a different driver/configuration has passed testing.
-
-### License
-* Modern UI for Minecraft
-  - Copyright (C) 2019-2026 BloCamLimb et al.
-  - [![License](https://img.shields.io/badge/License-LGPL--3.0--or--later-blue.svg?style=flat-square)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
-* Additional Assets
-  - [source-han-sans](https://github.com/adobe-fonts/source-han-sans) by Adobe, licensed under the OFL-1.1
-  - [jetbrains-mono](https://www.jetbrains.com/lp/mono/) by JetBrains, licensed under the OFL-1.1
-  - [inter](https://github.com/rsms/inter) by RSMS, licensed under the OFL-1.1
-    + Modern UI for Minecraft contains a modified version of Inter font family, the original license and
-      copyright notice were retained in the font file
-
-### Building ModernUI Lumen
-
-Use the JDK required by the selected branch; `master` (Minecraft 26.3) uses **JDK 25**. The Gradle wrapper and dependencies in this checkout are the build source of truth. The default platforms are Fabric and NeoForge. Minecraft 26.3 NeoForge builds require NeoForge **26.3.0.101 or later** with FML 12; older 26.3 beta builds use an incompatible configuration API.
+使用所选分支要求的 JDK；`master`（26.3）使用 **JDK 25**，默认构建 Fabric 和 NeoForge。当前固定 NeoForge **26.3.0.101**；更早的 26.3 beta 配置 API 不兼容。实际版本以 `gradle.properties` 和 Gradle wrapper 为准。
 
 ```sh
 ./gradlew clean build -Pfont_variant=standard
-# Collect the standard JARs before cleaning for the other edition.
+# 清理前先收集普通版产物
 ./gradlew clean build -Pfont_variant=misans
 ```
 
-Final shaded JARs are under each loader’s `build/libs/`:
+最终 JAR 位于各加载器的 `build/libs/`：
 
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
 
-See [font editions](docs/font-editions.md) for configuration and artifact checks. CI builds both editions and uploads `modernui-lumen-release-jars`; a normal branch push does not publish a release. Releases and tags require a separate explicit publishing instruction.
+CI 构建两版并上传 `modernui-lumen-release-jars` artifact。普通分支推送不会发布 Release；标签和发行仍需单独的发布指令。Gradle 项目/任务名与 Maven 坐标保持兼容，本 Fork 不宣称新版已发布到上游 Maven。
 
-The stable Gradle project/task names (`ModernUI-Fabric`, `ModernUI-NeoForge`, `ModernUI-Forge`) and Maven group/coordinates remain compatible. This fork does not claim that its new version is published to upstream’s Maven repository. Upstream development documentation and libraries remain available in [ModernUI](https://github.com/BloCamLimb/ModernUI) and [ModernUI-MC](https://github.com/BloCamLimb/ModernUI-MC).
+## 验证边界
 
-### Historical upstream screenshots (not acceptance evidence for this fork)
-Center Screen  
-![2024-03-30_16.17.11.png](https://cdn.modrinth.com/data/3sjzyvGR/images/2571f7372b1f9bbb116c118f29a93255338f4e41.png)
-New Tooltip  
-![new tooltip.png](https://s2.loli.net/2024/03/30/VhyoFPAD2Js1HWO.png)
-Markdown  
-![markdown](https://cdn.modrinth.com/data/3sjzyvGR/images/989a77ba61c62ff580a30dcf158e391080b949bd.png)  
-Enhanced Texts for Minecraft Vanilla  
-![fast text](https://cdn.modrinth.com/data/3sjzyvGR/images/d27f5d77555fd3f45392f5b8eb28efcb80f0b677.png)
-![new4](https://s2.loli.net/2022/03/06/TM5dVKnpqNvDiJH.png)  
-Navigation  
-![new5](https://s2.loli.net/2022/03/06/hwAoHTgZNWBvEdq.png)  
-Graphics  
-![new3.gif](https://i.loli.net/2021/09/27/yNsL98XtpKP7UVA.gif)  
-Audio visualization  
-![new2](https://i.loli.net/2021/09/24/TJjyzd6oOf5pPcq.png)  
-Out-of-date widgets  
-![a](https://i.loli.net/2020/05/15/fYAow29d4JtqaGu.png)
-![b](https://i.loli.net/2020/04/10/LDBFc1qo5wtnS8u.png)
+移植会按目标版本实际 API 核对 tooltip 参数与 uniform 布局、键盘/鼠标输入、窗口切换及 GPU 资源所有权。26.3 使用 SDL 和 RenderPearl，不能直接沿用旧版 GLFW 或 VulkanMod 接口。
+
+CPU 检查和编译通过不能代替物理显卡上的实际页面操作、截图、渲染器日志及正常退出验证。跨版本矩阵按准确 JAR、加载器、Minecraft 版本和后端分别记录，本文不作全矩阵已通过的声明。
+
+## 许可证与致谢
+
+Modern UI for Minecraft：Copyright (C) 2019–2026 BloCamLimb et al.，采用 [LGPL-3.0-or-later](LICENSE)。Fork 维护：MOPELotus。
+
+附加字体资源包括 Adobe [Source Han Sans](https://github.com/adobe-fonts/source-han-sans)、JetBrains [JetBrains Mono](https://www.jetbrains.com/lp/mono/) 和 RSMS [Inter](https://github.com/rsms/inter)，均保留各自 OFL 许可。随附的修改版 Inter 保留原许可及字体内版权声明。MiSans 使用其官方许可，下载和使用前需阅读对应条款。
