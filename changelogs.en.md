@@ -2075,4 +2075,4 @@ Add transition animation
 Add java version detection  
 
 ### 1.15.2-1.3.5.30 (2020-04-10)
-Initial Release
+Initial Release  
