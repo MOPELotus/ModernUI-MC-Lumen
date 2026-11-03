@@ -33,7 +33,6 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.joml.Matrix3x2f;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.openal.AL10;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -219,11 +218,10 @@ public enum BlurHandler {
                         targetVolumeMultiplier
                 );
             }
-            if (sGlobalVolumeControl) {
-                AL10.alListenerf(AL10.AL_GAIN, mVolumeMultiplier);
-            } else {
-                minecraft.getSoundManager().updateCategoryVolume(SoundSource.MASTER, mVolumeMultiplier);
-            }
+        }
+        // Mode changes need reapplication even when the fade has already settled.
+        if (BackgroundAudioControl.update(mVolumeMultiplier, sGlobalVolumeControl)) {
+            minecraft.getSoundManager().refreshCategoryVolume(SoundSource.MASTER);
         }
     }
 

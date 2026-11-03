@@ -145,6 +145,25 @@ tasks.register('checkVulkanShutdownOrder', JavaExec) {
 }
 check.dependsOn checkVulkanShutdownOrder
 
+tasks.register('checkBackgroundAudioControl', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.BackgroundAudioControlCheck'
+    doFirst {
+        def minecraftJar = configurations.compileClasspath.files.find { jar ->
+            jar.name.endsWith('.jar') && new java.util.jar.JarFile(jar).withCloseable { archive ->
+                archive.getJarEntry('net/minecraft/client/Minecraft.class') != null
+            }
+        }
+        if (minecraftJar == null) {
+            throw new GradleException('Missing actual Minecraft JAR for background audio verification')
+        }
+        setArgs([minecraftJar.absolutePath])
+    }
+}
+check.dependsOn checkBackgroundAudioControl
+
 tasks.register('checkClampingScrollView', JavaExec) {
     group = 'verification'
     dependsOn testClasses
