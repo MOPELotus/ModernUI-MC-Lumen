@@ -23,13 +23,32 @@ public final class PreferredFontIdentifierCheck {
         checkCoreDispatch();
         Path temporary = Files.createTempDirectory("modernui-font-identifier-");
         try {
-            Path source = args.length > 1 ? Path.of(args[1]) : Path.of("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
-            if (!Files.isRegularFile(source)) throw new AssertionError("Pass a real DejaVu TTF as the second argument: " + source);
             Path directory = temporary.resolve("registered-font-directory");
             Files.createDirectories(directory);
             Path path = directory.resolve("a-very-long-font-file-name-that-must-remain-a-file-identifier-".repeat(2) + ".ttf");
-            Files.copy(source, path);
-            String family = Font.createFont(Font.TRUETYPE_FONT, path.toFile()).getFamily(Locale.ROOT);
+            String family = "Fixture Resolved Family";
+            if (args.length > 1) {
+                Path source = Path.of(args[1]);
+                if (!Files.isRegularFile(source)) throw new AssertionError("Explicit real TTF missing: " + source);
+                Files.copy(source, path);
+                family = Font.createFont(Font.TRUETYPE_FONT, path.toFile()).getFamily(Locale.ROOT);
+                System.out.println("Explicit real-TTF fixture parsed: " + family + "; production font loading is outside this CPU probe");
+            } else {
+                boolean bundled = false;
+                for (String resource : List.of("/assets/modernui/font/muii18ncompat/muii18ncompat.ttf",
+                        "/assets/modernui/font/Inter-Regular.ttf")) {
+                    try (var input = PreferredFontIdentifierCheck.class.getResourceAsStream(resource)) {
+                        if (input != null) {
+                            Files.copy(input, path);
+                            bundled = true;
+                            break;
+                        }
+                    }
+                }
+                if (!bundled) Files.writeString(path, "Identifier-only fixture; not a font payload");
+                System.out.println("Default identifier/deferred-callback fixture (" + (bundled ? "bundled TTF resource" : "temporary .ttf identifier")
+                        + "); resolved family is a sink fixture, no font parsing/loading claim");
+            }
             FakeClient.family = new FakeFamily(family);
             ClassNode current = read(ACCORDION);
             Class<?> probe = probe(current, null);
@@ -72,7 +91,7 @@ public final class PreferredFontIdentifierCheck {
                 equal(family, FakeConfig.CLIENT.mFirstFontFamily.value, "old compiled resolved-family method reproduces path loss");
                 equal(1, FakeConfig.CLIENT.mFirstFontFamily.writes, "negative control writes saved path");
                 equal(1, reloads, "negative control reloads unexpectedly");
-                System.out.println("Negative control: old compiled updateSpinnerSelection overwrote the real TTF path only after queued callback");
+                System.out.println("Negative control: old compiled updateSpinnerSelection overwrote the font-file identifier only after queued callback");
             }
             System.out.println("Preferred font identifiers: compiled initialization/callback/apply methods preserve file/directory/unknown IDs, family no-op, user changes and not-ready adapter; Core deferred dispatch verified");
         } finally {
