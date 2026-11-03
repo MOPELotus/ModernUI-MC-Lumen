@@ -65,6 +65,8 @@
   "modernui.center.screen.framerateInactive": "帧率限制（窗口失焦时）",
   "modernui.center.screen.framerateMinimized": "帧率限制（窗口最小化时）",
   "modernui.center.screen.masterVolumeInactive": "主音量倍数（窗口失焦时）",
+  "modernui.center.screen.globalVolumeControl": "全局音量控制",
+  "modernui.center.screen.globalVolumeControl.tooltip": "启用时，主音量倍数直接作用于全局总音量。禁用时，仅对游戏的声音通道生效。",
   "modernui.center.screen.masterVolumeMinimized": "主音量倍数（窗口最小化时）",
   "modernui.center.view.scrollbarSize": "滚动条尺寸",
   "modernui.center.view.touchSlop": "触摸阈值",

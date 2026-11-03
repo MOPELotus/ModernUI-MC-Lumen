@@ -126,6 +126,7 @@ public final class Config {
         public final ConfigItem<Integer> mFramerateMinimized;
         public final ConfigItem<Double> mMasterVolumeInactive;
         public final ConfigItem<Double> mMasterVolumeMinimized;
+        public final ConfigItem<Boolean> mGlobalVolumeControl;
         public final ConfigItem<Integer> mScrollbarSize;
         public final ConfigItem<Integer> mTouchSlop;
         public final ConfigItem<Integer> mHoverSlop;
@@ -188,6 +189,7 @@ public final class Config {
             mFramerateMinimized = get(map, "mFramerateMinimized");
             mMasterVolumeInactive = get(map, "mMasterVolumeInactive");
             mMasterVolumeMinimized = get(map, "mMasterVolumeMinimized");
+            mGlobalVolumeControl = get(map, "mGlobalVolumeControl");
             mScrollbarSize = get(map, "mScrollbarSize");
             mTouchSlop = get(map, "mTouchSlop");
             mHoverSlop = get(map, "mHoverSlop");
@@ -224,6 +226,7 @@ public final class Config {
                     mFramerateMinimized.get(),
                     BlurHandler.sFramerateInactive
             );
+            BlurHandler.sGlobalVolumeControl = mGlobalVolumeControl.get();
             BlurHandler.sMasterVolumeInactive = mMasterVolumeInactive.get().floatValue();
             BlurHandler.sMasterVolumeMinimized = Math.min(
                     mMasterVolumeMinimized.get().floatValue(),

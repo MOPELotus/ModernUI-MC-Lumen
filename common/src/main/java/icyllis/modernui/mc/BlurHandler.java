@@ -96,7 +96,15 @@ public enum BlurHandler {
      */
     private boolean mBlurEffectLoaded;
 
+    public static volatile boolean sGlobalVolumeControl;
+    private static boolean sRefreshingChannelVolumes;
+
+    public static boolean isRefreshingChannelVolumes() {
+        return sRefreshingChannelVolumes;
+    }
+
     private float mVolumeMultiplier = 1;
+    private boolean mLastGlobalVolumeControl;
 
     /**
      * Use blur shader in game renderer post-processing.
@@ -258,7 +266,7 @@ public enum BlurHandler {
         } else {
             targetVolumeMultiplier = sMasterVolumeInactive;
         }
-        if (mVolumeMultiplier != targetVolumeMultiplier) {
+        if (mVolumeMultiplier != targetVolumeMultiplier || mLastGlobalVolumeControl != sGlobalVolumeControl) {
             // fade down is slower, 1 second = 20 ticks
             if (mVolumeMultiplier < targetVolumeMultiplier) {
                 mVolumeMultiplier = Math.min(
@@ -271,8 +279,16 @@ public enum BlurHandler {
                         targetVolumeMultiplier
                 );
             }
+            mLastGlobalVolumeControl = sGlobalVolumeControl;
             float volume = minecraft.options.getSoundSourceVolume(SoundSource.MASTER);
-            minecraft.getSoundManager().updateSourceVolume(SoundSource.MASTER, volume * mVolumeMultiplier);
+            minecraft.getSoundManager().updateSourceVolume(SoundSource.MASTER, volume);
+            sRefreshingChannelVolumes = true;
+            try {
+                minecraft.getSoundManager().updateSourceVolume(SoundSource.AMBIENT,
+                        minecraft.options.getSoundSourceVolume(SoundSource.AMBIENT));
+            } finally {
+                sRefreshingChannelVolumes = false;
+            }
         }
     }
 
@@ -314,6 +330,14 @@ public enum BlurHandler {
                     .setColor(color);
         }
         gr.flush();
+    }
+
+    public float getChannelVolumeMultiplier() {
+        return sGlobalVolumeControl ? 1 : mVolumeMultiplier;
+    }
+
+    public float getGlobalVolumeMultiplier() {
+        return sGlobalVolumeControl ? mVolumeMultiplier : 1;
     }
 
     // INTERNAL HOOK

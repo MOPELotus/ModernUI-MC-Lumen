@@ -266,6 +266,7 @@ public final class ConfigImpl {
         public final ModConfigSpec.IntValue mFramerateMinimized;
         public final ModConfigSpec.DoubleValue mMasterVolumeInactive;
         public final ModConfigSpec.DoubleValue mMasterVolumeMinimized;
+        public final ModConfigSpec.BooleanValue mGlobalVolumeControl;
 
         public final ModConfigSpec.IntValue mScrollbarSize;
         public final ModConfigSpec.IntValue mTouchSlop;
@@ -359,6 +360,9 @@ public final class ConfigImpl {
                             "Master volume multiplier on window minimized, 1 = same as master volume inactive.",
                             "This value will be no greater than master volume inactive.")
                     .defineInRange("masterVolumeMinimized", 0.25, 0, 1);
+            mGlobalVolumeControl = builder.comment(
+                            "Apply the inactive-window volume multiplier to the global listener, including Modern UI music.")
+                    .define("globalVolumeControl", false);
 
             builder.pop();
 
