@@ -133,3 +133,16 @@ tasks.register('checkVulkanBootstrap', JavaExec) {
     workingDir rootProject.projectDir
 }
 check.dependsOn checkVulkanBootstrap
+
+// Runs the compiled upload completion method against both releases' queue contracts.
+tasks.register('checkVulkanUploadSynchronization', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.VulkanUploadSynchronizationCheck'
+    workingDir rootProject.projectDir
+    if (project.hasProperty('vulkan_upload_negative_jar')) {
+        args project.property('vulkan_upload_negative_jar')
+    }
+}
+check.dependsOn checkVulkanUploadSynchronization

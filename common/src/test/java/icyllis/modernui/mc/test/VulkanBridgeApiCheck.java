@@ -47,7 +47,13 @@ public final class VulkanBridgeApiCheck {
   requireMethod(queue, fabric ? "vkQueue" : "queue", "()Lorg/lwjgl/vulkan/VkQueue;");
   requireMethod(queue, "beginCommands", "()Lnet/vulkanmod/vulkan/queue/CommandPool$CommandBuffer;");
   requireMethod(queue, "submitCommands", "(Lnet/vulkanmod/vulkan/queue/CommandPool$CommandBuffer;)J");
-  if (!fabric) requireMethod(read(jar, prefix + "vulkan/queue/GraphicsQueue"), "endRecordingAndSubmit", "()V");
+  if (!fabric) {
+   var graphicsQueue = read(jar, prefix + "vulkan/queue/GraphicsQueue");
+   requireField(graphicsQueue, "currentCmdBuffer", "Lnet/vulkanmod/vulkan/queue/CommandPool$CommandBuffer;");
+   requireMethod(graphicsQueue, "endRecordingAndSubmit", "()V");
+   requireMethod(graphicsQueue, "startRecording", "()V");
+   requireMethod(read(jar, prefix + "vulkan/queue/CommandPool$CommandBuffer"), "getFence", "()J");
+  }
   else requireMethod(read(jar, prefix + "render/texture/ImageUploadHelper"), "submitCommands", "()V");
   var pipelineManager = read(jar, prefix + (fabric ? "render/shader/" : "render/") + "PipelineManager");
   requireMethod(pipelineManager, fabric ? "getFastBlitPipeline" : "getGlFramebufferBlitPipeline",
@@ -118,6 +124,120 @@ public final class VulkanBridgeApiCheck {
   if (!fabric && !invokes(method(read(jar, "net/vulkanmod/gl/GlFramebuffer"), "bindFramebuffer", "(II)V"), "rebindMainTarget")) throw new AssertionError("External Neo framebuffer zero lost main target resume");
   System.out.println((fabric ? "Fabric" : "Neo") + " actual acquire/flush distinction and auxiliary LOAD resume verified");
  }
+ static final String GRAPHICS_QUEUE = "net/vulkanmod/vulkan/queue/GraphicsQueue";
+ static final String COMMAND = "Lnet/vulkanmod/vulkan/queue/CommandPool$CommandBuffer;";
+ static boolean nativeCall(MethodNode method, String owner, String name) {
+  for (var instruction : method.instructions)
+   if (instruction instanceof MethodInsnNode call && call.owner.equals(owner) && call.name.equals(name)) return true;
+  return false;
+ }
+ static Set<AbstractInsnNode> reachable(MethodNode method, AbstractInsnNode start) {
+  var result = new HashSet<AbstractInsnNode>();
+  var pending = new ArrayDeque<AbstractInsnNode>(); pending.add(start);
+  while (!pending.isEmpty()) {
+   var instruction = pending.removeFirst();
+   if (!result.add(instruction)) continue;
+   int opcode = instruction.getOpcode();
+   if (opcode == Opcodes.ATHROW || opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) continue;
+   if (instruction instanceof JumpInsnNode jump) {
+    pending.add(jump.label);
+    if (opcode == Opcodes.GOTO) continue;
+   }
+   if (instruction instanceof TableSwitchInsnNode || instruction instanceof LookupSwitchInsnNode)
+    throw new AssertionError("Unexpected switch in upload queue contract: " + method.name);
+   if (instruction.getNext() != null) pending.add(instruction.getNext());
+  }
+  return result;
+ }
+ static Set<AbstractInsnNode> pendingBranch(MethodNode method, boolean nullValue) {
+  JumpInsnNode condition = null;
+  for (var instruction : method.instructions)
+   if (instruction instanceof JumpInsnNode jump && (jump.getOpcode() == Opcodes.IFNULL || jump.getOpcode() == Opcodes.IFNONNULL)) {
+    var previous = jump.getPrevious(); while (previous != null && previous.getOpcode() < 0) previous = previous.getPrevious();
+    if (previous instanceof FieldInsnNode field && field.getOpcode() == Opcodes.GETSTATIC
+            && field.owner.equals(GRAPHICS_QUEUE) && field.name.equals("currentCmdBuffer")) {
+     if (condition != null) throw new AssertionError("Multiple pending state branches");
+     condition = jump;
+    }
+   }
+  if (condition == null) throw new AssertionError("Missing exact currentCmdBuffer null branch in " + method.name);
+  boolean takeJump = nullValue == (condition.getOpcode() == Opcodes.IFNULL);
+  return reachable(method, takeJump ? condition.label : condition.getNext());
+ }
+ static boolean pathCalls(Set<AbstractInsnNode> path, String name) {
+  return path.stream().anyMatch(i -> i instanceof MethodInsnNode call && call.name.equals(name));
+ }
+ static void neoUploadContract(JarFile jar) throws Exception {
+  var queue = read(jar, GRAPHICS_QUEUE);
+  var pending = queue.fields.stream().filter(f -> f.name.equals("currentCmdBuffer") && f.desc.equals(COMMAND)).findFirst().orElseThrow();
+  if ((pending.access & (Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC)) != (Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC))
+   throw new AssertionError("Neo pending upload field must remain private static");
+  var get = method(queue, "getCommandBuffer", "()" + COMMAND);
+  for (var instruction : get.instructions) if (instruction instanceof FieldInsnNode field && field.getOpcode() == Opcodes.PUTSTATIC)
+   throw new AssertionError("getCommandBuffer now changes pending scope ownership");
+  if (!pathCalls(pendingBranch(get, true), "beginCommands") || pathCalls(pendingBranch(get, false), "beginCommands"))
+   throw new AssertionError("Neo standalone getCommandBuffer allocation contract changed");
+  var endIf = method(queue, "endIfNeeded", "(" + COMMAND + ")J");
+  var independent = pendingBranch(endIf, true); var batched = pendingBranch(endIf, false);
+  if (!pathCalls(independent, "submitCommands") || pathCalls(batched, "submitCommands")
+          || batched.stream().noneMatch(i -> i.getOpcode() == Opcodes.LCONST_0))
+   throw new AssertionError("Neo standalone upload must submit, active batch must defer with zero fence");
+  check(args(endIf, queue, "submitCommands", "(" + COMMAND + ")J"), List.of("[local1]"));
+  var start = method(queue, "startRecording", "()V");
+  var frames = new Analyzer<>(new SourceInterpreter()).analyze(queue.name, start);
+  int writes = 0;
+  for (int i = 0; i < start.instructions.size(); i++) if (start.instructions.get(i) instanceof FieldInsnNode field
+          && field.getOpcode() == Opcodes.PUTSTATIC && field.owner.equals(GRAPHICS_QUEUE) && field.name.equals("currentCmdBuffer")) {
+   writes++; var frame = frames[i]; check(source(frame.getStack(frame.getStackSize() - 1)), "[return:beginCommands]");
+  }
+  if (writes != 1) throw new AssertionError("Neo batch start must publish its actual begun command buffer once");
+  var end = method(queue, "endRecordingAndSubmit", "()V");
+  if (!invokes(end, "submitCommands") || !nativeCall(end, "net/vulkanmod/vulkan/memory/MemoryManager", "addFrameOp"))
+   throw new AssertionError("Neo batch submission/reset ownership changed");
+  for (var instruction : end.instructions) if (instruction instanceof MethodInsnNode call
+          && call.owner.equals("net/vulkanmod/vulkan/Synchronization") && (call.name.equals("addFence") || call.name.equals("addCommandBuffer")))
+   throw new AssertionError("Neo batch now registers completion: revisit explicit fence/reset ownership");
+  boolean clears = false;
+  for (var instruction : end.instructions) if (instruction instanceof FieldInsnNode field
+          && field.getOpcode() == Opcodes.PUTSTATIC && field.owner.equals(GRAPHICS_QUEUE) && field.name.equals("currentCmdBuffer")) {
+   var previous = instruction.getPrevious(); while (previous.getOpcode() < 0) previous = previous.getPrevious();
+   if (previous.getOpcode() != Opcodes.ACONST_NULL) throw new AssertionError("Neo batch end must clear current ownership");
+   clears = true;
+  }
+  if (!clears || callPosition(end, "submitCommands") >= callPosition(end, "addFrameOp"))
+   throw new AssertionError("Neo batch submit must precede deferred reset registration");
+  var image = read(jar, "net/vulkanmod/vulkan/texture/VulkanImage");
+  var upload = method(image, "uploadSubTextureAsync", "(IIIIIIIILjava/nio/ByteBuffer;)V");
+  if (!nativeCall(upload, GRAPHICS_QUEUE, "endIfNeeded")
+          || !nativeCall(upload, "net/vulkanmod/vulkan/Synchronization", "addCommandBuffer")
+          || callPosition(upload, "endIfNeeded") >= callPosition(upload, "addCommandBuffer"))
+   throw new AssertionError("Neo standalone uploads lost submit/fence tracking");
+  check(args(upload, image, "endIfNeeded", "(" + COMMAND + ")J"),
+          args(upload, image, "addCommandBuffer", "(" + COMMAND + ")V"));
+  String tickOwner = "net/vulkanmod/mixin/texture/MTextureManager";
+  int starts = 0, ends = 0;
+  for (var entry : Collections.list(jar.entries())) if (entry.getName().endsWith(".class")) {
+   var owner = read(jar, entry.getName().substring(0, entry.getName().length() - 6));
+   for (var m : owner.methods) for (var instruction : m.instructions) {
+    if (instruction instanceof InvokeDynamicInsnNode dynamic) for (var argument : dynamic.bsmArgs)
+     if (argument instanceof Handle handle && handle.getOwner().equals(GRAPHICS_QUEUE)
+             && (handle.getName().equals("startRecording") || handle.getName().equals("endRecordingAndSubmit")))
+      throw new AssertionError("Unexpected indirect Neo batch owner " + owner.name + "." + m.name);
+    if (!(instruction instanceof MethodInsnNode call) || !call.owner.equals(GRAPHICS_QUEUE)
+            || !(call.name.equals("startRecording") || call.name.equals("endRecordingAndSubmit"))) continue;
+    if (!owner.name.equals(tickOwner) || !m.name.equals("tick") || !m.desc.equals("()V") || !call.desc.equals("()V"))
+     throw new AssertionError("Unexpected Neo upload batch owner " + owner.name + "." + m.name + m.desc);
+    if (call.name.equals("startRecording")) starts++; else ends++;
+   }
+  }
+  if (starts != 1 || ends != 1) throw new AssertionError("Expected one TextureManager tick upload scope");
+  var tick = method(read(jar, tickOwner), "tick", "()V");
+  if (!(callPosition(tick, "startRecording") < callPosition(tick, "getCommandBuffer")
+          && callPosition(tick, "getCommandBuffer") < callPosition(tick, "transitionLayouts")
+          && callPosition(tick, "transitionLayouts") < callPosition(tick, "endRecordingAndSubmit")))
+   throw new AssertionError("Neo batch owner must reacquire its current command buffer at scope tail");
+  System.out.println("Neo actual standalone submit/fence, pending batch/reset, and sole TextureManager scope contracts verified");
+ }
  static ClassNode product(String suffix) throws Exception {
   try (var input = VulkanBridgeApiCheck.class.getResourceAsStream("/icyllis/modernui/mc/VulkanModIntegration" + suffix + ".class")) {
    if (input == null) throw new AssertionError("Missing compiled bridge " + suffix);
@@ -168,6 +288,7 @@ public final class VulkanBridgeApiCheck {
    if (!observedFacades.add(fabric ? "fabric" : "neo")) throw new AssertionError("Need one release per loader");
    contract(jar, fabric);
    nativeTiming(jar, fabric);
+   if (!fabric) neoUploadContract(jar);
    var entry=method(image,"uploadSubTextureAsync","(IIIIIIIILjava/nio/ByteBuffer;)V");
    MethodNode upload;
    if(fabric){var delegate=args(entry,image,"uploadSubTextureAsync","(IIIIIIIIIJ)V");check(delegate,List.of("[local1]","[constant0]","[local2]","[local3]","[local4]","[local5]","[local6]","[local7]","[local8]","[return:memAddress]"));System.out.println("Fabric entry inserts arrayLayer=0; otherwise all eight input locals preserved: "+delegate);upload=method(image,"uploadSubTextureAsync","(IIIIIIIIIJ)V");}

@@ -74,7 +74,19 @@ public final class VulkanModIntegration {
             call(helper, get(field(helper, "INSTANCE"), null), "submitCommands", new Class<?>[0]);
         } else {
             Object queue = graphicsQueue();
-            call(queue.getClass(), queue, "endRecordingAndSubmit", new Class<?>[0]);
+            // Reforged submits standalone uploads immediately; only TextureManager.tick
+            // owns a recording batch. getCommandBuffer() would allocate when absent.
+            Object pending = get(field(queue.getClass(), "currentCmdBuffer"), null);
+            if (pending != null) {
+                call(queue.getClass(), queue, "endRecordingAndSubmit", new Class<?>[0]);
+                // Neo's end method schedules reset through MemoryManager, but does not
+                // register its fence with Synchronization. Keep that single reset owner.
+                long fence = (long) call(pending.getClass(), pending, "getFence", new Class<?>[0]);
+                VKUtil._CHECK_(vkWaitForFences(device(), fence, true, -1L));
+                // The enclosing tick reacquires its buffer after the callback and still
+                // ends its batch. Preserve that scope with a fresh recording buffer.
+                call(queue.getClass(), queue, "startRecording", new Class<?>[0]);
+            }
         }
         Class<?> sync = type("net.vulkanmod.vulkan.Synchronization");
         call(sync, get(field(sync, "INSTANCE"), null), "waitFences", new Class<?>[0]);
