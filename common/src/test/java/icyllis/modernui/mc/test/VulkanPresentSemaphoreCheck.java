@@ -63,6 +63,22 @@ public final class VulkanPresentSemaphoreCheck {
         try{fixed.create(2,0);throw new AssertionError("Expected invalid image count");}
         catch(InvocationTargetException failure){require(failure.getCause() instanceof RuntimeException,"invalid image count fails closed");}
         fixed.destroy();require(live.isEmpty(),"invalid count cleanup leaves no owned handles");
+        for(boolean error:new boolean[]{false,true}){
+            fixed.create(2,2);
+            var pool=new ThrowingPool(fixed.pool("renderFinishedSemaphores"),error);
+            fixed.owner.getField("renderFinishedSemaphores").set(fixed.instance,pool);
+            int priorDestroyed=destroyed.size();long priorHandle=next;
+            try{fixed.resize(3);throw new AssertionError("Expected unpublished-add failure");}
+            catch(InvocationTargetException failure){
+                require(failure.getCause()==pool.failure,"real tail propagates original add failure identity: "+error);
+            }
+            require(next==priorHandle+1&&destroyed.contains(next),"newly created unpublished handle is immediately destroyed");
+            require(live.isEmpty()&&destroyed.size()==priorDestroyed+7,
+                    "unpublished handle and all six original owner resources are destroyed exactly once");
+            require(fixed.pool("renderFinishedSemaphores").isEmpty()&&fixed.pool("imageAvailableSemaphores").isEmpty()&&fixed.pool("inFlightFences").isEmpty(),
+                    "real outer owner cleanup clears all original pools after add failure");
+            fixed.destroy();require(live.isEmpty(),"repeated destroy after add failure does not release handles twice");
+        }
         System.out.println("Vulkan present semaphore: "+checks+" actual-owner/real-hook CPU and structural checks passed; queue submit/present native bodies and GPU not executed");
     }
     private static int exercise(Executed run,boolean old) throws Exception {
@@ -117,6 +133,16 @@ public final class VulkanPresentSemaphoreCheck {
     private static Object value(AnnotationNode annotation,String key){
         for(int i=0;i<annotation.values.size();i+=2)if(key.equals(annotation.values.get(i)))return annotation.values.get(i+1);
         return null;
+    }
+    public static final class ThrowingPool extends ArrayList<Long> {
+        final Throwable failure;
+        ThrowingPool(Collection<Long> original,boolean error){
+            super(original);failure=error?new AssertionError("synthetic publication failure"):new IllegalStateException("synthetic publication failure");
+        }
+        @Override public boolean add(Long value){
+            if(failure instanceof Error error)throw error;
+            throw (RuntimeException)failure;
+        }
     }
     public static final class Stack implements AutoCloseable {
         public static Stack stackPush() { return new Stack(); }

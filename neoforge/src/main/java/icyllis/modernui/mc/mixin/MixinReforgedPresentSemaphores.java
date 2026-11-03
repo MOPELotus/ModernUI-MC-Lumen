@@ -42,7 +42,15 @@ public abstract class MixinReforgedPresentSemaphores {
                 VKUtil._CHECK_(vkCreateSemaphore(device, info, null, result));
                 long semaphore = result.get(0);
                 if (semaphore == VK_NULL_HANDLE) throw new IllegalStateException("Created null present semaphore");
-                renderFinishedSemaphores.add(semaphore);
+                try {
+                    renderFinishedSemaphores.add(semaphore);
+                } catch (RuntimeException | Error publicationFailure) {
+                    // Boxing/add may fail even after ensureCapacity. Until publication
+                    // this handle is ours, so the renderer's list cannot reclaim it.
+                    try { vkDestroySemaphore(device, semaphore, null); }
+                    catch (RuntimeException | Error cleanupFailure) { publicationFailure.addSuppressed(cleanupFailure); }
+                    throw publicationFailure;
+                }
             }
             while (renderFinishedSemaphores.size() > imagesNum) {
                 int last = renderFinishedSemaphores.size() - 1;
