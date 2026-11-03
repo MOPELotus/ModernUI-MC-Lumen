@@ -295,24 +295,9 @@ public class GLFontAtlas implements AutoCloseable {
         int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
         glBindTexture(GL_TEXTURE_2D, mTexture.getHandle());
 
-        // this is a fallback sampling method, generally used for direct mask, NEAREST is performant
-        // when used for SDF, a sampler object will override this setting
-        /*glTexParameteri(
-                GL_TEXTURE_2D,
-                GL_TEXTURE_MAG_FILTER,
-                GL_NEAREST
-        );
-        glTexParameteri(
-                GL_TEXTURE_2D,
-                GL_TEXTURE_MIN_FILTER,
-                mLinearSampling && (sLinearSamplingA8Atlas ||
-                        mMaskFormat == Engine.MASK_FORMAT_ARGB)   // color emoji requires linear sampling
-                        ? GL_LINEAR_MIPMAP_LINEAR
-                        : GL_NEAREST
-        );*/
-        boolean linear = mLinearSampling && (sLinearSamplingA8Atlas ||
-                mMaskFormat == Engine.MASK_FORMAT_ARGB);   // color emoji requires linear sampling
-        mTextureWrapper.setTextureFilter(linear ? FilterMode.LINEAR : FilterMode.NEAREST, FilterMode.NEAREST, linear);
+        mTextureWrapper.setTextureFilter(minFilterFor(mMaskFormat, mLinearSampling),
+                magFilterFor(mMaskFormat), mLinearSampling && (sLinearSamplingA8Atlas ||
+                        mMaskFormat == Engine.MASK_FORMAT_ARGB));
 
         if (mMaskFormat == Engine.MASK_FORMAT_A8) {
             //XXX: un-premultiplied, so 111r rather than rrrr
@@ -325,6 +310,15 @@ public class GLFontAtlas implements AutoCloseable {
         glBindTexture(GL_TEXTURE_2D, boundTexture);
 
         return true;
+    }
+
+    public static FilterMode minFilterFor(int maskFormat, boolean linearSampling) {
+        return maskFormat == Engine.MASK_FORMAT_A8 || linearSampling
+                ? FilterMode.LINEAR : FilterMode.NEAREST;
+    }
+
+    public static FilterMode magFilterFor(int maskFormat) {
+        return maskFormat == Engine.MASK_FORMAT_A8 ? FilterMode.LINEAR : FilterMode.NEAREST;
     }
 
     private GLTexture createTexture() {

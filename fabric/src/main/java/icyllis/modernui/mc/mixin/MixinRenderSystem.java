@@ -56,6 +56,10 @@ public class MixinRenderSystem {
     private static void onInitRenderer(long window, int debugLevel, boolean debugSync,
                                        BiFunction<ResourceLocation, ShaderType, String> defaultShaderSource,
                                        boolean enableDebugLabels, CallbackInfo ci) {
+        String backend = RenderSystem.getDevice().getBackendName();
+        if (!"OpenGL".equals(backend)) {
+            throw new UnsupportedOperationException("Unsupported rendering backend for Minecraft 1.21.6–1.21.8: " + backend);
+        }
         Core.initialize();
         ContextOptions options = new ContextOptions();
         String value = ModernUIClient.getBootstrapProperty(ModernUIClient.BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL);
@@ -66,6 +70,9 @@ public class MixinRenderSystem {
         if (value != null) {
             options.mAllowGLSPIRV = Boolean.parseBoolean(value);
         }
+        options.mDepthClipNegativeOneToOne = !GL.getCapabilities().GL_ARB_clip_control ||
+                org.lwjgl.opengl.GL33C.glGetInteger(org.lwjgl.opengl.ARBClipControl.GL_CLIP_DEPTH_MODE) ==
+                        org.lwjgl.opengl.ARBClipControl.GL_NEGATIVE_ONE_TO_ONE;
         options.mDriverBugWorkarounds = ModernUIClient.getGpuDriverBugWorkarounds();
         if (!Core.initOpenGL(options)) {
             Core.glShowCapsErrorDialog();

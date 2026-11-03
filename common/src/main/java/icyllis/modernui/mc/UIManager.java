@@ -122,6 +122,7 @@ public abstract class UIManager implements LifecycleOwner {
     private final Thread mUiThread;
     private volatile Looper mLooper;
     private volatile boolean mRunning;
+    private volatile boolean mShutdownRequested;
 
     // the view root impl
     protected volatile ViewRootImpl mRoot;
@@ -397,7 +398,13 @@ public abstract class UIManager implements LifecycleOwner {
         //mDecor.setLayoutTransition(new LayoutTransition());
 
         mRoot.setView(mDecor);
-        resize(minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight());
+        Window window = minecraft.getWindow();
+        if (window != null) {
+            resize(window.getWidth(), window.getHeight());
+        } else {
+            // The UI thread can initialize before Minecraft publishes its window.
+            resize(854, 480);
+        }
 
         mDecor.getViewTreeObserver().addOnScrollChangedListener(this::scheduleHoverMoveForScroll);
 
@@ -474,6 +481,26 @@ public abstract class UIManager implements LifecycleOwner {
         mRoot.mHandler.postDelayed(mLooper::quitSafely, 60);
     }
 
+    private void requestShutdown() {
+        if (mShutdownRequested) {
+            ViewRootImpl root = mRoot;
+            if (root != null) {
+                root.cancelPendingFrame();
+            }
+            return;
+        }
+        mShutdownRequested = true;
+        mRunning = false;
+
+        ViewRootImpl root = mRoot;
+        if (root != null) {
+            root.mHandler.post(this::finish);
+            root.cancelPendingFrame();
+        } else if (mLooper != null) {
+            mLooper.quitSafely();
+        }
+    }
+
     private void scheduleHoverMoveForScroll() {
         mRoot.mHandler.removeCallbacks(mSyntheticHoverMove);
         mRoot.mHandler.postDelayed(mSyntheticHoverMove, 60);
@@ -529,7 +556,13 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
+    // Lock keys are not shortcut modifiers in Core's event equality checks.
+    public static int normalizeModifiers(int mods) {
+        return mods & (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL | GLFW_MOD_ALT | GLFW_MOD_SUPER);
+    }
+
     public void onPostMouseInput(int button, int action, int mods) {
+        mods = normalizeModifiers(mods);
         // We should ensure (overlay == null && screen != null)
         // and the screen must be a mui screen
         if (minecraft.getOverlay() == null && mScreen != null) {
@@ -565,12 +598,14 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public void onKeyPress(int keyCode, int scanCode, int mods) {
+        mods = normalizeModifiers(mods);
         KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_DOWN, keyCode, 0,
                 mods, scanCode, 0);
         mRoot.enqueueInputEvent(keyEvent);
     }
 
     public void onKeyRelease(int keyCode, int scanCode, int mods) {
+        mods = normalizeModifiers(mods);
         KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_UP, keyCode, 0,
                 mods, scanCode, 0);
         mRoot.enqueueInputEvent(keyEvent);
@@ -957,9 +992,6 @@ public abstract class UIManager implements LifecycleOwner {
                     mLayerTexture.setTextureFilter(FilterMode.NEAREST, /*useMipmaps*/ false);
                     mLayerTextureView = (GlTextureView) MuiModApi.get().getRealGpuDevice()
                             .createTextureView(mLayerTexture);
-                } else {
-                    // ensure there's ref before submitting to the GPU
-                    mLayerTexture.touch();
                 }
                 gr.nextStratum();
                 MuiModApi.get().submitGuiElementRenderState(gr, new BlitRenderState(
@@ -1110,18 +1142,9 @@ public abstract class UIManager implements LifecycleOwner {
                 mLastPurgeNanos = mFrameTimeNanos;
                 context.performDeferredCleanup(120_000);
             }
-            if (mLayerTexture != null) {
-                // we can drop the ref after submitting to the GPU
-                mLayerTexture.close();
-            }
             if (!minecraft.isRunning() && mRunning) {
-                mRunning = false;
-                mRoot.mHandler.post(this::finish);
-                if (mLayerTexture != null) {
-                    mLayerTextureView.close();
-                    mLayerTextureView = null;
-                    mLayerTexture = null;
-                }
+                requestShutdown();
+                closeLayerTexture();
                 // later destroy() will be called
             }
         }
@@ -1155,9 +1178,23 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
+    @RenderThread
+    private void closeLayerTexture() {
+        if (mLayerTexture != null) {
+            mLayerTextureView.close();
+            mLayerTexture.close();
+            mLayerTextureView = null;
+            mLayerTexture = null;
+        }
+    }
+
     public static void destroy() {
         // see onRenderTick() above
         LOGGER.debug(MARKER, "Quiting Modern UI");
+        if (sInstance != null) {
+            sInstance.requestShutdown();
+            sInstance.closeLayerTexture();
+        }
         //BlurHandler.INSTANCE.closeEffect();
         FontResourceManager.getInstance().close();
         ImageStore.getInstance().clear();
@@ -1285,12 +1322,18 @@ public abstract class UIManager implements LifecycleOwner {
             canvas.restoreToCount(1);
             Recording task = Core.requireUiRecordingContext().snap();
             synchronized (mRenderLock) {
+                if (!mRunning) {
+                    task.close();
+                    return;
+                }
                 if (mLastFrameTask != null) {
                     mLastFrameTask.close();
                 }
                 mLastFrameTask = task;
                 try {
-                    mRenderLock.wait();
+                    while (mRunning && mLastFrameTask == task) {
+                        mRenderLock.wait();
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -1303,6 +1346,16 @@ public abstract class UIManager implements LifecycleOwner {
             if (System.nanoTime() - mLastPurgeNanos >= 20_000_000_000L) {
                 mLastPurgeNanos = System.nanoTime();
                 context.performDeferredCleanup(120_000);
+            }
+        }
+
+        private void cancelPendingFrame() {
+            synchronized (mRenderLock) {
+                if (mLastFrameTask != null) {
+                    mLastFrameTask.close();
+                    mLastFrameTask = null;
+                }
+                mRenderLock.notifyAll();
             }
         }
 

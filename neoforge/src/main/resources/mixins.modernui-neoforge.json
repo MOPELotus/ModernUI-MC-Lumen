@@ -27,6 +27,14 @@
     "MixinSelectionList",
     "MixinStringSplitter",
     "MixinTextFieldHelper",
-    "MixinWindow"
+    "MixinWindow",
+    "MixinGraniteText",
+    "MixinGpuBufferPoolAddress",
+    "MixinParcelBufferFree",
+    "MixinSPIRVCodeGenerator",
+    "MixinVulkanBindingBufferFree",
+    "MixinVulkanLongBufferFree",
+    "MixinWindowsWindowBorderAbi",
+    "MixinSoundEngine"
   ]
 }

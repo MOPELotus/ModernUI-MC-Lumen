@@ -63,6 +63,7 @@ public enum BlurHandler {
     //public static volatile int sFramerateMinimized;
     public static volatile float sMasterVolumeInactive = 1;
     public static volatile float sMasterVolumeMinimized = 1;
+    public static volatile boolean sGlobalVolumeControl = false;
 
     private final Minecraft minecraft = Minecraft.getInstance();
 
@@ -89,6 +90,7 @@ public enum BlurHandler {
     private boolean mHasScreen;
 
     private float mVolumeMultiplier = 1;
+    private boolean mLastGlobalVolumeControl;
 
     /**
      * Use blur shader in game renderer post-processing.
@@ -204,7 +206,7 @@ public enum BlurHandler {
         } else {
             targetVolumeMultiplier = sMasterVolumeInactive;
         }
-        if (mVolumeMultiplier != targetVolumeMultiplier) {
+        if (mVolumeMultiplier != targetVolumeMultiplier || mLastGlobalVolumeControl != sGlobalVolumeControl) {
             // fade down is slower, 1 second = 20 ticks
             if (mVolumeMultiplier < targetVolumeMultiplier) {
                 mVolumeMultiplier = Math.min(
@@ -217,9 +219,23 @@ public enum BlurHandler {
                         targetVolumeMultiplier
                 );
             }
+            mLastGlobalVolumeControl = sGlobalVolumeControl;
+            // 1.21.8 MASTER updates only the listener and returns immediately.
+            // The mixin scales that gain in global mode. A non-MASTER refresh
+            // recalculates every game channel, without changing extra music.
             float volume = minecraft.options.getSoundSourceVolume(SoundSource.MASTER);
-            minecraft.getSoundManager().updateSourceVolume(SoundSource.MASTER, volume * mVolumeMultiplier);
+            minecraft.getSoundManager().updateSourceVolume(SoundSource.MASTER, volume);
+            minecraft.getSoundManager().updateSourceVolume(SoundSource.AMBIENT,
+                    minecraft.options.getSoundSourceVolume(SoundSource.AMBIENT));
         }
+    }
+
+    public float getChannelVolumeMultiplier() {
+        return sGlobalVolumeControl ? 1.0f : mVolumeMultiplier;
+    }
+
+    public float getGlobalVolumeMultiplier() {
+        return sGlobalVolumeControl ? mVolumeMultiplier : 1.0f;
     }
 
     // INTERNAL HOOK

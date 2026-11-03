@@ -89,6 +89,14 @@ public abstract class MixinMinecraft {
         }
     }
 
+    @Inject(method = "runTick", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/DeltaTracker$Timer;advanceTime(JZ)I"))
+    private void onMiSansSetupFrame(boolean advanceGameTime, CallbackInfo ci) {
+        if (FontVariant.MISANS) {
+            MiSansSetup.tick((Minecraft) (Object) this);
+        }
+    }
+
     /*@Inject(method = "getFramerateLimit", at = @At("HEAD"), cancellable = true)
     private void onGetFramerateLimit(CallbackInfoReturnable<Integer> info) {
         if ((BlurHandler.sFramerateInactive != 0 ||

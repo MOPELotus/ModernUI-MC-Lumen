@@ -1,5 +1,9 @@
 plugins {
-    id 'agency.highlysuspect.minivan' version '0.5'
+    id 'dev.architectury.loom'
+}
+
+loom {
+    accessWidenerPath = file("src/main/resources/modernui.accesswidener")
 }
 
 repositories {
@@ -12,16 +16,98 @@ repositories {
     mavenLocal()
 }
 
-minivan {
-    version(minecraft_version)
-}
-
 dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.officialMojangMappings()
     compileOnly 'org.spongepowered:mixin:0.8.7'
+    testImplementation 'org.spongepowered:mixin:0.8.7'
     compileOnly 'org.ow2.asm:asm-tree:9.8'
+    testImplementation 'org.ow2.asm:asm-tree:9.8'
+    testImplementation 'org.ow2.asm:asm-commons:9.8'
 
     implementation("dev.icyllis:modernui-core:${core_version}")
     implementation("icyllis.modernui:ModernUI-Markflow:3.12.0") {
         transitive = false
     }
+
+    compileOnly("org.lwjgl:lwjgl-vulkan:${lwjgl_version}")
+    testImplementation("org.lwjgl:lwjgl-vulkan:${lwjgl_version}")
 }
+
+test {
+    failOnNoDiscoveredTests = false
+}
+
+tasks.register('checkTextMarquee', JavaExec) {
+    group = 'verification'
+    description = 'Checks continuous text movement, filtering and Canvas cache reuse without a GPU.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.TextMarqueeCheck'
+    systemProperty 'modernui.projectRoot', rootProject.projectDir.absolutePath
+}
+
+check.dependsOn checkTextMarquee
+
+// A task-backed source directory also supplies the dependency to loader compiles,
+// which compile the common sources directly.
+def generateFontVariant = tasks.register('generateFontVariant') {
+    def output = layout.buildDirectory.dir('generated/sources/fontVariant/java')
+    inputs.property('fontVariant', rootProject.fontVariant)
+    outputs.dir(output)
+    doLast {
+        def target = output.get().file('icyllis/modernui/mc/FontVariant.java').asFile
+        target.parentFile.mkdirs()
+        target.text = """package icyllis.modernui.mc;
+
+/** Build-time edition; never selected by a runtime property or config file. */
+public final class FontVariant {
+    public static final boolean MISANS = ${rootProject.fontVariant == 'misans'};
+    public static final String NAME = "${rootProject.fontVariant}";
+    public static final String CLIENT_CONFIG_NAME = "client-${rootProject.fontVariant}.toml";
+    private FontVariant() {}
+}
+"""
+    }
+}
+sourceSets.main.java.srcDir(generateFontVariant)
+
+tasks.register('checkFontVariant', JavaExec) {
+    group = 'verification'
+    description = 'Checks font defaults, legacy configuration isolation and compiled edition boundaries.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.FontVariantCheck'
+}
+check.dependsOn checkFontVariant
+
+['TooltipUniform', 'LwjglAbi', 'ClampingScrollView', 'SoundVolumeApi', 'PackMetadata'].each { checkName ->
+    def checkTask = tasks.register("check${checkName}", JavaExec) {
+        group = 'verification'
+        dependsOn testClasses
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = "icyllis.modernui.mc.test.${checkName}Check"
+        systemProperty 'modernui.projectRoot', rootProject.projectDir.absolutePath
+    }
+    check.dependsOn checkTask
+}
+
+
+tasks.register('checkSpirvArrayLayout', JavaExec) {
+    group = 'verification'
+    description = 'Checks SPIR-V local array layout against the actual compiler and mixin target.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.SpirvArrayLayoutCheck'
+}
+check.dependsOn checkSpirvArrayLayout
+
+// The GLFW bridge also verifies the exact compiled Screen adapters for each loader.
+tasks.register('checkGlfwInput', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses, ':ModernUI-Fabric:compileJava', ':ModernUI-NeoForge:compileJava'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.GlfwInputCheck'
+    workingDir rootProject.projectDir
+}
+check.dependsOn checkGlfwInput

@@ -22,8 +22,6 @@ import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.core.RefCnt;
@@ -36,7 +34,6 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.mixin.AccessBufferSource;
-import icyllis.modernui.mc.text.mixin.AccessGpuTexture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.*;
@@ -350,7 +347,7 @@ public abstract class TextRenderType extends RenderType {
         });*/
         RenderType renderType = MuiModApi.get().createRenderType("modern_text_sdf_fill", 256,
                 false, true, sCurrentPipelineSDFFill,
-                new ExtendedTextureStateShard(texture, FilterMode.LINEAR, FilterMode.LINEAR, true),
+                new ExtendedTextureStateShard(texture),
                 true);
         if (sFirstSDFFillType == null) {
             assert (sSDFFillTypes.isEmpty());
@@ -385,7 +382,7 @@ public abstract class TextRenderType extends RenderType {
         });*/
         RenderType renderType = MuiModApi.get().createRenderType("modern_text_sdf_stroke", 256,
                 false, true, sCurrentPipelineSDFStroke,
-                new ExtendedTextureStateShard(texture, FilterMode.LINEAR, FilterMode.LINEAR, true),
+                new ExtendedTextureStateShard(texture),
                 true);
         if (sFirstSDFStrokeType == null) {
             assert (sSDFStrokeTypes.isEmpty());
@@ -545,28 +542,6 @@ public abstract class TextRenderType extends RenderType {
         public ExtendedTextureStateShard(final GpuTextureView textureView) {
             super(() -> RenderSystem.setShaderTexture(0, textureView), () -> {
             });
-        }
-
-        // yes we can use a sampler object now, but it may not be possible in the future
-        public ExtendedTextureStateShard(final GpuTextureView textureView,
-                                         final FilterMode minFilter, final FilterMode magFilter,
-                                         final boolean useMipmaps) {
-            super(() -> {
-                GpuTexture texture = textureView.texture();
-                texture.setTextureFilter(minFilter, magFilter, useMipmaps);
-                RenderSystem.setShaderTexture(0, textureView);
-            }, restoreSampler(textureView));
-        }
-
-        private static Runnable restoreSampler(final GpuTextureView textureView) {
-            AccessGpuTexture access = (AccessGpuTexture) textureView.texture();
-            final FilterMode oldMinFilter = access.getMinFilter();
-            final FilterMode oldMagFilter = access.getMagFilter();
-            final boolean oldUseMipmaps = access.getUseMipmaps();
-            return () -> {
-                GpuTexture texture = textureView.texture();
-                texture.setTextureFilter(oldMinFilter, oldMagFilter, oldUseMipmaps);
-            };
         }
     }
 

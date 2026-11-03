@@ -1,7 +1,7 @@
+#version 150
 // This file is part of Modern UI.
 // Copyright (C) 2024 BloCamLimb.
 // Licensed under LGPL-3.0-or-later.
-#version 150
 
 #moj_import <minecraft:dynamictransforms.glsl>
 #moj_import <minecraft:projection.glsl>
@@ -14,7 +14,6 @@ layout(std140) uniform ModernTooltip {
     vec4 u_PushData3;
     vec4 u_PushData4;
     vec4 u_PushData5;
-    float u_RainbowOffset;
 };
 
 in vec3 Position;

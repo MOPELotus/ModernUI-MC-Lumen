@@ -198,8 +198,9 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });
 
+        icyllis.modernui.mc.FontVariantConfig.prepare(MuiPlatformFabric.BOOTSTRAP_PATH.getParent());
         ConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
-                ModernUI.NAME_CPT + "/client.toml");
+                ModernUI.NAME_CPT + "/" + icyllis.modernui.mc.FontVariant.CLIENT_CONFIG_NAME);
         ConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
                 ModernUI.NAME_CPT + "/text.toml");
 

@@ -769,6 +769,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
         } else {
             colorMatrix.zero();
         }
+        colorMatrix.m33(rainbowOffset);
 
         // we expect local coordinates, concat pose with model view
         Matrix3x2f localMatrix = new Matrix3x2f(pose);
@@ -780,7 +781,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
                         pushData0,
                         pushData1,
                         colorMatrix,
-                        rainbowOffset
+                        1.0f
                 );
         // estimate the draw bounds, half stroke width + 0.5 AA bloat + shadow spread
         float extent = sBorderWidth / 2f + 0.5f + shadowRadius * 1.2f;

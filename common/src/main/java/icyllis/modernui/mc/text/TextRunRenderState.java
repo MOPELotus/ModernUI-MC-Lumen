@@ -53,7 +53,7 @@ public record TextRunRenderState(
         int r = color >> 16 & 0xff;
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
-        final float baseline = top + TextLayout.sBaselineOffset;
+        final float baseline = TextLayout.sBaselineOffset;
         if (dropShadow && ModernTextRenderer.sAllowShadow && !isColorEmoji) {
             buildPass(vertexConsumer, z, invDensity, r >> 2, g >> 2, b >> 2, a, baseline, true);
         }
@@ -73,18 +73,17 @@ public record TextRunRenderState(
         float x = this.x;
         if (isShadow) {
             x += shadowOffset;
-            baseline += shadowOffset;
         }
         for (int i = glyphStart; i < glyphEnd; i++) {
             var glyph = glyphs[i];
-            if (glyph == null) {
+            if (glyph == null || glyph.width <= 0 || glyph.height <= 0) {
                 continue;
             }
             final int bits = flags[i];
             float rx;
             float ry;
-            final float w;
-            final float h;
+            float w;
+            float h;
             boolean fakeItalic = false;
             int ascent = 0;
             if ((bits & CharacterStyle.NO_SHADOW_MASK) != 0 && isShadow) {
@@ -101,7 +100,7 @@ public record TextRunRenderState(
                     scaleFactor = TextLayoutProcessor.sBaseFontSize / GlyphManager.EMOJI_BASE;
                 }
                 fakeItalic = (bits & CharacterStyle.ITALIC_MASK) != 0;
-                rx = x + positions[i << 1] + glyph.x * scaleFactor;
+                rx = positions[i << 1] + glyph.x * scaleFactor;
                 ry = baseline + positions[i << 1 | 1] + glyph.y * scaleFactor;
                 if (isShadow) {
                     // bitmap font shadow offset is always 1 pixel
@@ -112,7 +111,7 @@ public record TextRunRenderState(
                 w = glyph.width * scaleFactor;
                 h = glyph.height * scaleFactor;
             } else {
-                rx = x + positions[i << 1] + glyph.x * invDensity;
+                rx = positions[i << 1] + glyph.x * invDensity;
                 ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
 
                 w = glyph.width * invDensity;
@@ -122,6 +121,23 @@ public record TextRunRenderState(
                 // align to screen pixel center in 2D
                 rx = Math.round(rx * density) * invDensity;
                 ry = Math.round(ry * density) * invDensity;
+            }
+            // Quantize the fixed layout, never the animated draw origin.
+            rx += x;
+            ry += top + (isShadow ? shadowOffset : 0);
+            float u1 = glyph.u1, v1 = glyph.v1, u2 = glyph.u2, v2 = glyph.v2;
+            if (isDirectMask && (bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) == 0) {
+                // Preserve one transparent atlas texel around bilinearly sampled outlines.
+                float du = (u2 - u1) / glyph.width;
+                float dv = (v2 - v1) / glyph.height;
+                rx -= invDensity;
+                ry -= invDensity;
+                w += 2 * invDensity;
+                h += 2 * invDensity;
+                u1 -= du;
+                v1 -= dv;
+                u2 += du;
+                v2 += dv;
             }
             if (isColorEmoji) {
                 r = 0xff;
@@ -149,19 +165,19 @@ public record TextRunRenderState(
             }
             builder.addVertexWith2DPose(pose, rx + upSkew, ry, z)
                     .setColor(r, g, b, a)
-                    .setUv(glyph.u1, glyph.v1)
+                    .setUv(u1, v1)
                     .setLight(LightTexture.FULL_BRIGHT);
             builder.addVertexWith2DPose(pose, rx + downSkew, ry + h, z)
                     .setColor(r, g, b, a)
-                    .setUv(glyph.u1, glyph.v2)
+                    .setUv(u1, v2)
                     .setLight(LightTexture.FULL_BRIGHT);
             builder.addVertexWith2DPose(pose, rx + w + downSkew, ry + h, z)
                     .setColor(r, g, b, a)
-                    .setUv(glyph.u2, glyph.v2)
+                    .setUv(u2, v2)
                     .setLight(LightTexture.FULL_BRIGHT);
             builder.addVertexWith2DPose(pose, rx + w + upSkew, ry, z)
                     .setColor(r, g, b, a)
-                    .setUv(glyph.u2, glyph.v1)
+                    .setUv(u2, v1)
                     .setLight(LightTexture.FULL_BRIGHT);
         }
     }

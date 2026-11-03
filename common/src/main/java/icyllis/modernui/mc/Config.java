@@ -125,6 +125,7 @@ public final class Config {
         public final ConfigItem<Integer> mFramerateInactive;
         public final ConfigItem<Double> mMasterVolumeInactive;
         public final ConfigItem<Double> mMasterVolumeMinimized;
+        public final ConfigItem<Boolean> mGlobalVolumeControl;
         public final ConfigItem<Integer> mScrollbarSize;
         public final ConfigItem<Integer> mTouchSlop;
         public final ConfigItem<Integer> mHoverSlop;
@@ -142,6 +143,7 @@ public final class Config {
         public final ConfigItem<String> mFirstFontFamily;
         public final ConfigItem<List<? extends String>> mFallbackFontFamilyList;
         public final ConfigItem<List<? extends String>> mFontRegistrationList;
+        public final ConfigItem<Integer> mFontWeight;
         public final ConfigItem<Boolean> mUseColorEmoji;
         public final ConfigItem<Boolean> mLinearMetrics;
         public final ConfigItem<Boolean> mEmojiShortcodes;
@@ -195,6 +197,7 @@ public final class Config {
             mFramerateInactive = get(map, "mFramerateInactive");
             mMasterVolumeInactive = get(map, "mMasterVolumeInactive");
             mMasterVolumeMinimized = get(map, "mMasterVolumeMinimized");
+            mGlobalVolumeControl = get(map, "mGlobalVolumeControl");
             mScrollbarSize = get(map, "mScrollbarSize");
             mTouchSlop = get(map, "mTouchSlop");
             mHoverSlop = get(map, "mHoverSlop");
@@ -212,6 +215,7 @@ public final class Config {
             mFirstFontFamily = get(map, "mFirstFontFamily");
             mFallbackFontFamilyList = get(map, "mFallbackFontFamilyList");
             mFontRegistrationList = get(map, "mFontRegistrationList");
+            mFontWeight = get(map, "mFontWeight");
             mUseColorEmoji = get(map, "mUseColorEmoji");
             mLinearMetrics = get(map, "mLinearMetrics");
             mEmojiShortcodes = get(map, "mEmojiShortcodes");
@@ -229,9 +233,28 @@ public final class Config {
 
             ModernUIClient.sUseColorEmoji = mUseColorEmoji.get();
             ModernUIClient.sEmojiShortcodes = mEmojiShortcodes.get();
+            boolean importedLegacy = FontVariantConfig.consumeLegacyImport();
+            boolean resetLegacyFonts = !FontVariant.MISANS && importedLegacy
+                    && FontDefaults.isLegacyMiSansProfile(mFirstFontFamily.get(),
+                            mFallbackFontFamilyList.get(), mFontRegistrationList.get());
+            if (FontVariant.MISANS || resetLegacyFonts) {
+                mFirstFontFamily.set(FontDefaults.FIRST_FONT_FAMILY);
+                mFallbackFontFamilyList.set(FontDefaults.createFallbackFontFamilyList());
+                mFontRegistrationList.set(FontDefaults.createFontRegistrationList());
+            }
             ModernUIClient.sFirstFontFamily = mFirstFontFamily.get();
             ModernUIClient.sFallbackFontFamilyList = mFallbackFontFamilyList.get();
             ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
+            if (FontVariant.MISANS) {
+                int fontWeight = FontDefaults.normalizeFontWeight(mFontWeight.get());
+                if (fontWeight != mFontWeight.get()) {
+                    mFontWeight.set(fontWeight);
+                }
+                ModernUIClient.sFontWeight = fontWeight;
+            }
+            if (resetLegacyFonts) {
+                MuiPlatform.get().saveConfig(TYPE_CLIENT);
+            }
 
             if (mPropagate) {
                 apply();
@@ -258,6 +281,7 @@ public final class Config {
                     mMasterVolumeMinimized.get().floatValue(),
                     BlurHandler.sMasterVolumeInactive
             );
+            BlurHandler.sGlobalVolumeControl = mGlobalVolumeControl.get();
 
             List<? extends String> inColors = mBackgroundColor.get();
             int[] resultColors = new int[4];

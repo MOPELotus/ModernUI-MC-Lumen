@@ -194,9 +194,11 @@ public class ModernPreparedText implements Font.PreparedText {
                 upSkew = 0.25f * ascent;
                 downSkew = 0.25f * (ascent - h);
             }
-            bounds.joinNoCheck(
-                    rx + downSkew, ry, rx + w + upSkew, ry + h
-            );
+            // Culling also needs the rounded layout and transparent filter border.
+            float padding = preferredMode == TextRenderType.MODE_NORMAL
+                    ? (isBitmapFont || isColorEmoji ? 0.5f : 1.5f) * invDensity : 0;
+            bounds.joinNoCheck(rx + downSkew - padding, ry - padding,
+                    rx + w + upSkew + padding, ry + h + padding);
         }
         if (!textRuns.isEmpty()) {
             textRuns.getLast().glyphEnd = glyphs.length;
