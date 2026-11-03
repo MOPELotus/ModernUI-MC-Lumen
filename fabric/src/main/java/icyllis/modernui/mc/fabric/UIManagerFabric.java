@@ -43,7 +43,7 @@ public final class UIManagerFabric extends UIManager {
     @SuppressWarnings("NoTranslation")
     public static final KeyMapping OPEN_CENTER_KEY = new KeyMapping(
             "key.modernui.openCenter",
-            InputConstants.Type.KEYSYM, GLFW_KEY_K, "Modern UI");
+            InputConstants.Type.KEYSYM, GLFW_KEY_K, "key.category.modernui.keybind");
 
     private UIManagerFabric() {
         super();

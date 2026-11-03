@@ -35,7 +35,7 @@
   "gui.modernui.settings.category.other": "其他",
   "gui.modernui.settings.category.sounds": "音效",
   "gui.modernui.settings.category.mouse": "滑鼠",
-  "modernui.center.title": "Modern UI 控制中心",
+  "modernui.center.title": "ModernUI Lumen",
   "modernui.center.tab.dashboard": "首頁",
   "modernui.center.tab.preferences": "偏好設定",
   "modernui.center.tab.developerOptions": "進階選項",
@@ -57,7 +57,8 @@
   "modernui.center.screen.blurWithBackground": "Blur with Screen Background",
   "modernui.center.screen.blurWithBackground.tooltip": "When enabled, Gaussian blur is applied only when the screen has a default background, similar to Minecraft 1.20.6, with better optimization and compatibility.",
   "modernui.center.screen.overrideVanillaBlur": "覆蓋原版模糊特效",
-  "modernui.center.screen.overrideVanillaBlur.tooltip": "When enabled, Vanilla 3-pass box blur will be replaced with Modern UI Gaussian blur, which will give you better blur quality and rendering performance.\nModern UI has lower CPU and GPU usage to achieve similar blur strength as Vanilla at the same frame rate, it's recommended that you enable this option.","modernui.center.screen.blurRadius": "模糊半徑",
+  "modernui.center.screen.overrideVanillaBlur.tooltip": "When enabled, Vanilla 3-pass box blur will be replaced with Modern UI Gaussian blur, which will give you better blur quality and rendering performance.\nModern UI has lower CPU and GPU usage to achieve similar blur strength as Vanilla at the same frame rate, it's recommended that you enable this option.",
+  "modernui.center.screen.blurRadius": "模糊半徑",
   "modernui.center.screen.inventoryPause": "物品欄暫停",
   "modernui.center.screen.inventoryPause.tooltip": "當你開啟物品欄時，暫停單人遊戲。",
   "modernui.center.screen.windowMode": "視窗模式",
@@ -195,5 +196,6 @@
   "gui.modernui.whatsNewIn_s": "%s 的新功能",
   "gui.modernui.resetToDefault": "重設為預設值",
   "gui.modernui.restart_to_work": "重新啟動遊戲使設定生效",
-  "gui.modernui.font_reloaded": "重新載入預設字型清單"
+  "gui.modernui.font_reloaded": "重新載入預設字型清單",
+  "key.category.modernui.keybind": "ModernUI Lumen"
 }

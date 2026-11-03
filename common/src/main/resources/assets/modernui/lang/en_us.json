@@ -35,7 +35,7 @@
   "gui.modernui.settings.category.other": "Other",
   "gui.modernui.settings.category.sounds": "Sounds",
   "gui.modernui.settings.category.mouse": "Mouse",
-  "modernui.center.title": "Modern UI Center",
+  "modernui.center.title": "ModernUI Lumen",
   "modernui.center.tab.dashboard": "Home",
   "modernui.center.tab.preferences": "Preferences",
   "modernui.center.tab.developerOptions": "Advanced Options",
@@ -200,5 +200,6 @@
   "gui.modernui.whatsNewIn_s": "What's New in %s",
   "gui.modernui.resetToDefault": "Reset to Default",
   "gui.modernui.restart_to_work": "Restart the game for settings to take effect",
-  "gui.modernui.font_reloaded": "Reloaded default typeface list"
+  "gui.modernui.font_reloaded": "Reloaded default typeface list",
+  "key.category.modernui.keybind": "ModernUI Lumen"
 }
