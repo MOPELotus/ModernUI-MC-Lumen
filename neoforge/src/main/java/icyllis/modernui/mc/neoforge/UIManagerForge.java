@@ -307,7 +307,9 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
 
     /** Reforged may skip GameRenderer while NeoForge still publishes Frame.Post. */
     public static void onVulkanRenderFrameEnd() {
-        if (ModernUIMod.isVulkanModLoaded()) {
+        // LoadingOverlay can run nested client ticks. Recheck at completion rather
+        // than assuming the frame acquired at GameRenderer entry is still recording.
+        if (ModernUIMod.isVulkanModLoaded() && VulkanModIntegration.isFrameActive()) {
             ((UIManagerForge) UIManager.getInstance()).onRenderTick(/*isEnd*/ true);
         }
     }

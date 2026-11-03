@@ -68,6 +68,13 @@ public final class VulkanModIntegration {
 
     static Object graphicsQueue() { return call(Api.DEVICE, null, "getGraphicsQueue", new Class<?>[0]); }
     static VkDevice device() { return (VkDevice) get(field(Api.DEVICE, "vkDevice"), null); }
+
+    /** Neo Reforged may end a frame in a nested tick before the outer render returns. */
+    public static boolean isFrameActive() {
+        return (boolean) call(Api.RENDERER, null, "isRecording", new Class<?>[0]) &&
+                !(boolean) get(field(Api.RENDERER, "skipRendering"), null);
+    }
+
     static void finishTextureUploads() {
         if (Api.FABRIC) {
             Class<?> helper = type("net.vulkanmod.render.texture.ImageUploadHelper");

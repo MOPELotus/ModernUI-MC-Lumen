@@ -59,6 +59,11 @@ public final class VulkanBridgeApiCheck {
   requireMethod(pipelineManager, fabric ? "getFastBlitPipeline" : "getGlFramebufferBlitPipeline",
           "()Lnet/vulkanmod/vulkan/shader/GraphicsPipeline;");
   var renderer = read(jar, prefix + "vulkan/Renderer");
+  // Frame completion gating is Neo-only; Fabric's lifecycle API is different.
+  if (!fabric) {
+   requireMethod(renderer, "isRecording", "()Z");
+   requireField(renderer, "skipRendering", "Z");
+  }
   requireMethod(renderer, "flushCmds", "()V");
   requireMethod(renderer, "bindGraphicsPipeline", "(Lnet/vulkanmod/vulkan/shader/GraphicsPipeline;)V");
   requireMethod(renderer, "uploadAndBindUBOs", "(Lnet/vulkanmod/vulkan/shader/Pipeline;)V");

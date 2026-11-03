@@ -16,9 +16,11 @@ public final class VulkanFrameLifecycleCheck {
     private static final String MANAGER = "icyllis/modernui/mc/neoforge/UIManagerForge";
     private static final String COMMON = "icyllis/modernui/mc/UIManager";
     private static final String MIXIN = "icyllis/modernui/mc/mixin/MixinGameRendererEXT";
+    private static final String BRIDGE = "icyllis/modernui/mc/VulkanModIntegration";
     private static final String GENERATED = "icyllis/modernui/mc/test/VulkanFrameLifecycleExecuted";
     private static int checks, endCalls, consumes, outsideAcquired;
-    private static boolean acquired, queued;
+    private static boolean acquired, queued, recordingFailure, baseFailure;
+    private static int bridgeCalls;
 
     public static void main(String[] args) throws Exception {
         ClassNode manager = read(MANAGER, null), mixin = read(MIXIN, null);
@@ -43,6 +45,16 @@ public final class VulkanFrameLifecycleCheck {
         frame(run, false, true);
         frame(run, false, true);
         require(endCalls == 0 && queued, "repeated skipped Forge Posts never run VK fallback");
+        reset(true);
+        frame(run, true, false, false, false);
+        require(endCalls == 0 && queued, "entry recording does not authorize consumption after nested rendering ends recording");
+        frame(run, true, false);
+        require(endCalls == 1 && consumes == 1 && outsideAcquired == 0, "next active frame consumes work preserved at inactive RETURN once");
+        reset(true);
+        frame(run, true, false, true, true);
+        require(endCalls == 0 && queued, "entry recording does not authorize consumption when RETURN becomes skipRendering");
+        frame(run, true, false);
+        require(endCalls == 1 && consumes == 1 && outsideAcquired == 0, "next active frame consumes work preserved at skipped RETURN once");
         reset(false);
         frame(run, true, false);
         require(endCalls == 1 && consumes == 1, "GL retains one Forge Post callback despite renderer RETURN hook");
@@ -55,30 +67,65 @@ public final class VulkanFrameLifecycleCheck {
         reset(true);
         run.post();
         require(endCalls == 0, "VK Post alone never ends UI rendering");
+        reset(false);
+        run.rendererReturn();
+        require(bridgeCalls == 0, "GL helper short-circuits before querying the Vulkan bridge");
+        reset(true);
+        recordingFailure = true;
+        expectFailure(run, "recording failed");
+        require(endCalls == 0 && queued, "real reflective isRecording failure propagates without consuming Canvas");
+        reset(true);
+        ExactRenderer.recording = acquired = true;
+        baseFailure = true;
+        expectFailure(run, "base failed");
+        require(endCalls == 1 && consumes == 0 && queued, "active base callback failure propagates without consumption");
         if (args.length > 0) {
             Path jar = Path.of(args[0]);
-            var legacy = new Executed(read(MANAGER, jar), null);
+            var legacy = new Executed(read(MANAGER, jar), read(MIXIN, jar));
             reset(true);
-            frame(legacy, false, true);
+            frame(legacy, true, false, false, false);
             require(endCalls == 1 && consumes == 1 && outsideAcquired == 1,
-                    "old real Forge Post bytecode consumes queued Canvas outside an acquired Vulkan frame");
-            System.out.println("Old-JAR skipped-frame negative reproduced: " + jar + " sha256=" +
+                    "old real RETURN helper consumes queued Canvas after nested rendering made the Vulkan frame inactive");
+            reset(true);
+            frame(legacy, true, false, true, true);
+            require(endCalls == 1 && consumes == 1 && outsideAcquired == 1,
+                    "old real RETURN helper also consumes when skipRendering changes during rendering");
+            System.out.println("Old-JAR inactive-RETURN negative reproduced: " + jar + " sha256=" +
                     HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(java.nio.file.Files.readAllBytes(jar))));
-        } else System.out.println("Old-JAR negative control not supplied; pass frozen 1898 JAR as argument 0.");
+        } else System.out.println("Old-JAR negative control not supplied; pass frozen 2984 JAR as argument 0.");
         System.out.println("Vulkan frame lifecycle: " + checks + " real-hook CPU and real-base structural checks passed; no GPU initialized");
     }
 
-    /** Models only VM's externally verified render gate; hooks themselves are copied product bytecode. */
+    /** Models VM entry gating and a possible nested render changing live state before RETURN. */
     private static void frame(Executed run, boolean recording, boolean skipRendering) throws Exception {
-        if (recording && !skipRendering) {
-            acquired = true;
+        frame(run, recording, skipRendering, recording, skipRendering);
+    }
+    private static void frame(Executed run, boolean entryRecording, boolean entrySkip,
+                              boolean returnRecording, boolean returnSkip) throws Exception {
+        ExactRenderer.recording = entryRecording;
+        ExactRenderer.skipRendering = entrySkip;
+        if (entryRecording && !entrySkip) {
+            ExactRenderer.recording = returnRecording;
+            ExactRenderer.skipRendering = returnSkip;
+            acquired = returnRecording && !returnSkip;
             try { run.rendererReturn(); } finally { acquired = false; }
         }
         run.post();
     }
+    public static final class BridgeApi { public static final Class<?> RENDERER = ExactRenderer.class; }
+    public static final class ExactRenderer {
+        public static boolean recording, skipRendering;
+        public static boolean isRecording() {
+            bridgeCalls++;
+            if (recordingFailure) throw new IllegalStateException("recording failed");
+            return recording;
+        }
+    }
     private static void reset(boolean vulkan) {
         Flags.vulkan = vulkan; acquired = false; queued = true;
-        endCalls = consumes = outsideAcquired = 0;
+        ExactRenderer.recording = ExactRenderer.skipRendering = false;
+        endCalls = consumes = outsideAcquired = bridgeCalls = 0;
+        recordingFailure = baseFailure = false;
     }
     public static final class Flags { public static boolean vulkan; public static boolean isVulkanModLoaded() { return vulkan; } }
     public static class Base {
@@ -87,8 +134,16 @@ public final class VulkanFrameLifecycleCheck {
         public void onRenderTick(boolean end) {
             if (!end) throw new AssertionError("Unexpected start hook");
             endCalls++;
+            if (baseFailure) throw new IllegalStateException("base failed");
             if (Flags.vulkan && !acquired) outsideAcquired++;
             if (queued) { consumes++; queued = false; }
+        }
+    }
+    private static void expectFailure(Executed run, String message) throws Exception {
+        try { run.rendererReturn(); throw new AssertionError("Expected " + message); }
+        catch (java.lang.reflect.InvocationTargetException failure) {
+            require(failure.getCause() instanceof IllegalStateException && message.equals(failure.getCause().getMessage()),
+                    "actual hook/reflective call preserves exception: " + failure.getCause());
         }
     }
     private static void require(boolean value, String reason) {
@@ -173,8 +228,14 @@ public final class VulkanFrameLifecycleCheck {
                     COMMON, Type.getInternalName(Base.class), "icyllis/modernui/mc/ModernUIMod", Type.getInternalName(Flags.class),
                     "net/neoforged/neoforge/client/event/RenderFrameEvent$Post", "java/lang/Object",
                     "net/minecraft/client/DeltaTracker", "java/lang/Object",
-                    "org/spongepowered/asm/mixin/injection/callback/CallbackInfo", "java/lang/Object");
+                    "org/spongepowered/asm/mixin/injection/callback/CallbackInfo", "java/lang/Object",
+                    BRIDGE, GENERATED + "Bridge", BRIDGE + "$Api", Type.getInternalName(BridgeApi.class));
             var remapper = new SimpleRemapper(names);
+            ClassNode bridge = read(BRIDGE, null);
+            Set<String> bridgeMethods = Set.of("isFrameActive", "call", "get", "field");
+            require(bridge.methods.stream().filter(m -> bridgeMethods.contains(m.name)).count() == bridgeMethods.size(),
+                    "execute actual frame-state method and all three real reflection helpers");
+            copy(bridge, GENERATED + "Bridge", "java/lang/Object", remapper, bridgeMethods);
             Class<?> m = copy(original, GENERATED + "Manager", Type.getInternalName(Base.class), remapper,
                     Set.of("onRenderFramePost", "onVulkanRenderFrameEnd"));
             manager = m.getConstructor().newInstance(); Base.instance = (Base) manager;
