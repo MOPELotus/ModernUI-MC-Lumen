@@ -84,7 +84,7 @@ tasks.register('checkFontVariant', JavaExec) {
 }
 check.dependsOn checkFontVariant
 
-['GlfwInput', 'ClampingScrollView', 'LwjglAbi', 'VulkanContextLifecycle', 'SpirvArrayLayout', 'EffectTextureOwnership', 'SoundVolumeApi', 'VulkanRenderArea'].each { checkName ->
+['PreferredFontIdentifier', 'GlfwInput', 'ClampingScrollView', 'LwjglAbi', 'VulkanContextLifecycle', 'SpirvArrayLayout', 'EffectTextureOwnership', 'SoundVolumeApi', 'VulkanRenderArea'].each { checkName ->
     def checkTask = tasks.register("check${checkName}", JavaExec) {
         group = 'verification'
         dependsOn testClasses
