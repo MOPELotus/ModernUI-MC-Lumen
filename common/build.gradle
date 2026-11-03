@@ -129,3 +129,14 @@ tasks.register('checkWindowMode', JavaExec) {
     }
 }
 check.dependsOn checkWindowMode
+
+tasks.register('checkPreferredFontIdentifier', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.PreferredFontIdentifierCheck'
+    if (project.hasProperty('preferred_font_previous_jar')) {
+        args project.property('preferred_font_previous_jar')
+    }
+}
+check.dependsOn checkPreferredFontIdentifier
