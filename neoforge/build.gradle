@@ -51,11 +51,8 @@ dependencies {
 
     implementation project(':common')
 
-    ["dev.icyllis:arc3d-compiler"].each {
-        implementation(it + ":${arc3d_version}")
-        include(it + ":${arc3d_version}")
-    }
-    ["dev.icyllis:arc3d-core",
+    ["dev.icyllis:arc3d-compiler",
+     "dev.icyllis:arc3d-core",
      "dev.icyllis:arc3d-sketch",
      "dev.icyllis:arc3d-engine",
      "dev.icyllis:arc3d-granite",
@@ -130,8 +127,9 @@ loom.nestJars(
 )
 
 shadowJar {
-    archiveClassifier.set("universal")
+    archiveClassifier.set(rootProject.fontVariant == 'misans' ? "universal-misans" : "universal")
     configurations = [project.configurations.shadow]
+    exclude 'module-info.class', 'META-INF/versions/**/module-info.class'
 
     /*dependencies {
         exclude 'icu4j-59.1.jar'
@@ -192,9 +190,10 @@ if (project.hasProperty("keystore")) {
 
 processResources {
     inputs.property 'version', mod_version
+    inputs.property 'display_name', rootProject.fontVariantDisplayName
 
     filesMatching("META-INF/neoforge.mods.toml") {
-        expand 'version': mod_version
+        expand 'version': mod_version, 'display_name': rootProject.fontVariantDisplayName
     }
 }
 

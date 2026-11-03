@@ -148,6 +148,8 @@
   "modernui.center.font.openFontFile": "Open a Font File",
   "modernui.center.font.fallbackFonts": "Fallback Font Family List",
   "modernui.center.font.fallbackFonts.tooltip": "A set of fallback font families for the default typeface list.\nOutline fonts (TrueType/OpenType) are supported, each line can be one of the following two cases:\n1) Font family name in English for registered fonts, for instance: Segoe UI\n2) Path for font files on your PC, for instance: ../../Fonts/Andy Bold.ttf\nNote that for TTC/OTC font, it's recommended to register it and select one of font families. Otherwise, only the first font family in the TrueType/OpenType Collection will be used.",
+  "modernui.center.font.fontWeight": "Font Weight",
+  "modernui.center.font.fontWeight.tooltip": "100–900 selects nine MiSans weight presets, from thin to heavy. These preset numbers are not the fonts’ original weight values.",
   "modernui.center.font.colorEmoji": "Color Emoji",
   "modernui.center.font.colorEmoji.tooltip": "When enabled, Google Noto Color Emoji will be included in font itemization. Otherwise, Emoji will render in black and white.",
   "modernui.center.font.vanillaFont": "Use Vanilla Default Font",

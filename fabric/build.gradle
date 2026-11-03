@@ -84,6 +84,10 @@ dependencies {
 
     compileOnly("org.lwjgl:lwjgl-vulkan:3.4.1")
     testCompileOnly("org.lwjgl:lwjgl-vulkan:3.4.1")
+    testImplementation 'org.ow2.asm:asm-tree:9.8'
+    testImplementation 'org.ow2.asm:asm-commons:9.8'
+    testImplementation 'org.spongepowered:mixin:0.8.7'
+    testImplementation 'org.lwjgl:lwjgl-vulkan:3.4.1'
 
     //implementation("com.vladsch.flexmark:flexmark:${flexmark_version}")
 
@@ -133,8 +137,9 @@ loom.nestJars(
 )
 
 shadowJar {
-    archiveClassifier.set("universal")
+    archiveClassifier.set(rootProject.fontVariant == 'misans' ? "universal-misans" : "universal")
     configurations = [project.configurations.shadow]
+    exclude 'module-info.class', 'META-INF/versions/**/module-info.class'
 
     /*dependencies {
         exclude 'icu4j-59.1.jar'
@@ -195,9 +200,10 @@ if (project.hasProperty("keystore")) {
 
 processResources {
     inputs.property 'version', mod_version
+    inputs.property 'display_name', rootProject.fontVariantDisplayName
 
     filesMatching("fabric.mod.json") {
-        expand 'version': mod_version
+        expand 'version': mod_version, 'display_name': rootProject.fontVariantDisplayName
     }
 }
 
@@ -264,3 +270,18 @@ publishing {
         }
     }
 }
+
+tasks.register('checkVulkanDrawBuffersLifecycle', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.VulkanDrawBuffersLifecycleCheck'
+    doFirst {
+        def jars = configurations.compileClasspath.files.findAll {
+            it.name.toLowerCase(java.util.Locale.ROOT).contains('vulkanmod') && it.name.endsWith('.jar')
+        }
+        if (jars.empty) throw new GradleException('Missing VulkanMod API JAR')
+        setArgs(jars.collect { it.absolutePath })
+    }
+}
+check.dependsOn checkVulkanDrawBuffersLifecycle

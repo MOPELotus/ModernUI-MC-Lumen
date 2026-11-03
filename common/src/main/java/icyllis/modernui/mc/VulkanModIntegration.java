@@ -22,6 +22,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.core.RawPtr;
+import icyllis.arc3d.compiler.SPIRVVersion;
+import icyllis.modernui.core.Core;
 import icyllis.arc3d.engine.Swizzle;
 import icyllis.arc3d.vulkan.VKUtil;
 import icyllis.arc3d.vulkan.VulkanBackendContext;
@@ -36,6 +38,7 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkAllocationCallbacks;
 import org.lwjgl.vulkan.VkImageViewCreateInfo;
 import org.lwjgl.vulkan.VkPhysicalDeviceFeatures2;
@@ -67,17 +70,36 @@ public final class VulkanModIntegration {
         backendContext.mDevice = DeviceManager.vkDevice;
         var indices = net.vulkanmod.vulkan.queue.Queue.getQueueFamilies();
         backendContext.mGraphicsQueueIndex = indices.graphicsFamily;
-        vulkanManager.setPhysicalDeviceFeatures2(VkPhysicalDeviceFeatures2.calloc());
+        // Do not infer enabled logical-device features from physical support.
+        // VulkanMod does not expose its enabled feature chain to this bridge.
+        vulkanManager.setPhysicalDeviceFeatures2(VkPhysicalDeviceFeatures2.calloc().sType$Default());
         backendContext.mDeviceFeatures2 = vulkanManager.getPhysicalDeviceFeatures2();
+        // VulkanMod creates its instance and logical device for Vulkan 1.2 even
+        // when the physical device advertises a newer API version.
+        int apiVersion = Math.min(VK12.VK_API_VERSION_1_2, DeviceManager.deviceProperties.apiVersion());
+        backendContext.mMaxAPIVersion = apiVersion;
         vulkanManager.setMemoryAllocator(VulkanMemoryAllocator.make(
                 backendContext.mInstance, backendContext.mPhysicalDevice,
-                backendContext.mDevice, DeviceManager.deviceProperties.apiVersion(),
+                backendContext.mDevice, apiVersion,
                 0
         ));
         backendContext.mMemoryAllocator = vulkanManager.getMemoryAllocator();
         backendContext.mQueue = DeviceManager.getGraphicsQueue().vkQueue();
 
         return backendContext;
+    }
+
+    public static void closeContext(Thread uiThread) {
+        VulkanContextLifecycle.close(VulkanManager.get(), uiThread,
+                Core.peekImmediateContext(), Core.peekUiRecordingContext());
+    }
+
+    public static void configureShaderCaps() {
+        // Arc3D 2026.2 derives this from the physical API version and ignores
+        // mMaxAPIVersion. VulkanMod's Vulkan 1.2 device supports SPIR-V 1.5.
+        Core.requireImmediateContext().getCaps().shaderCaps().mSPIRVVersion = SPIRVVersion.SPIRV_1_5;
+        ModernUIMod.LOGGER.info(ModernUIMod.MARKER,
+                "Arc3D Vulkan shader target: SPIR-V 1.5 (VulkanMod Vulkan 1.2)");
     }
 
     public static void replaceMainImageViewWithSwizzle(GpuTextureView textureView, short swizzle) {
@@ -142,6 +164,15 @@ public final class VulkanModIntegration {
     public static void syncImageLayoutFromVulkan(GpuTexture vulkanTexture, @RawPtr VulkanImage arc3dVulkanImage) {
         var vulkanVulkanImage = ((net.vulkanmod.render.engine.VkGpuTexture) vulkanTexture).getVulkanImage();
         arc3dVulkanImage.getVulkanMutableState().setImageLayout(vulkanVulkanImage.getCurrentLayout());
+    }
+
+    /** Releases the VulkanMod registry entry without freeing the Arc3D-owned image. */
+    public static void releaseWrappedTexture(GpuTexture texture) {
+        if (!texture.isClosed()) {
+            int id = ((com.mojang.blaze3d.opengl.GlTexture) texture).glId();
+            net.vulkanmod.gl.VkGlTexture.setVulkanImage(id, null);
+            texture.close();
+        }
     }
 
     public static boolean sameImage(GpuTexture vulkanTexture, @RawPtr VulkanImage arc3dVulkanImage) {

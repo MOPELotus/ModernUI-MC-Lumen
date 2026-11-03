@@ -70,6 +70,26 @@ Releases for Minecraft Mod are available on [CurseForge](https://www.curseforge.
 [Modrinth](https://modrinth.com/project/3sjzyvGR).  
 For historical reasons, issues should go to Core Repo's [Issue Tracker](https://github.com/BloCamLimb/ModernUI/issues). 
 If you have any questions, feel free to join our [Discord](https://discord.gg/kmyGKt2) server.
+### Minecraft 26.1 branch
+
+This branch targets Minecraft 26.1, 26.1.1 and 26.1.2 with Fabric or NeoForge, using Java 25.
+The shared source uses the actual 26.1 GLFW input and GPU facade APIs. Vulkan rendering uses
+an optional compatible Fabric VulkanMod build; these Minecraft releases do not provide the
+native Vulkan backend introduced in 26.2. NeoForge has no matching VulkanMod package in this range.
+
+Build the standard and MiSans editions separately:
+
+```sh
+./gradlew build
+./gradlew build -Pfont_variant=misans
+```
+
+Both loaders are enabled by default; use `-Penabled_platforms=fabric` or
+`-Penabled_platforms=neoforge` to select one. Edition preferences are kept in separate files.
+MiSans uses the official nine static weights and requires the four official font families;
+the first-run installer shows the license notice before downloading. The standard edition retains
+customizable font preferences and contains no MiSans installer.
+
 ### Compatibility Matrix
 | Minecraft version | Status     | Latest Modern UI version | Mod loaders             | Rendering backend       |
 |-------------------|------------|--------------------------|-------------------------|-------------------------|

@@ -20,6 +20,10 @@ dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     compileOnly 'org.spongepowered:mixin:0.8.7'
     compileOnly 'org.ow2.asm:asm-tree:9.8'
+    testImplementation 'org.ow2.asm:asm-tree:9.8'
+    testImplementation 'org.ow2.asm:asm-commons:9.8'
+    testImplementation 'org.lwjgl:lwjgl-vulkan:3.4.1'
+    testImplementation 'org.spongepowered:mixin:0.8.7'
 
     implementation("dev.icyllis:modernui-core:${core_version}")
     implementation("icyllis.modernui:ModernUI-Markflow:3.12.0") {
@@ -27,10 +31,101 @@ dependencies {
     }
 
     // VulkanMod_26.1.2-0.6.6.jar
-    api("maven.modrinth:JYQhtZtO:PNODQNIn")
+    api("maven.modrinth:vulkanmod:PNODQNIn")
     compileOnly("org.lwjgl:lwjgl-vulkan:3.4.1")
 }
 
 test {
     failOnNoDiscoveredTests = false
 }
+
+tasks.register('generateFontVariant') {
+    def output = layout.buildDirectory.dir('generated/sources/fontVariant/java')
+    inputs.property('fontVariant', rootProject.fontVariant)
+    outputs.dir(output)
+    doLast {
+        def target = output.get().file('icyllis/modernui/mc/FontVariant.java').asFile
+        target.parentFile.mkdirs()
+        target.text = """package icyllis.modernui.mc;
+
+/** Build-time edition; never selected by a runtime property or config file. */
+public final class FontVariant {
+    public static final boolean MISANS = ${rootProject.fontVariant == 'misans'};
+    public static final String NAME = "${rootProject.fontVariant}";
+    public static final String CLIENT_CONFIG_NAME = "client-${rootProject.fontVariant}.toml";
+    private FontVariant() {}
+}
+"""
+    }
+}
+sourceSets.main.java.srcDir(generateFontVariant)
+
+tasks.register('checkFontVariant', JavaExec) {
+    group = 'verification'
+    description = 'Checks font defaults, legacy configuration isolation and compiled edition boundaries.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.FontVariantCheck'
+}
+check.dependsOn checkFontVariant
+
+tasks.register('checkTextMarquee', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.TextMarqueeCheck'
+    systemProperty 'modernui.projectRoot', rootProject.projectDir.absolutePath
+}
+check.dependsOn checkTextMarquee
+
+tasks.register('checkTooltipUniform', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.TooltipUniformCheck'
+}
+check.dependsOn checkTooltipUniform
+
+tasks.register('checkGlfwInput', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.GlfwInputCheck'
+}
+check.dependsOn checkGlfwInput
+
+tasks.register('checkPackMetadata', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.PackMetadataCheck'
+    systemProperty 'modernui.projectRoot', rootProject.projectDir.absolutePath
+}
+check.dependsOn checkPackMetadata
+
+['SpirvArrayLayout', 'VulkanDepthBarrier', 'VulkanSurface', 'VulkanAcquire', 'VulkanContextLifecycle', 'VulkanGpuOwnership', 'VulkanPipelineLifecycle', 'VulkanImageUploadBarrier', 'VulkanEncoderOwnership'].each { checkName ->
+    def checkTask = tasks.register("check${checkName}", JavaExec) {
+        group = 'verification'
+        dependsOn testClasses
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = "icyllis.modernui.mc.test.${checkName}Check"
+        if (checkName in ['VulkanDepthBarrier', 'VulkanSurface', 'VulkanAcquire', 'VulkanGpuOwnership', 'VulkanPipelineLifecycle', 'VulkanImageUploadBarrier', 'VulkanEncoderOwnership']) {
+            doFirst {
+                def vulkanJars = configurations.compileClasspath.files.findAll {
+                    it.name.toLowerCase(java.util.Locale.ROOT).contains('vulkanmod') && it.name.endsWith('.jar')
+                }
+                if (vulkanJars.empty) throw new GradleException('Missing VulkanMod API JAR for injection verification')
+                setArgs(vulkanJars.collect { it.absolutePath })
+            }
+        }
+    }
+    check.dependsOn checkTask
+}
+
+tasks.register('checkClampingScrollView', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.ClampingScrollViewCheck'
+}
+check.dependsOn checkClampingScrollView
