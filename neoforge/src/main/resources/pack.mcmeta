@@ -1,6 +1,13 @@
 {
     "pack": {
-        "description": "Modern UI for Minecraft",
-        "pack_format": 42
+        "description": "Modern UI Lumen for Minecraft",
+        "min_format": [
+            97,
+            1
+        ],
+        "max_format": [
+            121,
+            0
+        ]
     }
 }

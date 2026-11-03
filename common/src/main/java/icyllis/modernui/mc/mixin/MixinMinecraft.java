@@ -118,9 +118,9 @@ public abstract class MixinMinecraft {
     }*/
 
     @Inject(method = "close", at = @At(value = "INVOKE",
-            target = "Lcom/mojang/blaze3d/systems/RenderSystem;shutdownRenderer()V"))
+            target = "Lcom/mojang/renderpearl/api/device/GpuSurface;close()V"))
     private void onClose(CallbackInfo ci) {
-        if (!ModernUIMod.isVulkanBackend() && icyllis.modernui.core.Core.peekImmediateContext() != null) {
+        if (icyllis.modernui.core.Core.peekImmediateContext() != null) {
             UIManager.destroy();
         }
     }

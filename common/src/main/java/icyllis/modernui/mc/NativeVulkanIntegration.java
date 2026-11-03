@@ -60,6 +60,7 @@ public final class NativeVulkanIntegration {
 
     private static final Unsafe UNSAFE;
     private static final Field BACKEND_FIELD;
+    private static final Field DESTROY_QUEUE_FIELD;
     private static final Field ENABLED_FEATURES_FIELD;
 
     private static final long GPU_TEXTURE_FORMAT;
@@ -86,6 +87,8 @@ public final class NativeVulkanIntegration {
 
             BACKEND_FIELD = FrontendGpuDevice.class.getDeclaredField("backend");
             BACKEND_FIELD.setAccessible(true);
+            DESTROY_QUEUE_FIELD = VulkanCommandEncoder.class.getDeclaredField("destroyQueue");
+            DESTROY_QUEUE_FIELD.setAccessible(true);
             ENABLED_FEATURES_FIELD = VulkanDevice.class.getDeclaredField("enabledFeatures");
             ENABLED_FEATURES_FIELD.setAccessible(true);
 
@@ -341,6 +344,19 @@ public final class NativeVulkanIntegration {
 
     public static boolean sameImage(GpuTexture vulkanTexture, @RawPtr VulkanImage arc3dVulkanImage) {
         return ((VulkanGpuTexture) vulkanTexture).vkImage() == arc3dVulkanImage.vkImage();
+    }
+
+    /** Finish native submissions and release delayed image views before closing our allocator. */
+    public static void drainForShutdown() {
+        VulkanDevice device = device();
+        VulkanCommandEncoder encoder = device.createCommandEncoder();
+        encoder.submit();
+        device.graphicsQueue().waitIdle();
+        try {
+            ((AutoCloseable) DESTROY_QUEUE_FIELD.get(encoder)).close();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to drain Minecraft Vulkan destruction queue", e);
+        }
     }
 
     public static void addFrameOp(Runnable runnable) {
