@@ -27,6 +27,7 @@
     "MixinScreen",
     "MixinScrollPanel",
     "MixinSelectionList",
+    "MixinSoundEngine",
     "MixinStringSplitter",
     "MixinTextFieldHelper",
     "MixinWindow"

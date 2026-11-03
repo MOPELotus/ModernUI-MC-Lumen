@@ -29,6 +29,7 @@
     "MixinRenderSystem",
     "MixinScreen",
     "MixinSelectionList",
+    "MixinSoundEngine",
     "MixinStringSplitter",
     "MixinTextFieldHelper",
     "MixinWindow"

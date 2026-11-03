@@ -18,3 +18,11 @@ A wrapped Arc3D image is non-owning: closing the fabricated Minecraft texture wo
 The actual native `DestructionQueue` implements `AutoCloseable`. Its `close` drains buckets without permanently closing the queue, so Minecraft's later normal encoder destruction can safely drain it again. The bridge never destroys Minecraft's encoder or device itself.
 
 The CPU contract check verifies the real Minecraft shutdown order and native queue methods. It does not replace hardware OpenGL/Vulkan testing.
+
+## Audio focus gain
+
+Minecraft includes the user MASTER setting in each channel's final gain. Its modern listener has no `setGain` method, and the `gainBySource` map is keyed by the actual sound category: writing only a MASTER map entry cannot attenuate ordinary channels.
+
+The focus fade therefore multiplies Minecraft's calculated channel volume once in non-global mode. Global mode uses the OpenAL listener instead, with a channel multiplier of one. Switching back to non-global restores listener gain to one, refreshes existing channels, and preserves all user and external category gains. A successful audio library reload reapplies the current mode and multiplier even when the window's fade target did not change. Failed library initialization leaves the update pending. Minecraft's actual `Library.init` makes the calling thread's context current before creating AL capabilities; the bridge skips listener calls when no context exists.
+
+The CPU audio contract check inspects the target Minecraft bytecode, mixer hook registration, single user MASTER combination, category-map use, active-channel refresh and OpenAL context initialization order. Hardware/runtime verification must additionally observe actual channel/listener gains through mode changes and device reload.
