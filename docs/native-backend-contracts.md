@@ -26,3 +26,9 @@ Minecraft includes the user MASTER setting in each channel's final gain. Its mod
 The focus fade therefore multiplies Minecraft's calculated channel volume once in non-global mode. Global mode uses the OpenAL listener instead, with a channel multiplier of one. Switching back to non-global restores listener gain to one, refreshes existing channels, and preserves all user and external category gains. A successful audio library reload reapplies the current mode and multiplier even when the window's fade target did not change. Failed library initialization leaves the update pending. Minecraft's actual `Library.init` makes the calling thread's context current before creating AL capabilities; the bridge skips listener calls when no context exists.
 
 The CPU audio contract check inspects the target Minecraft bytecode, mixer hook registration, single user MASTER combination, category-map use, active-channel refresh and OpenAL context initialization order. Hardware/runtime verification must additionally observe actual channel/listener gains through mode changes and device reload.
+
+## Native Vulkan API and image handoff
+
+Minecraft creates its native Vulkan instance for API 1.2 even on GPUs advertising newer versions. Arc3D's shader target is explicitly limited to SPIR-V 1.5. The bridge advertises enabled logical-device features rather than all physical-device support: 26.2 uses the backend's guaranteed required-feature subset, while 26.3 copies its retained enabled-feature set.
+
+The actual native sampled-image descriptors specify `VK_IMAGE_LAYOUT_GENERAL`. Arc3D output is transitioned to GENERAL before Minecraft samples it, and the Arc3D mutable image state is returned as GENERAL after native rendering. SHADER_READ_ONLY_OPTIMAL is a different valid Vulkan layout, but it does not satisfy these native descriptors. This contract is separate from older VulkanMod image tracking.

@@ -3,6 +3,8 @@ package icyllis.modernui.mc.test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 
 /** Checks the native backend's actual destruction contract without creating a GPU. */
 public final class NativeVulkanContractCheck {
@@ -34,7 +36,53 @@ public final class NativeVulkanContractCheck {
         if (count != 1 || surface < 0 || renderer <= surface) {
             throw new AssertionError("Native shutdown injection no longer precedes surface/device destruction");
         }
-        System.out.println("Native Vulkan queue API and real Minecraft shutdown order verified");
+        var renderPass = read("com/mojang/renderpearl/backend/vulkan/VulkanRenderPass");
+        int sampledLayoutDeclarations = 0;
+        for (var method : renderPass.methods) {
+            for (var instruction : method.instructions) {
+                if (instruction instanceof MethodInsnNode call && call.owner.startsWith("org/lwjgl/vulkan/VkDescriptorImageInfo")
+                        && call.name.equals("imageLayout")) {
+                    if (instruction.getPrevious().getOpcode() != org.objectweb.asm.Opcodes.ICONST_1) {
+                        throw new AssertionError("Minecraft's sampled-image descriptor no longer requires GENERAL");
+                    }
+                    sampledLayoutDeclarations++;
+                }
+            }
+        }
+        if (sampledLayoutDeclarations == 0) throw new AssertionError("Missing actual native sampled-image descriptor");
+        var bridge = read("icyllis/modernui/mc/NativeVulkanIntegration");
+        for (String name : new String[]{"syncImageLayoutFromArc3D", "syncImageLayoutFromVulkan"}) {
+            boolean general = false;
+            for (var method : bridge.methods) {
+                if (!method.name.equals(name)) continue;
+                for (var instruction : method.instructions) {
+                    if (instruction.getOpcode() == org.objectweb.asm.Opcodes.ICONST_1) general = true;
+                    if (instruction.getOpcode() == org.objectweb.asm.Opcodes.ICONST_5) {
+                        throw new AssertionError(name + " must not use the incompatible SHADER_READ_ONLY layout");
+                    }
+                }
+            }
+            if (!general) throw new AssertionError(name + " must hand off GENERAL layout");
+        }
+        boolean shaderTarget = false;
+        for (var method : bridge.methods) {
+            if (!method.name.equals("configureShaderCaps")) continue;
+            for (var instruction : method.instructions) {
+                if (instruction instanceof FieldInsnNode field && field.name.equals("SPIRV_1_5")) shaderTarget = true;
+            }
+        }
+        if (!shaderTarget) throw new AssertionError("Minecraft Vulkan 1.2 requires the Arc3D SPIR-V 1.5 target");
+        var instance = read("com/mojang/renderpearl/backend/vulkan/VulkanInstance");
+        boolean api12 = false;
+        for (var method : instance.methods) for (var instruction : method.instructions) {
+            if (instruction instanceof MethodInsnNode call && call.name.equals("apiVersion")
+                    && ((instruction.getPrevious() instanceof LdcInsnNode constant
+                        && Integer.valueOf(4202496).equals(constant.cst))
+                        || (instruction.getPrevious() instanceof FieldInsnNode field
+                            && field.owner.equals("org/lwjgl/vulkan/VK12") && field.name.equals("VK_API_VERSION_1_2")))) api12 = true;
+        }
+        if (!api12) throw new AssertionError("Minecraft's actual Vulkan instance API contract changed");
+        System.out.println("Native Vulkan queue/shutdown, GENERAL descriptor layout and Vulkan 1.2 / SPIR-V 1.5 contracts verified");
     }
 
     private static ClassNode read(String name) throws Exception {
