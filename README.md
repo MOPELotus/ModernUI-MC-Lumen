@@ -1,169 +1,86 @@
+[CN](README.md) | [EN](README.en.md)
+
 # ModernUI Lumen
 
-**ModernUI Lumen** is MOPELotus’s independently maintained fork of [Modern UI for Minecraft](https://github.com/BloCamLimb/ModernUI-MC), originally created by **BloCamLimb**. It is based on the [ModernUI framework](https://github.com/BloCamLimb/ModernUI) and retains the upstream authors’ credits and licenses. This fork is not an official upstream release.
+**ModernUI Lumen** 是 **MOPELotus** 独立维护的 [Modern UI for Minecraft](https://github.com/BloCamLimb/ModernUI-MC) 分支，原作者为 **BloCamLimb**，基于 [ModernUI 框架](https://github.com/BloCamLimb/ModernUI)。本项目保留上游作者署名及许可证，不是上游官方发行版。
 
-本 Fork 由 **MOPELotus** 维护，原作者为 **BloCamLimb**。当前模组版本为 **3.13.0.10**。游戏内显示名为 **ModernUI Lumen**；MiSans 版显示为 **ModernUI Lumen (MiSans)**。
+当前模组版本为 **3.13.0.10**。普通版显示为 **ModernUI Lumen**，MiSans 版显示为 **ModernUI Lumen (MiSans)**。
 
-[Source](https://github.com/MOPELotus/ModernUI-MC-Lumen) · [Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues) · [Releases](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [普通版 / MiSans 版说明](docs/font-editions.md)
+[源码](https://github.com/MOPELotus/ModernUI-MC-Lumen) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues) · [发行页面](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [更新记录](changelogs.md)
 
-The mod ID `modernui`, resource namespace, Java packages, API and existing `config/ModernUI/` paths remain unchanged for compatibility. Install one edition at a time, replacing the original JAR.
+## 功能
 
-### Description
-This fork builds on **Modern UI for Minecraft**, a Minecraft mod based on
-[ModernUI Framework](https://github.com/BloCamLimb/ModernUI) (a cross-platform framework to
-build rich desktop applications on top of JDK) and its extensions.  
+- 为 Minecraft 提供 ModernUI 界面框架、控件、主题及模组开发接口。
+- 为原版 GUI 提供 Unicode 文字布局、字体回退、抗锯齿及可配置的文字阴影、字号和双向文字处理。
+- 提供圆角或直角 tooltip、标题分隔与居中、边框和背景颜色、长内容移动等设置。
+- 提供界面背景模糊、淡入、窗口模式、失焦时的帧率限制，以及失焦或最小化时的音量设置。
+- 提供 Unicode 编辑、撤销与重做、聊天 emoji 短代码，以及本地音乐播放、进度与音量控制和频谱界面。
+- 提供 GUI 缩放滑块、列表平滑滚动、加载提示音，以及打开背包时暂停单人游戏的选项。
+- NeoForge 提供 C 键缩放；Fabric 不提供这一功能。
 
-This project provides ModernUI bootstrap program in Minecraft environment, allowing ModernUI-based applications
-to run *natively* in Minecraft. It also provides Modding API based on Forge/NeoForge/Fabric
-to make powerful Graphical User Interface in Minecraft.
+Minecraft 原生 GUI 的彩色 emoji 与 Core 控件的 emoji 渲染能力不同：Core TextView、Canvas 和输入控件的 emoji 渲染仍受上游实现限制。Core TextView 的自动 MARQUEE 也不是已完成的功能；外部驱动的 Canvas 与原生 GUI 文字滚动应按实际绘制调用使用。
 
-This Mod also includes a powerful text layout engine and text rendering system designed for Minecraft.
-This engine allows Minecraft and Mods based on Vanilla GUI system to enjoy a modern text system similar
-to ModernUI framework without modifying their code. It provides appropriate methods for processing Unicode
-text and gives you more readable text in any scale, in 2D/3D. In details:
-* Real-time preview and reload TrueType/OpenType fonts
-* A better font fallback implementation
-* Anti-aliasing text and FreeType font hinting
-* Use improved SDF text rendering in 2D/3D (also use batch rendering)
-* Compute exact font size in device space for native glyph rendering
-* Use Google Noto Color Emoji and support all the Unicode 16.0 Emoji
-* Configurable bidirectional text heuristic algorithm
-* Configurable text shadow and raw font size
-* Unicode line breaking and CSS line-break & word-break
-* Fast, exact and asynchronous Unicode text layout computation
-* Faster and more memory efficient rectangle packing algorithm for glyphs
-* Use real alpha mask texture (1 byte-per-pixel, whereas Minecraft is 4 bpp)
-* Many optimizations for text rendering, multiplying the performance of
-  GUI text rendering, Sign/Glowing Sign text rendering, greatly improving framerate,
-  significantly reducing object allocations and lowering GC pressure.
-* Compatible with OptiFine, Sodium (Rubidium), Iris (Oculus) and many mods
-* Compatible with Minecraft's JSON font definition (bitmap fonts, TTF fonts)
+## 安装与字体版本
 
-Additionally, this Mod provides many utilities which improve game performance and gaming experience. Currently, we have:
-* Changing screen background color
-* Gaussian blur to screen backdrop image
-* Fade-in animation to screen background
-* More window modes: Fullscreen (borderless), Maximized (borderless)
-* Framerate limit and master volume fading on window inactive (out of focus) and minimized
-* Pausing single-player game when Inventory is open
-* Changing GUI scale option to Slider and providing hint text
-* Playing a "Ding" sound when Minecraft loads and reaches the Main Menu
-* Enabling smooth scrolling in Vanilla's Selection List and Forge's Scroll Panel
-* Pressing "C" to Zoom on NeoForge, as in OptiFine
-* Undo/Redo and Unicode word iterator for all text fields
-* Playing local music, allowing to seek and view spectrum
-* Support Discord/Slack/GitHub/IamCal/JoyPixels emoji shortcodes in Chatting
-* A fancy tooltip style
-  + Choose rounded border or normal border (with anti-aliasing)
-  + Add title break and control title line spacing
-  + Center the title line, support RTL layout direction
-  + Exactly position the tooltip to pixel grid (smooth movement)
-  + Change background color and border color (with gradient and animation)
+选择匹配 Minecraft、加载器和字体版本的一个最终 JAR。两版使用相同的模组 ID `modernui`，每次只安装其中一版，切换时替换原 JAR。
 
-You can think of this project as a bridge/service layer, along with several improvements and extensions specifically
-made for Minecraft. Applications (or program fragments) you develop with ModernUI can run independently of Minecraft,
-or inside Minecraft — via this Mod but without any code changes. Other Minecraft Mods based on Minecraft Vanilla
-can also benefit from this Mod.
+- **普通版（standard）**：使用 Inter 和思源黑体等默认字体，提供首选字体、回退字体和字体注册设置。
+- **MiSans 版（misans）**：使用 MiSans、MiSans Latin、MiSans TC 与 MiSans L3。缺少所需字体时显示许可及安装入口，由用户选择下载；支持九档字重。
 
-If you want to develop mods — especially ones with feature-rich interfaces — it's recommended to build on the
-**ModernUI framework** (instead of just putting ModernUI-MC in your mod list). You may also implement a hybrid UI:
-part of it based on ModernUI, and part of it on the Vanilla GUI system (which will be enhanced by ModernUI-MC,
-though these enhancements can be disabled).
+两版的配置、字体安装和实际字重映射见[字体版本说明](docs/font-editions.md)。模组 ID、资源命名空间、Java 包、API 和既有 `config/ModernUI/` 路径保持兼容。
 
-### Maintained Minecraft branches
+## 维护分支
 
-All branches below are maintained by this fork. These are maintenance targets, not a claim that every loader/backend/version combination has passed runtime acceptance. Exact compatibility ranges and current test results are being checked per branch; consult that branch’s metadata and validation notes before installing.
+以下八个分支均在维护。维护目标不代表所有版本、加载器和渲染后端组合已完成运行验收；具体安装范围以对应分支元数据为准。
 
-| Branch | Minecraft maintenance target | Status |
+| 分支 | Minecraft 维护范围 | 状态 |
 | --- | --- | --- |
-| `1.21.1` | 1.21–1.21.1 | Maintained |
-| `1.21.6` | 1.21.6 | Maintained |
-| `1.21.8` | 1.21.7–1.21.8 | Maintained |
-| `1.21.9` | 1.21.9 | Maintained |
-| `1.21.10` | 1.21.10 | Maintained |
-| `1.21.11` | 1.21.11 | Maintained |
-| `26.1` | 26.1 family | Maintained |
-| `26.2` | 26.2 | Maintained |
-| `master` | 26.3 | Maintained |
+| `1.21.1` | 1.21–1.21.1 | 维护中 |
+| `1.21.8` | 1.21.6–1.21.8 | 维护中 |
+| `1.21.9` | 1.21.9 | 维护中 |
+| `1.21.10` | 1.21.10 | 维护中 |
+| `1.21.11` | 1.21.11 | 维护中 |
+| `26.1` | 26.1–26.1.2 | 维护中 |
+| `26.2` | 26.2 | 维护中 |
+| `master` | 26.3 | 维护中 |
 
-`master` tracks Minecraft 26.3. Version branches retain their own build toolchains and loader dependencies. A maintenance target does not imply a shared JAR across all listed Minecraft versions.
+## 1.21.9–1.21.11 加载器与后端
 
-### Minecraft 1.21.9–1.21.11 backports
-These branches backport the current UI and text fixes to Minecraft 1.21.9, 1.21.10 and 1.21.11. Each branch targets its own Minecraft version and builds Fabric and NeoForge artifacts, in standard and MiSans editions. Use the matching Minecraft and loader version; install one edition at a time.
+这三个分支分别构建各自 Minecraft 版本的 Fabric、NeoForge 普通版和 MiSans 版。不要跨版本使用成品。
 
-| Minecraft | Fabric OpenGL | NeoForge OpenGL | Fabric Vulkan package | NeoForge Vulkan package |
+| Minecraft | Fabric OpenGL | NeoForge OpenGL | Fabric Vulkan 依赖 | NeoForge Vulkan 依赖 |
 | --- | --- | --- | --- | --- |
-| 1.21.9 | Targeted | Targeted | VulkanMod 0.6.6 | No matching published package |
-| 1.21.10 | Targeted | Targeted | VulkanMod 0.6.6 | No matching published package |
-| 1.21.11 | Targeted | Targeted | VulkanMod 0.6.8 | VulkanMod Reforged 0.3.0-ALPHA |
+| 1.21.9 | 支持目标 | 支持目标 | VulkanMod 0.6.6 | 无对应发行包 |
+| 1.21.10 | 支持目标 | 支持目标 | VulkanMod 0.6.6 | 无对应发行包 |
+| 1.21.11 | 支持目标 | 支持目标 | VulkanMod 0.6.8 | VulkanMod Reforged 0.3.0-ALPHA |
 
-Vulkan support uses the external VulkanMod backend and its Vulkan 1.2 device. VulkanMod 0.6.6's package metadata supports both 1.21.9 and 1.21.10 despite its `1.21.10` filename. The table describes the integration targets and available packages, not completed runtime acceptance. NeoForge Vulkan combinations without a matching package are outside the runnable matrix. Fabric does not provide the C-key zoom feature; that feature is specific to NeoForge.
+Vulkan 集成使用外部 VulkanMod 后端及其 Vulkan 1.2 设备。0.6.6 的包元数据同时支持 1.21.9 和 1.21.10，文件名包含 `1.21.10` 不代表只支持该版本。缺少对应依赖包的组合不列为可运行组合。此表说明兼容目标和依赖，不宣称完整运行矩阵已经通过。
 
-Build with JDK 21. Give the 1.21.9 and 1.21.10 branches separate `GRADLE_USER_HOME` directories: their Loom layered-mapping caches must not be shared between those Minecraft versions. A per-version cache for all three branches is recommended. From the corresponding branch checkout:
+## 构建
+
+本分支目标为 **Minecraft 1.21.9**，使用 **JDK 21**，默认构建 Fabric 和 NeoForge。1.21.9 与 1.21.10 使用不同 Loom 分层映射缓存，必须分配独立 `GRADLE_USER_HOME`；建议所有版本按分支隔离缓存。
 
 ```sh
 export JAVA_HOME=/path/to/jdk-21
 export PATH="$JAVA_HOME/bin:$PATH"
-# Read the version from this checkout so separate worktrees use separate caches.
 mc_version=$(sed -n 's/^minecraft_version=//p' gradle.properties)
 export GRADLE_USER_HOME="$HOME/.gradle-modernui-$mc_version"
 ./gradlew clean build -Pfont_variant=standard
+# 先复制普通版成品，再清理构建另一版。
 ./gradlew clean build -Pfont_variant=misans
 ```
 
-Copy the first build's final `*-universal.jar` files before the second `clean`; the MiSans files end in `-universal-misans.jar`. Final remapped artifacts are under `fabric/build/libs` and `neoforge/build/libs`; use these instead of `-shadow.jar` or development JARs. See [font editions](docs/font-editions.md) for configuration migration and packaging details.
-
-Version-specific tooltip uniform layouts, input signatures and sampling adaptations are documented in [backport API notes](docs/backport-api-notes.md).
-
-
-### License
-* Modern UI for Minecraft
-  - Copyright (C) 2019-2026 BloCamLimb et al.
-  - [![License](https://img.shields.io/badge/License-LGPL--3.0--or--later-blue.svg?style=flat-square)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
-* Additional Assets
-  - [source-han-sans](https://github.com/adobe-fonts/source-han-sans) by Adobe, licensed under the OFL-1.1
-  - [jetbrains-mono](https://www.jetbrains.com/lp/mono/) by JetBrains, licensed under the OFL-1.1
-  - [inter](https://github.com/rsms/inter) by RSMS, licensed under the OFL-1.1
-    + Modern UI for Minecraft contains a modified version of Inter font family, the original license and
-      copyright notice were retained in the font file
-
-### Building ModernUI Lumen
-
-This branch targets Minecraft **1.21.9** and uses **JDK 21**. The Gradle wrapper and dependencies in this checkout are the build source of truth. The default platforms are Fabric and NeoForge.
-
-```sh
-./gradlew clean build -Pfont_variant=standard
-# Collect the standard JARs before cleaning for the other edition.
-./gradlew clean build -Pfont_variant=misans
-```
-
-Final shaded JARs are under each loader’s `build/libs/`:
+成品位于 `fabric/build/libs` 与 `neoforge/build/libs`：
 
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
 
-See [font editions](docs/font-editions.md) for configuration and artifact checks. CI builds both editions and uploads `modernui-lumen-release-jars`; a normal branch push does not publish a release. Releases and tags require a separate explicit publishing instruction.
+安装最终重映射成品，避免使用 `-shadow.jar` 或开发用 JAR。CI 上传 `modernui-lumen-release-jars` 构建产物；普通分支推送不会发布 Release。标签推送或手动运行工作流时填写 `tag` 会创建或更新 GitHub Release。
 
-The stable Gradle project/task names (`ModernUI-Fabric`, `ModernUI-NeoForge`, `ModernUI-Forge`) and Maven group/coordinates remain compatible. This fork does not claim that its new version is published to upstream’s Maven repository. Upstream development documentation and libraries remain available in [ModernUI](https://github.com/BloCamLimb/ModernUI) and [ModernUI-MC](https://github.com/BloCamLimb/ModernUI-MC).
+稳定 Gradle 项目和任务名（如 `ModernUI-Fabric`、`ModernUI-NeoForge`）以及 Maven 坐标保持兼容；历史 Forge 项目名不表示本分支维护 Forge 成品。本 Fork 不声称新版本已发布到上游 Maven 仓库。接口参数、uniform 布局与检查任务以对应分支源码为准。构建和 CPU 检查不能替代物理显卡上的界面与交互验收。
 
-### Historical upstream screenshots (not acceptance evidence for this fork)
-Center Screen  
-![2024-03-30_16.17.11.png](https://cdn.modrinth.com/data/3sjzyvGR/images/2571f7372b1f9bbb116c118f29a93255338f4e41.png)
-New Tooltip  
-![new tooltip.png](https://s2.loli.net/2024/03/30/VhyoFPAD2Js1HWO.png)
-Markdown  
-![markdown](https://cdn.modrinth.com/data/3sjzyvGR/images/989a77ba61c62ff580a30dcf158e391080b949bd.png)  
-Enhanced Texts for Minecraft Vanilla  
-![fast text](https://cdn.modrinth.com/data/3sjzyvGR/images/d27f5d77555fd3f45392f5b8eb28efcb80f0b677.png)
-![new4](https://s2.loli.net/2022/03/06/TM5dVKnpqNvDiJH.png)  
-Navigation  
-![new5](https://s2.loli.net/2022/03/06/hwAoHTgZNWBvEdq.png)  
-Graphics  
-![new3.gif](https://i.loli.net/2021/09/27/yNsL98XtpKP7UVA.gif)  
-Audio visualization  
-![new2](https://i.loli.net/2021/09/24/TJjyzd6oOf5pPcq.png)  
-Out-of-date widgets  
-![a](https://i.loli.net/2020/05/15/fYAow29d4JtqaGu.png)
-![b](https://i.loli.net/2020/04/10/LDBFc1qo5wtnS8u.png)
+## 许可证与归属
 
-Minecraft 1.21.9 stores texture filtering on each atlas: outline/SDF A8 atlases use linear minification and magnification for smooth fractional scrolling, while bitmap and emoji filtering retain their existing settings. Unlike the 1.21.11 per-run sampler path, these versions keep one stable texture-level setting across all runs sharing an atlas.
+Modern UI for Minecraft：Copyright (C) 2019–2026 BloCamLimb et al.，采用 [LGPL-3.0-or-later](https://www.gnu.org/licenses/lgpl-3.0.en.html)。本仓库的许可证原文及各资源版权声明适用于相应代码和资源。
+
+附加字体包括 Adobe 的 [Source Han Sans](https://github.com/adobe-fonts/source-han-sans)、JetBrains 的 [JetBrains Mono](https://www.jetbrains.com/lp/mono/) 和 RSMS 的 [Inter](https://github.com/rsms/inter)，采用 SIL OFL。随附修改版 Inter 保留原许可证及版权声明。MiSans 的许可与下载来源见[字体说明](docs/font-editions.md)。

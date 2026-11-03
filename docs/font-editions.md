@@ -1,59 +1,40 @@
-# ModernUI Lumen：普通版与 MiSans 版
+[CN](font-editions.md) | [EN](font-editions.en.md)
 
-两版都保留当前 Minecraft 移植、走马灯低速抖动、裁剪和输入修复。
+# 字体版本
 
-| 版本 | 普通版 | MiSans 版 | 每次构建总数 |
-| --- | --- | --- | --- |
-| Minecraft 1.21.9 分支 | Fabric、NeoForge | Fabric、NeoForge | 4 |
-| Minecraft 1.21.10 分支 | Fabric、NeoForge | Fabric、NeoForge | 4 |
-| Minecraft 1.21.11 分支 | Fabric、NeoForge | Fabric、NeoForge | 4 |
+选择与 Minecraft 和加载器匹配的一个字体版本。两版使用相同的模组 ID `modernui`，每次只安装其中一版；切换时替换原 JAR。
 
-模组版本为 `3.13.0.10`，不再带 `-marquee.1`。JAR 名称格式为 `ModernUI-Lumen-{Loader}-{Minecraft}-{Version}-universal[-misans].jar`。普通版文件名以 `-universal.jar` 结尾；MiSans 版以 `-universal-misans.jar` 结尾，模组列表显示为 `ModernUI Lumen (MiSans)`。两版的模组 ID 都是 `modernui`，每次只安装其中一版，切换时替换原 JAR。
-
-## 功能和配置
-
-- **普通版**：恢复 Inter / 思源黑体等默认字体、首选字体选择器、回退字体列表和字体注册列表，保存后尊重用户选择。JAR 不包含 MiSans 安装界面和下载器，不要求安装 MiSans。
-- **MiSans 版**：保留 MiSans 固定字体组合、100–900 字重控制、缺失字体检查、安装界面、用户点击下载后从小米下载四套字体/28 个文件、校验、重试、许可及重启提示。已有字体无需重新下载。
-- 两版分别使用 `config/ModernUI/client-standard.toml` 和 `config/ModernUI/client-misans.toml`。该版配置首次创建时复制原 `client.toml`，原文件保留；已有该版配置时不覆盖。
-- 普通版首次导入旧配置时，仅将旧 MiSans 完整固定字体组合恢复为普通默认字体。其他设置和用户自定义的字体组合保留。MiSans 版继续执行其固定字体策略。
-- `text.toml`、`common.toml` 和 bootstrap 配置仍然共用；下载的字体仍存放在 `config/ModernUI/fonts`。
-
-## MiSans 字重档位
-
-100–900 是从细到粗的九个离散选择档位，不是字体文件的 OS/2 原始字重数值。默认 400 档仍使用 Regular。主字体 MiSans、MiSans Latin 与 MiSans TC 使用相同的档位映射；MiSans L3 固定使用 Regular，不参与字重切换。
-
-| 选择档位 | 实体字体风格 | 官方 OS/2 `usWeightClass` |
+| 版本 | 当前字体策略 | 游戏内名称 |
 | --- | --- | --- |
-| 100 | Thin | 150 |
-| 200 | ExtraLight | 200 |
-| 300 | Light | 250 |
-| 400（默认） | Regular | 330 |
-| 500 | Medium | 380 |
-| 600 | Demibold | 450 |
-| 700 | Semibold | 520 |
-| 800 | Bold | 630 |
-| 900 | Heavy | 700 |
+| 普通版 `standard` | 默认首选 Inter Frozen Medium，使用思源黑体等回退字体；提供首选、回退和字体注册设置 | ModernUI Lumen |
+| MiSans 版 `misans` | 使用 MiSans、MiSans Latin、MiSans TC 和 MiSans L3，提供字重与字体安装入口 | ModernUI Lumen (MiSans) |
 
-此表依据从小米官方四套字体包实际取得的字体 name 表及 OS/2 元数据。此前 600/700 档的 Semibold/Demibold 顺序相反，会在增大档位时变细；现按实际粗细递增排列。回归检查使用仅含字体名称、原始字重、SHA-256 及官方来源地址的元数据夹具，不随仓库提交字体或许可文件。
+## MiSans 安装与字重
 
-## 构建与取包
+缺少所需字体时，MiSans 版显示安装页面。请先查看[小米官方字体许可页面](https://hyperos.mi.com/font/zh/download/)，再决定是否点击下载。安装器从小米官方来源下载四套字体包，安装 28 个 TTF 文件，并保存许可 PDF 和下载记录。已有完整所需字体时可直接使用。
 
-GitHub Actions 的 **Build and Release** 每次按普通版、MiSans 版分别执行 `clean build`，运行回归检查并检查最终 JAR 的版本、配置文件名、安装器隔离和加载器配对，合并上传到 `modernui-lumen-release-jars` artifact。普通分支推送只产出 artifact；标签或显式填写 release tag 才会发布 GitHub Release。
+下载失败可重试；安装完成后按提示退出并重启客户端。字体的使用和分发遵循其许可，模组许可证不替代字体许可。
 
-本地构建使用 JDK 21。1.21.9 与 1.21.10 必须使用独立的 `GRADLE_USER_HOME`，避免不同 Minecraft 版本共用 Loom 分层映射缓存；建议三个分支均按版本隔离。
+MiSans、MiSans Latin 和 MiSans TC 提供以下九档字重，默认 **400（Regular）**；MiSans L3 固定使用 Regular。
 
-```sh
-export JAVA_HOME=/path/to/jdk-21
-export PATH="$JAVA_HOME/bin:$PATH"
-mc_version=$(sed -n 's/^minecraft_version=//p' gradle.properties)
-export GRADLE_USER_HOME="$HOME/.gradle-modernui-$mc_version"
-./gradlew clean build -Pfont_variant=standard
-# 先复制普通版最终 JAR，再执行下一次 clean。
-./gradlew clean build -Pfont_variant=misans
-```
+| 档位 | 风格 |
+| --- | --- |
+| 100 | Thin |
+| 200 | ExtraLight |
+| 300 | Light |
+| 400 | Regular |
+| 500 | Medium |
+| 600 | Demibold |
+| 700 | Semibold |
+| 800 | Bold |
+| 900 | Heavy |
 
-最终重映射 JAR 位于 `fabric/build/libs` 和 `neoforge/build/libs`。安装 `-universal.jar` 或 `-universal-misans.jar`，不安装 `-shadow.jar` 或开发用 JAR。
+## 配置与目录
 
-OpenGL 是两种加载器的目标后端。Fabric 的 Vulkan 组合使用 VulkanMod 0.6.6（1.21.9/1.21.10）或 0.6.8（1.21.11）；NeoForge 目前只有 1.21.11 的 VulkanMod Reforged 0.3.0-ALPHA 对应包。缺少对应包的 NeoForge 1.21.9/1.21.10 Vulkan 组合不列为可运行组合。以上是构建与兼容目标说明，不代表实际运行验收已经完成。
+- 普通版：`config/ModernUI/client-standard.toml`。
+- MiSans 版：`config/ModernUI/client-misans.toml`。
+- 字体目录：`config/ModernUI/fonts`。
 
-省略 `font_variant` 时构建普通版。构建参数决定版本，运行时配置不会开启普通版的 MiSans 下载器。切换构建参数会重新生成常量并重新编译。
+`text.toml`、`common.toml` 和 bootstrap 配置由两版共用。普通版的自定义字体设置与 MiSans 版的固定字体组合是不同策略。
+
+构建环境、成品文件名及渲染后端依赖见 [README](../README.md)。
