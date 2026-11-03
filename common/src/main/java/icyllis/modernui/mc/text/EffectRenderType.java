@@ -28,6 +28,7 @@ import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.mc.VulkanFontTexture;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
@@ -42,6 +43,7 @@ import java.util.Objects;
 public class EffectRenderType extends RenderType {
 
     private static GLTexture WHITE;
+    private static VulkanFontTexture WHITE_VULKAN;
 
     private static final EffectRenderType TYPE;
     private static final EffectRenderType SEE_THROUGH_TYPE;
@@ -50,15 +52,15 @@ public class EffectRenderType extends RenderType {
     static {
         TYPE = new EffectRenderType("modern_text_effect", 256, () -> {
             TextRenderType.VANILLA_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, WHITE.getHandle());
+            RenderSystem.setShaderTexture(0, getWhiteTextureId());
         }, () -> TextRenderType.VANILLA_STATES.forEach(RenderStateShard::clearRenderState));
         SEE_THROUGH_TYPE = new EffectRenderType("modern_text_effect_see_through", 256, () -> {
             TextRenderType.SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, WHITE.getHandle());
+            RenderSystem.setShaderTexture(0, getWhiteTextureId());
         }, () -> TextRenderType.SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
         POLYGON_OFFSET_TYPE = new EffectRenderType("modern_text_effect_polygon_offset", 256, () -> {
             TextRenderType.POLYGON_OFFSET_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, WHITE.getHandle());
+            RenderSystem.setShaderTexture(0, getWhiteTextureId());
         }, () -> TextRenderType.POLYGON_OFFSET_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
@@ -70,14 +72,14 @@ public class EffectRenderType extends RenderType {
     @RenderThread
     @Nonnull
     public static EffectRenderType getRenderType(boolean seeThrough, boolean polygonOffset) {
-        if (WHITE == null)
-            makeWhiteTexture();
+        ensureWhiteTexture();
         return polygonOffset ? POLYGON_OFFSET_TYPE : seeThrough ? SEE_THROUGH_TYPE : TYPE;
     }
 
     @RenderThread
     @Nonnull
     public static EffectRenderType getRenderType(Font.DisplayMode mode) {
+        ensureWhiteTexture();
         return switch (mode) {
             case SEE_THROUGH -> SEE_THROUGH_TYPE;
             case POLYGON_OFFSET -> POLYGON_OFFSET_TYPE;
@@ -87,12 +89,43 @@ public class EffectRenderType extends RenderType {
 
     public static void clear() {
         WHITE = RefCnt.move(WHITE);
+        if (WHITE_VULKAN != null) {
+            WHITE_VULKAN.close();
+            WHITE_VULKAN = null;
+        }
+    }
+
+    private static void ensureWhiteTexture() {
+        if (WHITE == null && WHITE_VULKAN == null) {
+            makeWhiteTexture();
+        }
+    }
+
+    private static int getWhiteTextureId() {
+        // A retained RenderType can be used again after a resource reload.
+        ensureWhiteTexture();
+        return WHITE_VULKAN != null ? WHITE_VULKAN.getTextureId() : WHITE.getHandle();
     }
 
     private static void makeWhiteTexture() {
         ImmediateContext context = Core.requireImmediateContext();
         final int width = 8, height = 8;
         final int colorType = ColorInfo.CT_RGBA_8888;
+        if (!(context.getDevice() instanceof GLDevice)) {
+            VulkanFontTexture texture = VulkanFontTexture.create(width, height,
+                    Engine.MASK_FORMAT_ARGB, false, false);
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                ByteBuffer pixels = stack.malloc(width * height * 4);
+                MemoryUtil.memSet(pixels, 0xff);
+                texture.upload(0, 0, width, height, MemoryUtil.memAddress(pixels));
+                texture.generateMipmaps(); // Also transitions a non-mipmapped image for sampling.
+                WHITE_VULKAN = texture;
+            } catch (RuntimeException | Error failure) {
+                texture.close();
+                throw failure;
+            }
+            return;
+        }
         ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
                 Engine.ImageType.k2D,
                 colorType,

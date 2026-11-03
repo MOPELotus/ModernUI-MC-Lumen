@@ -346,7 +346,7 @@ public class GLFontAtlas implements AutoCloseable {
     }
 
     private VulkanFontTexture createVulkanTexture() {
-        boolean linear = mMaskFormat == Engine.MASK_FORMAT_ARGB && mLinearSampling;
+        boolean linear = mLinearSampling && (sLinearSamplingA8Atlas || mMaskFormat == Engine.MASK_FORMAT_ARGB);
         return VulkanFontTexture.create(mWidth, mHeight, mMaskFormat, mLinearSampling, linear);
     }
 

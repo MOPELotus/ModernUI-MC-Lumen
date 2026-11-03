@@ -712,8 +712,11 @@ public abstract class UIManager implements LifecycleOwner {
         if (surface == null) {
             return;
         }
-        @RawPtr
-        GLTexture layer = (GLTexture) surface.getImage();
+        if (!(surface.getImage() instanceof @RawPtr GLTexture layer)) {
+            // The framework's developer-only UI readback currently uses OpenGL.
+            surface.unref();
+            return;
+        }
         final int width = layer.getWidth();
         final int height = layer.getHeight();
         final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
