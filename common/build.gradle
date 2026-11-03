@@ -42,6 +42,7 @@ test {
 tasks.register('generateFontVariant') {
     def output = layout.buildDirectory.dir('generated/sources/fontVariant/java')
     inputs.property('fontVariant', rootProject.fontVariant)
+    inputs.property('fontVariantDisplayName', rootProject.fontVariantDisplayName)
     outputs.dir(output)
     doLast {
         def target = output.get().file('icyllis/modernui/mc/FontVariant.java').asFile
@@ -52,6 +53,7 @@ tasks.register('generateFontVariant') {
 public final class FontVariant {
     public static final boolean MISANS = ${rootProject.fontVariant == 'misans'};
     public static final String NAME = "${rootProject.fontVariant}";
+    public static final String DISPLAY_NAME = "${rootProject.fontVariantDisplayName}";
     public static final String CLIENT_CONFIG_NAME = "client-${rootProject.fontVariant}.toml";
     private FontVariant() {}
 }
