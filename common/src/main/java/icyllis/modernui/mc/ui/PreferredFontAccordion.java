@@ -25,7 +25,6 @@ import icyllis.modernui.core.Context;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.Config;
-import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.view.ContextMenu;
 import icyllis.modernui.view.Gravity;
 import icyllis.modernui.view.MenuItem;
@@ -248,18 +247,17 @@ public class PreferredFontAccordion implements View.OnClickListener,
     }
 
     private void updateSpinnerSelection() {
-        if (mSpinner == null) {
+        if (mSpinner == null || mAdapter == null) {
             return;
         }
-        FontFamily first = ModernUIClient.getInstance().getFirstFontFamily();
-        if (first != null) {
-            String firstName = first.getFamilyName();
-            for (int i = 1; i < mAdapter.getCount(); i++) {
-                var candidate = mAdapter.getItem(i);
-                if (candidate.rootName.equalsIgnoreCase(firstName)) {
-                    mSpinner.setSelection(i);
-                    return;
-                }
+        // The resolved family can also belong to a custom font file. Selecting
+        // that system family here would asynchronously replace the saved path.
+        String configuredValue = Config.CLIENT.mFirstFontFamily.get();
+        for (int i = 1; i < mAdapter.getCount(); i++) {
+            var candidate = mAdapter.getItem(i);
+            if (candidate.rootName.equals(configuredValue)) {
+                mSpinner.setSelection(i);
+                return;
             }
         }
         mSpinner.setSelection(0);
