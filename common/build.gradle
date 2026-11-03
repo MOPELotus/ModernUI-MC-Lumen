@@ -164,6 +164,25 @@ tasks.register('checkBackgroundAudioControl', JavaExec) {
 }
 check.dependsOn checkBackgroundAudioControl
 
+tasks.register('checkWindowMode', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.WindowModeCheck'
+    doFirst {
+        def minecraftJar = configurations.compileClasspath.files.find { jar ->
+            jar.name.endsWith('.jar') && new java.util.jar.JarFile(jar).withCloseable { archive ->
+                archive.getJarEntry('net/minecraft/client/Minecraft.class') != null
+            }
+        }
+        if (minecraftJar == null) {
+            throw new GradleException('Missing actual Minecraft JAR for window transition verification')
+        }
+        setArgs([minecraftJar.absolutePath])
+    }
+}
+check.dependsOn checkWindowMode
+
 tasks.register('checkClampingScrollView', JavaExec) {
     group = 'verification'
     dependsOn testClasses

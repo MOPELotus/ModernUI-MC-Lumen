@@ -478,6 +478,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        window.updateFullscreenIfChanged();
                         GLFW.glfwRestoreWindow(window.handle());
                         GLFW.glfwSetWindowAttrib(window.handle(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
@@ -498,6 +499,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        window.updateFullscreenIfChanged();
                         GLFW.glfwRestoreWindow(window.handle());
                         GLFW.glfwSetWindowAttrib(window.handle(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
@@ -507,6 +509,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        window.updateFullscreenIfChanged();
                         GLFW.glfwRestoreWindow(window.handle());
                         GLFW.glfwSetWindowAttrib(window.handle(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
@@ -516,6 +519,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        window.updateFullscreenIfChanged();
                         GLFW.glfwSetWindowAttrib(window.handle(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
                         GLFW.glfwRestoreWindow(window.handle());
@@ -524,6 +528,7 @@ public final class Config {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        window.updateFullscreenIfChanged();
                         GLFW.glfwSetWindowAttrib(window.handle(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
                         GLFW.glfwRestoreWindow(window.handle());
