@@ -1,8 +1,15 @@
-# Modern UI for Minecraft
-[![CurseForge](http://cf.way2muchnoise.eu/full_352491_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/modern-ui)
-[![CurseForge](http://cf.way2muchnoise.eu/versions/For%20Minecraft_352491_all.svg)](https://www.curseforge.com/minecraft/mc-mods/modern-ui)
+# ModernUI Lumen
+
+**ModernUI Lumen** is MOPELotus’s independently maintained fork of [Modern UI for Minecraft](https://github.com/BloCamLimb/ModernUI-MC), originally created by **BloCamLimb**. It is based on the [ModernUI framework](https://github.com/BloCamLimb/ModernUI) and retains the upstream authors’ credits and licenses. This fork is not an official upstream release.
+
+本 Fork 由 **MOPELotus** 维护，原作者为 **BloCamLimb**。当前模组版本为 **3.13.0.10**。游戏内显示名为 **ModernUI Lumen**；MiSans 版显示为 **ModernUI Lumen (MiSans)**。
+
+[Source](https://github.com/MOPELotus/ModernUI-MC-Lumen) · [Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues) · [Releases](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [普通版 / MiSans 版说明](docs/font-editions.md)
+
+The mod ID `modernui`, resource namespace, Java packages, API and existing `config/ModernUI/` paths remain unchanged for compatibility. Install one edition at a time, replacing the original JAR.
+
 ### Description
-**Modern UI for Minecraft**, a.k.a ModernUI-MC, is a Minecraft Mod that is based on
+This fork builds on **Modern UI for Minecraft**, a Minecraft mod based on
 [ModernUI Framework](https://github.com/BloCamLimb/ModernUI) (a cross-platform framework to
 build rich desktop applications on top of JDK) and its extensions.  
 
@@ -42,7 +49,7 @@ Additionally, this Mod provides many utilities which improve game performance an
 * Changing GUI scale option to Slider and providing hint text
 * Playing a "Ding" sound when Minecraft loads and reaches the Main Menu
 * Enabling smooth scrolling in Vanilla's Selection List and Forge's Scroll Panel
-* Pressing "C" to Zoom that is the same as OptiFine
+* Pressing "C" to zoom on branches/loaders that provide the upstream zoom extension (not Fabric)
 * Undo/Redo and Unicode word iterator for all text fields
 * Playing local music, allowing to seek and view spectrum
 * Support Discord/Slack/GitHub/IamCal/JoyPixels emoji shortcodes in Chatting
@@ -63,13 +70,52 @@ If you want to develop mods — especially ones with feature-rich interfaces —
 part of it based on ModernUI, and part of it on the Vanilla GUI system (which will be enhanced by ModernUI-MC,
 though these enhancements can be disabled).
 
-Releases for Minecraft Mod are available on [CurseForge](https://www.curseforge.com/minecraft/mc-mods/modern-ui) and
-[Modrinth](https://modrinth.com/mod/modern-ui).  
-For historical reasons, issues should go to Core Repo's [Issue Tracker](https://github.com/BloCamLimb/ModernUI/issues). 
-If you have any questions, feel free to join our [Discord](https://discord.gg/kmyGKt2) server.
+### Maintained Minecraft branches
+
+All branches below are maintained by this fork. These are maintenance targets, not a claim that every loader/backend/version combination has passed runtime acceptance. Exact compatibility ranges and current test results are being checked per branch; consult that branch’s metadata and validation notes before installing.
+
+| Branch | Minecraft maintenance target | Status |
+| --- | --- | --- |
+| `1.21.1` | 1.21–1.21.1 | Maintained |
+| `1.21.8` | 1.21.6–1.21.8 | Maintained; shared JAR candidate |
+| `1.21.9` | 1.21.9 | Maintained |
+| `1.21.10` | 1.21.10 | Maintained |
+| `1.21.11` | 1.21.11 | Maintained |
+| `26.1` | 26.1 family | Maintained |
+| `26.2` | 26.2 | Maintained |
+| `master` | 26.3 | Maintained |
+
+`master` tracks Minecraft 26.3. Version branches retain their own build toolchains and loader dependencies. A maintenance target does not imply a shared JAR across all listed Minecraft versions.
+
+### Known compatibility issues / 已知兼容性问题
+
+#### Remove Reloading Screen — Minecraft 26.3 (Fabric)
+
+Players have reported a startup crash with ModernUI and Remove Reloading Screen on Minecraft 26.3 / Fabric
+when Remove Reloading Screen uses `hideOverlays = "ALL"`. The error reports missing shader files even though
+they are present in the ModernUI JAR. In the reported environment, changing the following setting in
+**Remove Reloading Screen's configuration** and restarting the game resolved the crash:
+
+```toml
+[global]
+    hideOverlays = "RELOADING"
+```
+
+Edit the existing `hideOverlays` entry under `[global]`; this is not a ModernUI setting.
+`RELOADING` keeps the initial loading overlay visible while hiding subsequent resource reload overlays.
+This is a configuration workaround based on a player's real-client investigation, not a code fix;
+the suspected resource initialization ordering issue has not been confirmed here.
+The report covers Fabric on 26.3; other Minecraft versions and loaders have not been verified for this issue.
+
+**中文：** Minecraft 26.3 / Fabric 同时安装 ModernUI 和 Remove Reloading Screen 时，后者使用
+`hideOverlays = "ALL"` 的配置可能导致启动崩溃，报错为找不到着色器文件，即使 JAR 内实际存在这些文件。
+据玩家实机排查，将 **Remove Reloading Screen 配置**中 `[global]` 下已有的 `hideOverlays` 改为
+`"RELOADING"`，保存并重启游戏即可规避：保留首次加载屏幕，仅隐藏后续资源重载屏幕。
+这是已反馈有效的配置规避方案；初始化时序原因仍属推测，尚无代码修复或其他版本、加载器的验证结论。
+
 ### License
 * Modern UI for Minecraft
-  - Copyright (C) 2019-2025 BloCamLimb et al.
+  - Copyright (C) 2019-2026 BloCamLimb et al.
   - [![License](https://img.shields.io/badge/License-LGPL--3.0--or--later-blue.svg?style=flat-square)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
 * Additional Assets
   - [source-han-sans](https://github.com/adobe-fonts/source-han-sans) by Adobe, licensed under the OFL-1.1
@@ -78,124 +124,26 @@ If you have any questions, feel free to join our [Discord](https://discord.gg/km
     + Modern UI for Minecraft contains a modified version of Inter font family, the original license and
       copyright notice were retained in the font file
 
-#### Gradle configuration
-You MUST use our Maven if you are in development environment, the version we publish to Maven is different
-from CurseForge and Modrinth.
-```groovy
-repositories {
-    maven {
-        name 'IzzelAliz Maven'
-        url 'https://maven.izzel.io/releases/'
-    }
-    // If you are on Fabric, uncomment this.
-    /*maven {
-        url 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
-        content {
-            includeGroup 'fuzs.forgeconfigapiport'
-        }
-    }*/
-}
-```
-##### ArchLoom / FabricLoom
-```groovy
-dependencies {
-  // If you are on Fabric, uncomment this and find a compatible FCAPI version.
-  // modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${fcapi_version}"
-  implementation "icyllis.modernui:ModernUI-Core:${modernui_version}"
-  // Modern UI core extensions
-  // Markdown (<=3.11.1) / Markflow (>=3.12.0) is required, others are optional
-  implementation "icyllis.modernui:ModernUI-Markflow:${modernui_version}"
-  // Choose one of Fabric or NeoForge
-  modImplementation("icyllis.modernui:ModernUI-Fabric:${minecraft_version}-${modernui_version}.+")
-}
-```
-##### ModDevGradle
-```groovy
-dependencies {
-  // Modern UI
-  implementation("icyllis.modernui:ModernUI-NeoForge:${minecraft_version}-${modernui_version}.+")
-  additionalRuntimeClasspath(compileOnly("icyllis.modernui:ModernUI-Core:${modernui_version}")) {
-    exclude group: "org.slf4j", module: "slf4j-api"
-    exclude group: "org.apache.logging.log4j", module: "log4j-core"
-    exclude group: "org.apache.logging.log4j", module: "log4j-api"
-    exclude group: "com.google.code.findbugs", module: "jsr305"
-    exclude group: "org.jetbrains", module: "annotations"
-    exclude group: "com.ibm.icu", module: "icu4j"
-    exclude group: "it.unimi.dsi", module: "fastutil"
-  }
-  // Modern UI core extensions
-  // Markdown (<=3.11.1) / Markflow (>=3.12.0) is required, others are optional
-  additionalRuntimeClasspath(compileOnly("icyllis.modernui:ModernUI-Markflow:${modernui_version}")) {
-    exclude group: "org.slf4j", module: "slf4j-api"
-    exclude group: "org.apache.logging.log4j", module: "log4j-core"
-    exclude group: "org.apache.logging.log4j", module: "log4j-api"
-    exclude group: "com.google.code.findbugs", module: "jsr305"
-    exclude group: "org.jetbrains", module: "annotations"
-    exclude group: "com.ibm.icu", module: "icu4j"
-    exclude group: "it.unimi.dsi", module: "fastutil"
-  }
-}
-```
-##### ForgeGradle 5
-```groovy
-configurations {
-    library
-    implementation.extendsFrom library
-}
-minecraft.runs.all {
-  lazyToken('minecraft_classpath') {
-    configurations.library.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
-  }
-}
-// Add this block if you have not MixinGradle (https://github.com/SpongePowered/MixinGradle):
-minecraft {
-  runs {
-    client {
-      property 'mixin.env.remapRefMap', 'true'
-      property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-    }
-    server {
-      property 'mixin.env.remapRefMap', 'true'
-      property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-    }
-    // apply to data if you have datagen
-  }
-  // You need to regenerate run configurations if you make any changes on this.
-}
-dependencies {
-    library("icyllis.modernui:ModernUI-Core:${modernui_version}") {
-      exclude group: "org.slf4j", module: "slf4j-api"
-      exclude group: "org.apache.logging.log4j", module: "log4j-core"
-      exclude group: "org.apache.logging.log4j", module: "log4j-api"
-      exclude group: "com.google.code.findbugs", module: "jsr305"
-      exclude group: "org.jetbrains", module: "annotations"
-      exclude group: "com.ibm.icu", module: "icu4j"
-      exclude group: "it.unimi.dsi", module: "fastutil"
-    }
-    // Modern UI core extensions
-    // Markdown (<=3.11.1) / Markflow (>=3.12.0) is required, others are optional
-    library("icyllis.modernui:ModernUI-Markflow:${modernui_version}") {
-      exclude group: "org.slf4j", module: "slf4j-api"
-      exclude group: "org.apache.logging.log4j", module: "log4j-core"
-      exclude group: "org.apache.logging.log4j", module: "log4j-api"
-      exclude group: "com.google.code.findbugs", module: "jsr305"
-      exclude group: "org.jetbrains", module: "annotations"
-      exclude group: "com.ibm.icu", module: "icu4j"
-      exclude group: "it.unimi.dsi", module: "fastutil"
-    }
-    // Modern UI for Minecraft Forge
-    implementation fg.deobf("icyllis.modernui:ModernUI-Forge:${minecraft_version}-${modernui_version}.+")
-}
-```
-#### Building Modern UI for Minecraft
-**Modern UI for Minecraft** requires the latest [ModernUI](https://github.com/BloCamLimb/ModernUI) codebase to build.
-You should clone `ModernUI` into the same parent directory of `ModernUI-MC` and ensure they're up-to-date.
-Checkout `ModernUI/master` branch or a stable branch.  
-You can also cherry-pick a stable version of Modern UI for Minecraft and build from maven.
+### Building ModernUI Lumen
 
-When you build ModernUI-MC, the universal jar will contain not only ModernUI-MC itself, but also shadow the
-ModernUI framework and extensions (except Kotlin extensions), as well as additional assets and runtime.
-### Screenshots (OUTDATED, see CurseForge/Modrinth or try yourself)
+This `1.21.8` branch uses **JDK 21**. Use the JDK required by the selected branch; `master` (Minecraft 26.3) uses **JDK 25**. The Gradle wrapper and dependencies in this checkout are the build source of truth. The default platforms are Fabric and NeoForge.
+
+```sh
+./gradlew clean build -Pfont_variant=standard
+# Collect the standard JARs before cleaning for the other edition.
+./gradlew clean build -Pfont_variant=misans
+```
+
+Final shaded JARs are under each loader’s `build/libs/`:
+
+- `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
+- `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
+
+See [font editions](docs/font-editions.md) for configuration and artifact checks. CI builds both editions and uploads `modernui-lumen-release-jars`; a normal branch push does not publish a release. Releases and tags require a separate explicit publishing instruction.
+
+The stable Gradle project/task names (`ModernUI-Fabric`, `ModernUI-NeoForge`, `ModernUI-Forge`) and Maven group/coordinates remain compatible. This fork does not claim that its new version is published to upstream’s Maven repository. Upstream development documentation and libraries remain available in [ModernUI](https://github.com/BloCamLimb/ModernUI) and [ModernUI-MC](https://github.com/BloCamLimb/ModernUI-MC).
+
+### Historical upstream screenshots (not acceptance evidence for this fork)
 Center Screen  
 ![2024-03-30_16.17.11.png](https://cdn.modrinth.com/data/3sjzyvGR/images/2571f7372b1f9bbb116c118f29a93255338f4e41.png)
 New Tooltip  
