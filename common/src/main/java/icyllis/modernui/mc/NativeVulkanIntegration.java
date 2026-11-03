@@ -24,11 +24,14 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vulkan.VulkanCommandEncoder;
+import com.mojang.blaze3d.vulkan.VulkanBackend;
 import com.mojang.blaze3d.vulkan.VulkanConst;
 import com.mojang.blaze3d.vulkan.VulkanDevice;
 import com.mojang.blaze3d.vulkan.VulkanGpuTexture;
 import com.mojang.blaze3d.vulkan.VulkanGpuTextureView;
 import icyllis.arc3d.core.RawPtr;
+import icyllis.arc3d.compiler.SPIRVVersion;
+import icyllis.modernui.core.Core;
 import icyllis.arc3d.engine.Swizzle;
 import icyllis.arc3d.vulkan.VKUtil;
 import icyllis.arc3d.vulkan.VulkanBackendContext;
@@ -38,6 +41,7 @@ import icyllis.arc3d.vulkan.VulkanMemoryAllocator;
 import icyllis.modernui.core.VulkanManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK11;
 import org.lwjgl.vulkan.VK12;
@@ -131,14 +135,14 @@ public final class NativeVulkanIntegration {
         var physicalDevice = vkDevice.getPhysicalDevice();
         var instance = physicalDevice.getInstance();
 
-        VkPhysicalDeviceFeatures2 features2 = VkPhysicalDeviceFeatures2.calloc().sType$Default();
-        VK11.vkGetPhysicalDeviceFeatures2(physicalDevice, features2);
+        VkPhysicalDeviceFeatures2 features2 = copyRequiredEnabledFeatures();
 
         int apiVersion;
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkPhysicalDeviceProperties properties = VkPhysicalDeviceProperties.calloc(stack);
             VK10.vkGetPhysicalDeviceProperties(physicalDevice, properties);
-            apiVersion = properties.apiVersion();
+            // Minecraft creates a Vulkan 1.2 instance even on newer physical devices.
+            apiVersion = Math.min(properties.apiVersion(), VK12.VK_API_VERSION_1_2);
         }
 
         VulkanMemoryAllocator allocator = VulkanMemoryAllocator.make(
@@ -161,6 +165,39 @@ public final class NativeVulkanIntegration {
         backendContext.mDeviceFeatures2 = features2;
         backendContext.mMemoryAllocator = allocator;
         return backendContext;
+    }
+
+    private static VkPhysicalDeviceFeatures2 copyRequiredEnabledFeatures() {
+        VkPhysicalDeviceFeatures2 features2 = VkPhysicalDeviceFeatures2.calloc().sType$Default();
+        try {
+            // 26.2 does not retain an enabled-feature field. Its backend enables
+            // every required feature and may additionally enable multiDraw.
+            // Advertise only the guaranteed enabled subset, never all supported hardware features.
+            for (var feature : VulkanBackend.REQUIRED_DEVICE_FEATURES) {
+                var struct = feature.struct();
+                if (struct.findStructInPNextChain(features2.address()) == 0) {
+                    long address = MemoryUtil.nmemCallocChecked(1, struct.structSize());
+                    VkPhysicalDeviceFeatures2.nsType(address, struct.sType());
+                    VkPhysicalDeviceFeatures2.npNext(address, features2.pNext());
+                    features2.pNext(address);
+                }
+                if (!feature.set(features2, true)) {
+                    throw new IllegalStateException("Failed to copy required enabled Vulkan feature " + feature);
+                }
+            }
+            return features2;
+        } catch (RuntimeException e) {
+            VulkanManager.freeFeaturesExtensionsStructs(features2);
+            features2.free();
+            throw e;
+        }
+    }
+
+    public static void configureShaderCaps() {
+        // Arc3D 2026.2 otherwise derives its SPIR-V target from the physical GPU API version.
+        Core.requireImmediateContext().getCaps().shaderCaps().mSPIRVVersion = SPIRVVersion.SPIRV_1_5;
+        ModernUIMod.LOGGER.info(ModernUIMod.MARKER,
+                "Arc3D Vulkan shader target: SPIR-V 1.5 (Minecraft Vulkan 1.2)");
     }
 
     public static void replaceMainImageViewWithSwizzle(GpuTextureView textureView, short swizzle) {
@@ -250,7 +287,7 @@ public final class NativeVulkanIntegration {
 
     public static void syncImageLayoutFromArc3D(GpuTexture vulkanTexture, @RawPtr VulkanImage arc3dVulkanImage) {
         int oldLayout = arc3dVulkanImage.getVulkanMutableState().getImageLayout();
-        int newLayout = VK10.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        int newLayout = VK10.VK_IMAGE_LAYOUT_GENERAL;
         if (oldLayout == newLayout) {
             return;
         }
@@ -259,7 +296,7 @@ public final class NativeVulkanIntegration {
     }
 
     public static void syncImageLayoutFromVulkan(GpuTexture vulkanTexture, @RawPtr VulkanImage arc3dVulkanImage) {
-        arc3dVulkanImage.getVulkanMutableState().setImageLayout(VK10.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        arc3dVulkanImage.getVulkanMutableState().setImageLayout(VK10.VK_IMAGE_LAYOUT_GENERAL);
     }
 
     private static void transitionImageLayout(VulkanGpuTexture texture, int oldLayout, int newLayout) {
