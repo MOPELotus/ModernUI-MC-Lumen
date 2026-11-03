@@ -33,4 +33,4 @@ MiSans 提供 **100–900** 九个由细到粗的预设，默认 **400（Regular
 ./gradlew clean build -Pfont_variant=misans
 ```
 
-CI 分别构建两版，上传 `modernui-lumen-release-jars`；普通分支推送不创建 Release。
+可在 Actions 手动选择本分支运行 **Build and Release**，分别构建两版并上传 `modernui-lumen-release-jars`。本分支普通推送不触发自动构建；留空 release tag 时不创建 Release。

@@ -52,7 +52,7 @@
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
 - `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
 
-CI 构建两版并上传 `modernui-lumen-release-jars` artifact。普通分支推送不会发布 Release；推送标签或手动运行工作流并填写 release tag 时会创建或更新 Release。Gradle 项目/任务名与 Maven 坐标保持兼容，本 Fork 不宣称新版已发布到上游 Maven。
+本分支保留 **Build and Release** 工作流（JDK 21），构建两版并上传 `modernui-lumen-release-jars` artifact。自动分支推送/PR 触发仅配置于 `master`，因此推送 `1.21.1` 本身不触发构建；可在 Actions 手动运行时选择本分支。推送标签或手动填写 release tag 会创建或更新 Release；留空时仅构建 artifact。Gradle 项目/任务名与 Maven 坐标保持兼容，本 Fork 不宣称新版已发布到上游 Maven。
 
 ## 验证边界
 

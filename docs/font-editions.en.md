@@ -33,4 +33,4 @@ Use JDK 21 on this branch and the appropriate toolchain on other branches. Omitt
 ./gradlew clean build -Pfont_variant=misans
 ```
 
-CI builds both editions and uploads `modernui-lumen-release-jars`. Normal branch pushes do not create Releases.
+Select this branch when manually running **Build and Release** in Actions to build both editions and upload `modernui-lumen-release-jars`. Normal pushes to this branch do not trigger automatic builds. An empty release tag does not create a Release.
