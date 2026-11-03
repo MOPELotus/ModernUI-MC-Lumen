@@ -115,7 +115,7 @@ public class DashboardFragment extends Fragment {
                 // TITLE
                 {
                     var title = new TextView(context);
-                    title.setText(I18n.get("modernui.center.title"));
+                    title.setText(icyllis.modernui.mc.FontVariant.DISPLAY_NAME);
                     title.setTextSize(32);
                     title.setTextStyle(Typeface.BOLD);
                     title.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
@@ -151,15 +151,15 @@ public class DashboardFragment extends Fragment {
                     markflow.setMarkdown(info,
                             I18n.get("gui.modernui.sourceCode_ssss",
                                     "[ModernUI](https://github.com/BloCamLimb/ModernUI)",
-                                    "[ModernUI-MC](https://github.com/BloCamLimb/ModernUI-MC)",
+                                    "[ModernUI Lumen](https://github.com/MOPELotus/ModernUI-MC-Lumen)",
                                     "", "") + "  \n" +
                                     I18n.get("gui.modernui.modReleases_ssss",
-                                            "[CurseForge](https://www.curseforge.com/minecraft/mc-mods/modern-ui)",
-                                            "[Modrinth](https://modrinth.com/mod/modern-ui)",
+                                            "[GitHub](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases)",
+                                            "",
                                             "", "") + "  \n" +
                                     I18n.get("gui.modernui.community_ssss",
-                                            "[Discord](https://discord.gg/kmyGKt2)",
-                                            "", "", ""));
+                                            "[Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)",
+                                            "", "", "") + "  \nMaintained by **MOPELotus** · Fork of Modern UI by **BloCamLimb**");
                     var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
                     params.bottomMargin = content.dp(40);
                     panel.addView(info, params);
@@ -256,7 +256,7 @@ public class DashboardFragment extends Fragment {
         tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
         tv.setMovementMethod(LinkMovementMethod.getInstance());
         f.mMarkflow.setMarkdown(tv, result != null ? result :
-                "[Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)");
+                "[Full Changelog…](https://github.com/MOPELotus/ModernUI-MC-Lumen/blob/master/changelogs.md)");
         list.addView(tv);
     }
 
@@ -495,7 +495,7 @@ public class DashboardFragment extends Fragment {
             future = CompletableFuture.supplyAsync(() -> {
                 HttpURLConnection connection = null;
                 try {
-                    URL url = new URL("https://raw.githubusercontent.com/BloCamLimb/ModernUI-MC/refs/heads/master/changelogs.md");
+                    URL url = new URL("https://raw.githubusercontent.com/MOPELotus/ModernUI-MC-Lumen/refs/heads/master/changelogs.md");
                     connection = (HttpURLConnection) url.openConnection();
                     connection.setConnectTimeout(60_000); // 1min
                     connection.setReadTimeout(180_000); // 3min
@@ -525,7 +525,7 @@ public class DashboardFragment extends Fragment {
                             sb.append(line).append('\n');
                         }
                     }
-                    sb.append("[Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)");
+                    sb.append("[Full Changelog…](https://github.com/MOPELotus/ModernUI-MC-Lumen/blob/master/changelogs.md)");
                     return sb.toString();
                 } catch (IOException e) {
                     throw new CompletionException(e);

@@ -22,7 +22,7 @@ ext.fontVariant = providers.gradleProperty('font_variant').getOrElse('standard')
 if (!(fontVariant in ['standard', 'misans'])) {
     throw new GradleException('font_variant must be standard or misans')
 }
-ext.fontVariantDisplayName = fontVariant == 'misans' ? 'Modern UI (MiSans)' : 'Modern UI'
+ext.fontVariantDisplayName = fontVariant == 'misans' ? 'ModernUI Lumen (MiSans)' : 'ModernUI Lumen'
 
 subprojects {
     apply plugin: 'java'
@@ -71,6 +71,9 @@ subprojects {
     }
 
     tasks.withType(Jar).configureEach {
+        if (project.name in ['ModernUI-Fabric', 'ModernUI-NeoForge', 'ModernUI-Forge']) {
+            archiveBaseName.set(project.name.replace('ModernUI-', 'ModernUI-Lumen-'))
+        }
         manifest.attributes('ModernUI-Font-Variant': rootProject.fontVariant)
         if (rootProject.fontVariant == 'standard') {
             exclude 'icyllis/modernui/mc/MiSansInstaller*.class'
