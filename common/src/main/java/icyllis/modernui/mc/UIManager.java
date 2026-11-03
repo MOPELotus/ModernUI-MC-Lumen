@@ -165,6 +165,7 @@ public abstract class UIManager implements LifecycleOwner {
 
     private GpuTexture mLayerTexture_Vulkan;
     private GpuTextureView mLayerTextureView_Vulkan;
+    private VulkanImage mLayerImage_Vulkan;
 
     @RawPtr
     private VulkanImage mLastSubmittedVulkanLayer;
@@ -576,7 +577,13 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
+    public static int normalizeModifiers(int mods) {
+        return mods & (GLFW_MOD_SHIFT | GLFW_MOD_CONTROL |
+                GLFW_MOD_ALT | GLFW_MOD_SUPER);
+    }
+
     public void onPostMouseInput(int button, int action, int mods) {
+        mods = normalizeModifiers(mods);
         // We should ensure (overlay == null && screen != null)
         // and the screen must be a mui screen
         if (minecraft.gui.overlay() == null && mScreen != null) {
@@ -612,12 +619,14 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public void onKeyPress(int keyCode, int scanCode, int mods) {
+        mods = normalizeModifiers(mods);
         KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_DOWN, keyCode, 0,
                 mods, scanCode, 0);
         mRoot.enqueueInputEvent(keyEvent);
     }
 
     public void onKeyRelease(int keyCode, int scanCode, int mods) {
+        mods = normalizeModifiers(mods);
         KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_UP, keyCode, 0,
                 mods, scanCode, 0);
         mRoot.enqueueInputEvent(keyEvent);
@@ -1023,13 +1032,13 @@ public abstract class UIManager implements LifecycleOwner {
                 if (ModernUIMod.isVulkanBackend()) {
                     if (mLayerTexture_Vulkan == null || !NativeVulkanIntegration.sameImage(mLayerTexture_Vulkan, layer)) {
                         if (mLayerTexture_Vulkan != null) {
-                            // there's nothing to close, because the resource is managed by us
-                            mLayerTexture_Vulkan = null;
-                            mLayerTextureView_Vulkan.close();
+                            closeVulkanLayer();
                         }
                         mLayerTexture_Vulkan = NativeVulkanIntegration.wrapTextureImageFromArc3D(layer);
                         mLayerTextureView_Vulkan = RenderSystem.getDevice()
                                 .createTextureView(mLayerTexture_Vulkan);
+                        layer.ref();
+                        mLayerImage_Vulkan = layer;
                     }
                     layer.refCommandBuffer();
                     NativeVulkanIntegration.syncImageLayoutFromArc3D(mLayerTexture_Vulkan, layer);
@@ -1200,9 +1209,7 @@ public abstract class UIManager implements LifecycleOwner {
                     mLayerTexture = null;
                 }
                 if (mLayerTexture_Vulkan != null) {
-                    mLayerTexture_Vulkan = null;
-                    mLayerTextureView_Vulkan.close();
-                    mLayerTextureView_Vulkan = null;
+                    closeVulkanLayer();
                 }
                 // later destroy() will be called
             }
@@ -1237,25 +1244,61 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
+    private void closeVulkanLayer() {
+        if (mLayerTextureView_Vulkan == null) return;
+        mLayerTextureView_Vulkan.close();
+        VulkanImage image = mLayerImage_Vulkan;
+        NativeVulkanIntegration.addFrameOp(image::unref);
+        mLayerTextureView_Vulkan = null;
+        mLayerTexture_Vulkan = null; // Non-owning wrapper: never close the Arc3D-owned image.
+        mLayerImage_Vulkan = null;
+        mLastSubmittedVulkanLayer = null;
+    }
+
     public static void destroy() {
-        // see onRenderTick() above
-        LOGGER.debug(MARKER, "Quiting Modern UI");
-        //BlurHandler.INSTANCE.closeEffect();
-        FontResourceManager.getInstance().close();
-        ImageStore.getInstance().clear();
-        System.gc();
-        Core.requireImmediateContext().unref();
+        LOGGER.debug(MARKER, "Quitting Modern UI");
         if (sInstance != null) {
             sInstance.requestShutdown();
             AudioManager.getInstance().close();
             try {
-                // in case of GLFW is terminated too early
                 sInstance.mUiThread.join(1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while stopping Modern UI thread", e);
+            }
+            if (sInstance.mUiThread.isAlive()) {
+                throw new IllegalStateException("Modern UI thread is still using the renderer");
+            }
+            sInstance.closeVulkanLayer();
+            if (sInstance.mLayerTexture != null) {
+                sInstance.mLayerTextureView.close();
+                sInstance.mLayerTexture.close();
+                sInstance.mLayerTextureView = null;
+                sInstance.mLayerTexture = null;
             }
         }
-        LOGGER.debug(MARKER, "Quited Modern UI");
+        FontResourceManager.getInstance().close();
+        ImageStore.getInstance().clear();
+        if (ModernUIMod.isVulkanBackend()) NativeVulkanIntegration.drainForShutdown();
+        var context = Core.requireImmediateContext();
+        context.unref();
+        if (ModernUIMod.isVulkanBackend()) {
+            if (context.getRefCntAcquire() != 0) {
+                throw new IllegalStateException("Modern UI Vulkan context still has owners");
+            }
+            var recording = Core.peekUiRecordingContext();
+            if (recording != null && recording.getRefCntAcquire() != 0) {
+                throw new IllegalStateException("Modern UI Vulkan recording context still has owners");
+            }
+            // The manager owns only the allocator and copied feature chain, not Minecraft's device.
+            var manager = icyllis.modernui.core.VulkanManager.get();
+            if (manager.getDevice() != null || manager.getInstance() != null) {
+                throw new IllegalStateException("Minecraft's Vulkan device must remain externally owned");
+            }
+            manager.close();
+            LOGGER.info(MARKER, "Released Modern UI native Vulkan allocator and features after draining GPU work");
+        }
+        LOGGER.debug(MARKER, "Quit Modern UI");
     }
 
     @UiThread

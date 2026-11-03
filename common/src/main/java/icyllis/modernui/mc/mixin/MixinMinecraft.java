@@ -117,8 +117,8 @@ public abstract class MixinMinecraft {
         }
     }*/
 
-    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Util;shutdownExecutors()V"))
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/GpuSurface;close()V"))
     private void onClose(CallbackInfo ci) {
-        UIManager.destroy();
+        if (icyllis.modernui.core.Core.peekImmediateContext() != null) UIManager.destroy();
     }
 }

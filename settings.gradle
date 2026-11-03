@@ -23,9 +23,12 @@ rootProject.name = 'ModernUI-MC'
 
 include 'common'
 
-include 'forge'
-project(':forge').name = "ModernUI-Forge"
-include 'neoforge'
-project(':neoforge').name = "ModernUI-NeoForge"
-include 'fabric'
-project(':fabric').name = "ModernUI-Fabric"
+def platformNames = [forge: 'Forge', neoforge: 'NeoForge', fabric: 'Fabric']
+providers.gradleProperty('enabled_platforms').getOrElse('fabric,neoforge')
+        .split(',').collect { it.trim() }.each { platform ->
+    if (!platformNames.containsKey(platform)) {
+        throw new GradleException("Unknown platform: ${platform}")
+    }
+    include platform
+    project(":${platform}").name = "ModernUI-${platformNames[platform]}"
+}
