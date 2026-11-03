@@ -132,3 +132,14 @@ check.dependsOn checkFontVariant
     }
     check.dependsOn checkTask
 }
+
+tasks.register('checkNativeVulkanShutdown', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.NativeVulkanShutdownCheck'
+    if (project.hasProperty('native_shutdown_previous_jar')) {
+        args project.property('native_shutdown_previous_jar')
+    }
+}
+check.dependsOn checkNativeVulkanShutdown

@@ -12,14 +12,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = VulkanDevice.class, remap = false)
 public abstract class MixinNativeVulkanDevice {
-    // The command encoder first waits for the GPU and drains deferred texture
-    // references. Arc3D must then release its resources before VkDevice is freed.
-    @Inject(method = "close", at = @At(value = "INVOKE",
-            target = "Lorg/lwjgl/util/vma/Vma;vmaDestroyAllocator(J)V"))
+    // Normal shutdown already released Arc3D before closing the surface. Core
+    // retains that context reference at refcount zero. Only a live context
+    // needs this fallback, before Minecraft destroys its command encoder.
+    @Inject(method = "close", at = @At("HEAD"))
     private void modernui$releaseSharedContext(CallbackInfo ci) {
         if (ModernUIMod.isVulkanBackend()) {
-            if (Core.peekImmediateContext() != null) {
-                UIManager.destroy();
+            var context = Core.peekImmediateContext();
+            if (context != null) {
+                if (context.getRefCntAcquire() > 0) {
+                    UIManager.destroy();
+                }
             } else {
                 VulkanManager.get().close();
             }
