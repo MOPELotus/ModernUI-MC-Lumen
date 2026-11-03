@@ -114,3 +114,30 @@ check.dependsOn checkFontVariant
     }
     check.dependsOn checkTask
 }
+
+// Check compiled mode application and the target Window transition without presenting a frame.
+tasks.register('checkWindowModeTransition', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    def loaderProjects = rootProject.subprojects.findAll { it.name in ['ModernUI-Fabric', 'ModernUI-NeoForge'] }
+    dependsOn loaderProjects.collect { it.tasks.named('compileJava') }
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.WindowModeTransitionCheck'
+    workingDir rootProject.projectDir
+    systemProperty 'modernui.windowCheckModules', (['common'] + loaderProjects.collect { it.projectDir.name }).join(',')
+    doFirst {
+        if (project.hasProperty('window_mode_target')) {
+            setArgs([project.property('window_mode_target')])
+        } else {
+            def neoProject = rootProject.findProject(':ModernUI-NeoForge')
+            if (neoProject != null) {
+                def neoJars = neoProject.configurations.compileClasspath.files.findAll {
+                    it.name.startsWith('neoforge-') && it.name.contains('minecraft-merged') && it.name.endsWith('.jar')
+                }
+                if (neoJars.empty) throw new GradleException('Missing actual mapped NeoForge game JAR for Window transition verification')
+                setArgs(neoJars.collect { it.absolutePath })
+            }
+        }
+    }
+}
+check.dependsOn checkWindowModeTransition

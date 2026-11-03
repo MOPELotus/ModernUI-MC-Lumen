@@ -55,7 +55,7 @@ for loader in loaders:
                 for cls in ('ModernUIClient', 'mixin/MixinMinecraft'):
                     data = jar.read(f'icyllis/modernui/mc/{cls}.class')
                     assert b'icyllis/modernui/mc/MiSansSetup' not in data, (name, cls)
-            for cls in ('text/TextRunRenderState', 'text/TextSampling', 'FontVariantConfig'):
+            for cls in ('text/TextRunRenderState', 'text/TextSampling', 'FontVariantConfig', 'IModernWindow'):
                 assert f'icyllis/modernui/mc/{cls}.class' in entries, (name, cls)
             assert jar.read('icyllis/modernui/mc/FontVariant.class').find(
                     f'client-{variant}.toml'.encode()) >= 0, name
