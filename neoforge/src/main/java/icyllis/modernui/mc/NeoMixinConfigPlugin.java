@@ -8,16 +8,18 @@ public final class NeoMixinConfigPlugin extends MixinConfigPlugin {
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         if (mixinClassName.endsWith(".MixinNeoVulkanStencilOnlyPipeline")) {
             try {
-                return VulkanPipelineCleanupCompat.needsCleanup(
-                        MixinService.getService().getBytecodeProvider().getClassNode(targetClassName), "withStencilPipeline");
+                var target = MixinService.getService().getBytecodeProvider().getClassNode(targetClassName);
+                VulkanPipelineCleanupCompat.configureNativeOwnership(target);
+                return VulkanPipelineCleanupCompat.needsCleanup(target, "withStencilPipeline");
             } catch (Exception exception) {
                 throw new IllegalStateException("Cannot verify NeoForge stencil-only pipeline ownership", exception);
             }
         }
         if (mixinClassName.endsWith(".MixinNeoVulkanRenderPipeline")) {
             try {
-                return VulkanPipelineCleanupCompat.needsCleanup(
-                        MixinService.getService().getBytecodeProvider().getClassNode(targetClassName));
+                var target = MixinService.getService().getBytecodeProvider().getClassNode(targetClassName);
+                VulkanPipelineCleanupCompat.configureNativeOwnership(target);
+                return VulkanPipelineCleanupCompat.needsCleanup(target);
             } catch (Exception exception) {
                 throw new IllegalStateException("Cannot verify NeoForge Vulkan pipeline ownership", exception);
             }

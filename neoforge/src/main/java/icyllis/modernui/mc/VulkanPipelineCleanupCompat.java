@@ -7,8 +7,21 @@ import org.objectweb.asm.tree.*;
 public final class VulkanPipelineCleanupCompat {
     private VulkanPipelineCleanupCompat() {}
 
+    private static volatile boolean nativeOwnsStencilOnly;
+    private static volatile String nativeOwnershipTarget;
+
+    public static void configureNativeOwnership(ClassNode target) {
+        nativeOwnsStencilOnly = target.fields.stream().anyMatch(f -> f.name.equals("withStencilPipeline") && f.desc.equals("J"))
+                && !needsCleanup(target, "withStencilPipeline");
+        nativeOwnershipTarget = target.name;
+    }
+
+
     public static boolean needsCleanup(ClassNode target) {
-        return needsCleanup(target, "withDepthStencilPipeline");
+        // The 26.3 hook also reads this peer to resolve aliases against a native
+        // owner. Do not apply its shadow fields to an unsupported older shape.
+        return target.fields.stream().anyMatch(f -> f.name.equals("withStencilPipeline") && f.desc.equals("J"))
+                && needsCleanup(target, "withDepthStencilPipeline");
     }
 
     public static boolean needsCleanup(ClassNode target, String fieldName) {
@@ -27,6 +40,18 @@ public final class VulkanPipelineCleanupCompat {
                     && call.name.equals(fieldName)) return false;
         }
         return true;
+    }
+
+    public static boolean ownsDistinctDepthStencilHandle(long depthStencil, long stencil, long depth, long plain) {
+        if (nativeOwnershipTarget == null) {
+            throw new IllegalStateException("NeoForge native pipeline ownership was not configured by its Mixin plugin");
+        }
+        return ownsDistinctDepthStencilHandle(depthStencil, stencil, depth, plain, nativeOwnsStencilOnly);
+    }
+
+    public static boolean ownsDistinctDepthStencilHandle(long depthStencil, long stencil, long depth, long plain,
+                                                         boolean stencilOwnedByNative) {
+        return ownsDistinctHandle(depthStencil, depth, plain) && (depthStencil != stencil || !stencilOwnedByNative);
     }
 
     public static boolean ownsDistinctStencilHandle(long stencil, long depthStencil, long depth, long plain) {

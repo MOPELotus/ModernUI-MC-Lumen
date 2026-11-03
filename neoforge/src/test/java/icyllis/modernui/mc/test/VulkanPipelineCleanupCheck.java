@@ -30,6 +30,22 @@ public final class VulkanPipelineCleanupCheck {
         require(!VulkanPipelineCleanupCompat.ownsDistinctStencilHandle(3, 3, 1, 2), "Depth/stencil alias must have a single owner");
         require(VulkanPipelineCleanupCompat.ownsDistinctStencilHandle(4, 3, 1, 2), "Independent stencil-only handle must be freed");
 
+        for (boolean nativeDepth : new boolean[]{false, true}) for (boolean nativeStencil : new boolean[]{false, true}) {
+            for (long depthStencil : new long[]{0,1,2,3}) for (long stencil : new long[]{0,1,2,3,4}) {
+                long depth=1, plain=2;
+                var releases=new java.util.HashMap<Long,Integer>();
+                java.util.function.LongConsumer release=h -> { if(h!=0) releases.merge(h,1,Integer::sum); };
+                var nativeOwned=new java.util.HashSet<Long>();nativeOwned.add(depth);nativeOwned.add(plain);
+                if(nativeDepth && depthStencil!=0) nativeOwned.add(depthStencil);
+                if(nativeStencil && stencil!=0) nativeOwned.add(stencil);
+                nativeOwned.forEach(release::accept);
+                if(!nativeDepth && VulkanPipelineCleanupCompat.ownsDistinctDepthStencilHandle(
+                        depthStencil,stencil,depth,plain,nativeStencil)) release.accept(depthStencil);
+                if(!nativeStencil && VulkanPipelineCleanupCompat.ownsDistinctStencilHandle(stencil,depthStencil,depth,plain)) release.accept(stencil);
+                for(long handle:new long[]{depth,plain,depthStencil,stencil}) if(handle!=0)
+                    require(releases.getOrDefault(handle,0)==1,"Each native-or-mod-owned handle must be released exactly once, across all field gates and aliases");
+            }
+        }
         var mixin = read("icyllis/modernui/mc/mixin/MixinNeoVulkanRenderPipeline");
         var hook = mixin.methods.stream().filter(m -> m.name.equals("modernui$destroyStencilPipeline")).findFirst().orElseThrow();
         var annotations = new java.util.ArrayList<AnnotationNode>();
@@ -42,7 +58,7 @@ public final class VulkanPipelineCleanupCheck {
         for (var instruction : hook.instructions) {
             if (instruction instanceof MethodInsnNode call) {
                 if (call.name.equals("vkDestroyPipeline")) destroys++;
-                if (call.name.equals("ownsDistinctHandle")) guards++;
+                if (call.name.equals("ownsDistinctDepthStencilHandle")) guards++;
             }
         }
         require(destroys == 1 && guards == 1, "Expected one guarded Vulkan pipeline destruction");
@@ -75,10 +91,18 @@ public final class VulkanPipelineCleanupCheck {
         require(!VulkanPipelineCleanupCompat.needsCleanup(node), "Accessor-based upstream cleanup must retain ownership");
         destroy.instructions.remove(destroy.instructions.getFirst());
         destroy.instructions.insert(new FieldInsnNode(Opcodes.GETFIELD, node.name, "withStencilPipeline", "J"));
+        VulkanPipelineCleanupCompat.configureNativeOwnership(node);
+        require(!VulkanPipelineCleanupCompat.ownsDistinctDepthStencilHandle(3,3,1,2),
+                "Native-owned stencil-only alias must not also be freed by the depth/stencil mixin");
+
         require(!VulkanPipelineCleanupCompat.needsCleanup(node, "withStencilPipeline"), "Fixed stencil-only owner must not be duplicated");
         require(VulkanPipelineCleanupCompat.needsCleanup(node), "Fixed stencil-only field must not disable depth/stencil cleanup");
         destroy.instructions.remove(destroy.instructions.getFirst());
+        VulkanPipelineCleanupCompat.configureNativeOwnership(node);
+        require(VulkanPipelineCleanupCompat.ownsDistinctDepthStencilHandle(3,3,1,2),
+                "When native owns neither extra alias, depth/stencil mixin must retain ownership");
         node.fields.removeIf(f -> f.name.equals("withStencilPipeline"));
+        require(!VulkanPipelineCleanupCompat.needsCleanup(node), "Depth/stencil hook requires its alias peer shadow field");
         require(!VulkanPipelineCleanupCompat.needsCleanup(node, "withStencilPipeline"), "Absent stencil-only field must not receive the mixin");
         node.fields.removeIf(f -> f.name.equals("withDepthStencilPipeline"));
         require(!VulkanPipelineCleanupCompat.needsCleanup(node), "Vanilla/absent field must not receive NeoForge workaround");

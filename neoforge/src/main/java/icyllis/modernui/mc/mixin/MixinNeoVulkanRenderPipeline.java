@@ -15,14 +15,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = VulkanRenderPipeline.class, remap = false)
 public abstract class MixinNeoVulkanRenderPipeline {
     @Shadow @Final private long withDepthStencilPipeline;
+    @Shadow @Final private long withStencilPipeline;
     @Shadow @Final private long withDepthPipeline;
     @Shadow @Final private long withoutDepthPipeline;
     @Shadow @Final private VulkanDevice device;
 
     @Inject(method = "destroy", at = @At("HEAD"), require = 1)
     private void modernui$destroyStencilPipeline(CallbackInfo ci) {
-        if (VulkanPipelineCleanupCompat.ownsDistinctHandle(
-                withDepthStencilPipeline, withDepthPipeline, withoutDepthPipeline)) {
+        if (VulkanPipelineCleanupCompat.ownsDistinctDepthStencilHandle(
+                withDepthStencilPipeline, withStencilPipeline, withDepthPipeline, withoutDepthPipeline)) {
             VK12.vkDestroyPipeline(device.vkDevice(), withDepthStencilPipeline, null);
         }
     }
