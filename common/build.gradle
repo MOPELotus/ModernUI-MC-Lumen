@@ -21,6 +21,7 @@ dependencies {
     compileOnly 'org.spongepowered:mixin:0.8.7'
     compileOnly 'org.ow2.asm:asm-tree:9.8'
     testImplementation 'org.ow2.asm:asm-tree:9.8'
+    testRuntimeOnly 'org.spongepowered:mixin:0.8.7'
 
     implementation("dev.icyllis:modernui-core:${core_version}")
     implementation("icyllis.modernui:ModernUI-Markflow:3.12.0") {
@@ -79,13 +80,20 @@ tasks.register('checkFontVariant', JavaExec) {
 }
 check.dependsOn checkFontVariant
 
-['ClampingScrollView', 'GlfwInput', 'TooltipUniform', 'NativeVulkanContract', 'PackMetadata', 'SoundVolumeContract'].each { checkName ->
+['ClampingScrollView', 'GlfwInput', 'TooltipUniform', 'NativeVulkanContract', 'PackMetadata', 'SoundVolumeContract', 'SpirvArrayLayout', 'NativeVulkanUpload'].each { checkName ->
     def checkTask = tasks.register("check${checkName}", JavaExec) {
         group = 'verification'
         dependsOn testClasses
         classpath = sourceSets.test.runtimeClasspath
         mainClass = "icyllis.modernui.mc.test.${checkName}Check"
         systemProperty 'modernui.projectRoot', rootProject.projectDir.absolutePath
+        if (checkName == 'SpirvArrayLayout') {
+            args providers.gradleProperty('spirv_fixture_dir').getOrElse(
+                    rootProject.layout.buildDirectory.dir('spirv-validation-fixtures').get().asFile.absolutePath)
+            if (providers.gradleProperty('spirv_validator').isPresent()) {
+                systemProperty 'modernui.spirvValidator', providers.gradleProperty('spirv_validator').get()
+            }
+        }
         if (checkName == 'SoundVolumeContract') {
             doFirst {
                 def neoProject = rootProject.findProject(':ModernUI-NeoForge')

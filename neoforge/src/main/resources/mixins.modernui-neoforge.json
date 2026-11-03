@@ -28,6 +28,8 @@
     "MixinScrollPanel",
     "MixinSelectionList",
     "MixinSoundEngine",
+    "MixinSPIRVCodeGenerator",
+    "MixinNativeVulkanUpload",
     "MixinStringSplitter",
     "MixinTextFieldHelper",
     "MixinWindow"
