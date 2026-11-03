@@ -77,8 +77,7 @@ All branches below are maintained by this fork. These are maintenance targets, n
 | Branch | Minecraft maintenance target | Status |
 | --- | --- | --- |
 | `1.21.1` | 1.21–1.21.1 | Maintained |
-| `1.21.6` | 1.21.6 | Maintained |
-| `1.21.8` | 1.21.7–1.21.8 | Maintained |
+| `1.21.8` | 1.21.6–1.21.8 | Maintained |
 | `1.21.9` | 1.21.9 | Maintained |
 | `1.21.10` | 1.21.10 | Maintained |
 | `1.21.11` | 1.21.11 | Maintained |
