@@ -96,7 +96,7 @@ public class PreferredFontAccordion implements View.OnClickListener,
             input.setOnFocusChangeListener(this);
             input.setSingleLine();
 
-            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+            var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 5);
             params.gravity = Gravity.CENTER_VERTICAL;
             layout.addView(input, params);
             mContent.addView(layout);
@@ -179,7 +179,7 @@ public class PreferredFontAccordion implements View.OnClickListener,
             title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             title.setTextSize(14);
 
-            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
+            var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 2);
             params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
             layout.addView(title, params);
         }
