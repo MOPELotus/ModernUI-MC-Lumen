@@ -28,6 +28,10 @@ for loader in loaders:
             assert jar.testzip() is None, name
             manifest = jar.read('META-INF/MANIFEST.MF').decode().replace('\r\n ', '')
             assert re.search(rf'^ModernUI-Font-Variant: {variant}\r?$', manifest, re.M), name
+            for title in ('Specification-Title', 'Implementation-Title'):
+                assert re.search(rf'^{title}: ModernUI-Lumen-{label}\r?$', manifest, re.M), (name, title)
+            if 'pack.mcmeta' in entries:
+                assert json.loads(jar.read('pack.mcmeta'))['pack']['description'] == 'ModernUI Lumen for Minecraft', name
             if loader == 'fabric':
                 meta = json.loads(jar.read('fabric.mod.json'))
                 ident, actual_version, display = meta['id'], meta['version'], meta['name']

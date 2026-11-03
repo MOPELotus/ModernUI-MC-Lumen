@@ -55,6 +55,7 @@ check.dependsOn checkTextMarquee
 def generateFontVariant = tasks.register('generateFontVariant') {
     def output = layout.buildDirectory.dir('generated/sources/fontVariant/java')
     inputs.property('fontVariant', rootProject.fontVariant)
+    inputs.property('fontVariantDisplayName', rootProject.fontVariantDisplayName)
     outputs.dir(output)
     doLast {
         def target = output.get().file('icyllis/modernui/mc/FontVariant.java').asFile
