@@ -18,9 +18,9 @@ public abstract class MixinSoundEngine {
                                              CallbackInfoReturnable<Float> ci) {
         ci.setReturnValue(ci.getReturnValueF() * BlurHandler.INSTANCE.getChannelVolumeMultiplier());
     }
-    @ModifyArg(method = "updateCategoryVolume",
+    @ModifyArg(method = {"updateCategoryVolume(Lnet/minecraft/sounds/SoundSource;F)V", "loadLibrary()V"},
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/audio/Listener;setGain(F)V"),
-            index = 0, require = 1)
+            index = 0, require = 2, allow = 2)
     private float modernui$scaleGlobalVolume(float gain) {
         return gain * BlurHandler.INSTANCE.getGlobalVolumeMultiplier();
     }
