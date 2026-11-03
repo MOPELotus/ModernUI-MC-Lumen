@@ -36,6 +36,8 @@ for loader in loaders:
                 assert 'MixinSPIRVCodeGenerator' in config['client'], name
                 assert config['plugin'] == 'icyllis.modernui.mc.NeoMixinConfigPlugin', name
                 assert 'MixinNeoVulkanRenderPipeline' in config['client'], name
+                assert 'MixinNeoVulkanStencilOnlyPipeline' in config['client'], name
+                assert 'icyllis/modernui/mc/mixin/MixinNeoVulkanStencilOnlyPipeline.class' in entries, name
                 for cls in ('NeoMixinConfigPlugin', 'VulkanPipelineCleanupCompat',
                             'mixin/MixinNeoVulkanRenderPipeline'):
                     assert f'icyllis/modernui/mc/{cls}.class' in entries, (name, cls)

@@ -37,6 +37,7 @@
     "MixinSPIRVCodeGenerator",
     "MixinNativeVulkanUpload",
     "MixinNeoVulkanRenderPipeline",
+    "MixinNeoVulkanStencilOnlyPipeline",
     "MixinStringSplitter",
     "MixinTextFieldHelper",
     "MixinWindow"

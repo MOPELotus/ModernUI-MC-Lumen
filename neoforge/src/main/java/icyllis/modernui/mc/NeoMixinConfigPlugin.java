@@ -6,6 +6,14 @@ import org.spongepowered.asm.service.MixinService;
 public final class NeoMixinConfigPlugin extends MixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.endsWith(".MixinNeoVulkanStencilOnlyPipeline")) {
+            try {
+                return VulkanPipelineCleanupCompat.needsCleanup(
+                        MixinService.getService().getBytecodeProvider().getClassNode(targetClassName), "withStencilPipeline");
+            } catch (Exception exception) {
+                throw new IllegalStateException("Cannot verify NeoForge stencil-only pipeline ownership", exception);
+            }
+        }
         if (mixinClassName.endsWith(".MixinNeoVulkanRenderPipeline")) {
             try {
                 return VulkanPipelineCleanupCompat.needsCleanup(

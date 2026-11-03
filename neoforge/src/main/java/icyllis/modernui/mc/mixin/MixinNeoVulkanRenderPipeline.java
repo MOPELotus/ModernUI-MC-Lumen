@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** NeoForge adds a third pipeline but currently omits it from destroy(). */
+/** One of NeoForge's extra stencil variants is omitted from destroy(). */
 @Mixin(value = VulkanRenderPipeline.class, remap = false)
 public abstract class MixinNeoVulkanRenderPipeline {
     @Shadow @Final private long withDepthStencilPipeline;
