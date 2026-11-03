@@ -3,7 +3,7 @@
   "required": true,
   "mixinPriority": 1,
   "compatibilityLevel": "JAVA_17",
-  "plugin": "icyllis.modernui.mc.MixinConfigPlugin",
+  "plugin": "icyllis.modernui.mc.NeoMixinConfigPlugin",
   "package": "icyllis.modernui.mc.mixin",
   "client": [
     "AccessClientTextTooltip",
@@ -30,6 +30,7 @@
     "MixinSoundEngine",
     "MixinSPIRVCodeGenerator",
     "MixinNativeVulkanUpload",
+    "MixinNeoVulkanRenderPipeline",
     "MixinStringSplitter",
     "MixinTextFieldHelper",
     "MixinWindow"

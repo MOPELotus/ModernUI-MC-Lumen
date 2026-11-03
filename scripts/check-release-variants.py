@@ -34,6 +34,11 @@ for loader in loaders:
                 assert mixin in entries, name
                 config = json.loads(jar.read('mixins.modernui-neoforge.json'))
                 assert 'MixinSPIRVCodeGenerator' in config['client'], name
+                assert config['plugin'] == 'icyllis.modernui.mc.NeoMixinConfigPlugin', name
+                assert 'MixinNeoVulkanRenderPipeline' in config['client'], name
+                for cls in ('NeoMixinConfigPlugin', 'VulkanPipelineCleanupCompat',
+                            'mixin/MixinNeoVulkanRenderPipeline'):
+                    assert f'icyllis/modernui/mc/{cls}.class' in entries, (name, cls)
             manifest = jar.read('META-INF/MANIFEST.MF').decode().replace('\r\n ', '')
             assert re.search(rf'^ModernUI-Font-Variant: {variant}\r?$', manifest, re.M), name
             for title in ('Specification-Title', 'Implementation-Title'):

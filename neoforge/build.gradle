@@ -129,6 +129,17 @@ tasks.register('checkZoomVisibility', JavaExec) {
 }
 check.dependsOn checkZoomVisibility
 
+tasks.register('checkVulkanPipelineCleanup', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.VulkanPipelineCleanupCheck'
+    if (project.hasProperty('native_pipeline_runtime_jar')) {
+        args project.property('native_pipeline_runtime_jar')
+    }
+}
+check.dependsOn checkVulkanPipelineCleanup
+
 
 loom.nestJars(
         tasks.named("shadowJar", Jar),
