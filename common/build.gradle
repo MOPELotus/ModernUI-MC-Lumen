@@ -93,7 +93,9 @@ check.dependsOn checkFontVariant
         systemProperty 'modernui.projectRoot', rootProject.projectDir.absolutePath
         if (checkName == 'WindowVolume') {
             doFirst {
-                def neoJars = project(':ModernUI-NeoForge').configurations.compileClasspath.files.findAll {
+                def neoProject = rootProject.findProject(':ModernUI-NeoForge')
+                if (neoProject == null) return // Honor explicitly Fabric-only builds.
+                def neoJars = neoProject.configurations.compileClasspath.files.findAll {
                     it.name.startsWith('neoforge-') && it.name.contains('minecraft-merged') && it.name.endsWith('.jar')
                 }
                 if (neoJars.empty) throw new GradleException('Missing actual mapped NeoForge game JAR for audio API verification')
