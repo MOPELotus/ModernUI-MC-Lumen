@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.joml.Matrix3x2f;
 import org.lwjgl.openal.AL10;
+import org.lwjgl.openal.ALC10;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -89,7 +90,9 @@ public enum BlurHandler {
      */
     private boolean mHasScreen;
 
-    private float mVolumeMultiplier = 1;
+    private volatile float mVolumeMultiplier = 1;
+    private boolean mAppliedGlobalVolumeControl;
+    private boolean mAudioVolumeDirty = true;
 
     /**
      * Use blur shader in game renderer post-processing.
@@ -205,7 +208,8 @@ public enum BlurHandler {
         } else {
             targetVolumeMultiplier = sMasterVolumeInactive;
         }
-        if (mVolumeMultiplier != targetVolumeMultiplier) {
+        boolean changed = mVolumeMultiplier != targetVolumeMultiplier;
+        if (changed) {
             // fade down is slower, 1 second = 20 ticks
             if (mVolumeMultiplier < targetVolumeMultiplier) {
                 mVolumeMultiplier = Math.min(
@@ -218,12 +222,34 @@ public enum BlurHandler {
                         targetVolumeMultiplier
                 );
             }
-            if (sGlobalVolumeControl) {
-                AL10.alListenerf(AL10.AL_GAIN, mVolumeMultiplier);
-            } else {
-                minecraft.getSoundManager().updateCategoryVolume(SoundSource.MASTER, mVolumeMultiplier);
-            }
         }
+        if (changed || mAudioVolumeDirty || mAppliedGlobalVolumeControl != sGlobalVolumeControl) {
+            applyVolumeControl();
+        }
+    }
+
+    /** Additional Minecraft-channel gain; the user's MASTER setting is already applied by Minecraft. */
+    public float getSoundVolumeMultiplier() {
+        return sGlobalVolumeControl ? 1.0f : mVolumeMultiplier;
+    }
+
+    /** Reapply after a successful library load, even if the fade target did not change. */
+    public void onSoundLibraryLoaded() {
+        mAudioVolumeDirty = true;
+        applyVolumeControl();
+    }
+
+    private void applyVolumeControl() {
+        // Library.init makes the context current on this calling thread before creating AL capabilities.
+        if (ALC10.alcGetCurrentContext() == 0) {
+            mAudioVolumeDirty = true;
+            return;
+        }
+        AL10.alListenerf(AL10.AL_GAIN, sGlobalVolumeControl ? mVolumeMultiplier : 1.0f);
+        // Refresh all active channels without modifying Minecraft's per-source gain map.
+        minecraft.getSoundManager().refreshCategoryVolume(SoundSource.MASTER);
+        mAppliedGlobalVolumeControl = sGlobalVolumeControl;
+        mAudioVolumeDirty = false;
     }
 
     // INTERNAL HOOK
