@@ -113,3 +113,16 @@ tasks.register('checkGlfwInput', JavaExec) {
     workingDir rootProject.projectDir
 }
 check.dependsOn checkGlfwInput
+
+// Executes the target Window's actual pending transition with instrumented native calls.
+tasks.register('checkWindowModeTransition', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses, ':ModernUI-Fabric:compileJava', ':ModernUI-NeoForge:compileJava'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.WindowModeTransitionCheck'
+    workingDir rootProject.projectDir
+    if (project.hasProperty('window_mode_target')) {
+        args project.property('window_mode_target')
+    }
+}
+check.dependsOn checkWindowModeTransition
