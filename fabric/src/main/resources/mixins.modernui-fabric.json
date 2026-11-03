@@ -37,6 +37,7 @@
     "MixinGpuBufferPoolAddress",
     "MixinWindowsWindowBorderAbi",
     "MixinGraniteText",
+    "MixinVulkanRenderArea",
     "MixinSPIRVCodeGenerator",
     "MixinVulkanImage",
     "MixinVulkanImageUpload",
