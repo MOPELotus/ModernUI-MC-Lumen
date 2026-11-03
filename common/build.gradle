@@ -21,6 +21,7 @@ dependencies {
     compileOnly 'org.spongepowered:mixin:0.8.7'
     compileOnly 'org.ow2.asm:asm-tree:9.8'
     testImplementation 'org.ow2.asm:asm-tree:9.8'
+    testImplementation 'org.ow2.asm:asm-commons:9.8'
     testRuntimeOnly 'org.spongepowered:mixin:0.8.7'
     // Core's standalone ModernUI context still links GLFW types; 26.3 itself uses SDL.
     testRuntimeOnly "org.lwjgl:lwjgl-glfw:${lwjgl_version}"
@@ -143,3 +144,14 @@ tasks.register('checkNativeVulkanShutdown', JavaExec) {
     }
 }
 check.dependsOn checkNativeVulkanShutdown
+
+tasks.register('checkPreferredFontIdentifier', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.PreferredFontIdentifierCheck'
+    if (project.hasProperty('preferred_font_previous_jar')) {
+        args project.property('preferred_font_previous_jar')
+    }
+}
+check.dependsOn checkPreferredFontIdentifier
