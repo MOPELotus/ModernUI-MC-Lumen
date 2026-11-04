@@ -12,6 +12,8 @@ ModernUI Lumen 提供普通版与 MiSans 版，二者的界面和文字功能相
 
 两版的模组 ID 都是 `modernui`，请每次只安装其中一版，切换时替换 JAR。`text.toml`、`common.toml` 与 bootstrap 配置共用；字体文件位于 `config/ModernUI/fonts`。
 
+当前 Core 3.13.0 中，Minecraft 文本渲染路径可显示彩色 emoji；Core 文本控件（如 TextView）及 Canvas 对位图 emoji 存在留白限制。切换普通版与 MiSans 版不会消除这一限制。
+
 ## MiSans 安装与字重
 
 MiSans 版会检查缺失字体并提供安装界面。用户主动点击下载后，从小米官方获取 MiSans、MiSans Latin、MiSans TC 与 MiSans L3 四套字体，共 28 个文件。安装流程包含许可提示、文件校验、重试及重启提示；已有完整字体时无需重复下载。请在安装界面阅读并遵守字体许可。
