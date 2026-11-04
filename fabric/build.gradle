@@ -10,6 +10,7 @@ version = "${minecraft_version}-${mod_version}" as String
 
 configurations {
     shadow
+    vulkanShutdownAudit
 }
 
 loom {
@@ -58,6 +59,10 @@ dependencies {
     implementation project(':common')
     compileOnly("org.lwjgl:lwjgl-vulkan:${lwjgl_version}")
     testCompileOnly("org.lwjgl:lwjgl-vulkan:${lwjgl_version}")
+    testImplementation 'org.ow2.asm:asm:9.8'
+    testImplementation 'org.ow2.asm:asm-tree:9.8'
+    testImplementation 'org.ow2.asm:asm-commons:9.8'
+    vulkanShutdownAudit('maven.modrinth:vulkanmod:2eqroDKD') { transitive = false }
 
     ["dev.icyllis:arc3d-compiler"].each {
         implementation(it + ":${arc3d_version}")
@@ -116,6 +121,15 @@ sourcesJar {
 }
 
 test { failOnNoDiscoveredTests = false }
+
+tasks.register('checkFabricVulkanShutdownCompat', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.fabric.FabricVulkanShutdownCompatCheck'
+    doFirst { setArgs([configurations.vulkanShutdownAudit.singleFile.absolutePath]) }
+}
+check.dependsOn checkFabricVulkanShutdownCompat
 
 tasks.withType(ProcessResources).configureEach {
     from project(":common").sourceSets.main.resources
