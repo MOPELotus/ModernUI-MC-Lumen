@@ -11,6 +11,8 @@ Minecraft 1.21.10 的 Fabric 与 NeoForge 均提供两种字体版本。两版�
 
 两版模组 ID 都是 `modernui`，**每次只安装一版**；切换时替换原 JAR。
 
+当前 Core 3.13.0 中，Minecraft 文本渲染路径可显示彩色 emoji；Core 文本控件（如 TextView）及 Canvas 对位图 emoji 存在留白限制。切换普通版与 MiSans 版不会消除这一限制。
+
 ## 字体策略
 
 普通版默认首选 `Inter Frozen Medium`，回退包含 `Source Han Sans CN Medium`（思源黑体）和系统字体等，无需安装 MiSans。Preferences 的 Font 页可设置首选字体、回退列表和字体注册列表。

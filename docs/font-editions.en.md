@@ -11,6 +11,8 @@ Fabric and NeoForge for Minecraft 1.21.10 each provide two font editions. They s
 
 Both use the `modernui` mod ID. **Install one edition at a time**, replacing the JAR when switching.
 
+With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+
 ## Font policies
 
 Standard defaults to `Inter Frozen Medium`, with fallback including `Source Han Sans CN Medium` and system fonts. Installing MiSans is unnecessary. The Preferences Font page provides preferred-font, fallback-list and font-registration settings.
