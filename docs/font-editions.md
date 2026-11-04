@@ -9,6 +9,8 @@
 | 普通版 `standard` | 默认首选 Inter Frozen Medium，使用思源黑体等回退字体；提供首选、回退和字体注册设置 | ModernUI Lumen |
 | MiSans 版 `misans` | 使用 MiSans、MiSans Latin、MiSans TC 和 MiSans L3，提供字重与字体安装入口 | ModernUI Lumen (MiSans) |
 
+当前 Core 3.13.0 中，Minecraft 文本渲染路径可显示彩色 emoji；Core 文本控件（如 TextView）及 Canvas 对位图 emoji 存在留白限制。切换普通版与 MiSans 版不会消除这一限制。
+
 ## MiSans 安装与字重
 
 缺少所需字体时，MiSans 版显示安装页面。请先查看[小米官方字体许可页面](https://hyperos.mi.com/font/zh/download/)，再决定是否点击下载。安装器从小米官方来源下载四套字体包，安装 28 个 TTF 文件，并保存许可 PDF 和下载记录。已有完整所需字体时可直接使用。

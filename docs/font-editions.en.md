@@ -9,6 +9,8 @@ Choose one edition matching your Minecraft version and loader. Both use mod ID `
 | `standard` | Inter Frozen Medium preferred, with fallbacks including Source Han Sans; preferred-font, fallback and font-registration settings | ModernUI Lumen |
 | `misans` | MiSans, MiSans Latin, MiSans TC and MiSans L3, with weight controls and a font-installation entry | ModernUI Lumen (MiSans) |
 
+With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+
 ## MiSans installation and weights
 
 The MiSans edition displays its installer when required fonts are missing. Read [Xiaomi’s official font-license page](https://hyperos.mi.com/font/zh/download/) before choosing to download. The installer downloads four font packages from Xiaomi’s official source, installs 28 TTF files, and saves the license PDF and download record. Complete existing font files can be used directly.
