@@ -11,6 +11,8 @@ Mod version: **3.13.0.10**. Both editions share the Minecraft adaptations and fi
 
 Full filename: `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal[-misans].jar`. Both use mod ID `modernui`. Install one at a time and replace the JAR when switching.
 
+With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+
 ## Fonts and configuration
 
 Standard uses configurable default fonts with preferred-font selection, fallback and registration lists. MiSans uses a fixed MiSans family set, nine weight presets and a missing-font setup flow. After the user reads the license and chooses to download, it retrieves and verifies four official Xiaomi packages containing 28 font files. It supports retry and restart prompts and can reuse existing fonts.
