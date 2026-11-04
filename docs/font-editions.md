@@ -9,6 +9,8 @@
 | 普通版 | ModernUI Lumen | `-universal.jar` | 可自定义字体 |
 | MiSans 版 | ModernUI Lumen (MiSans) | `-universal-misans.jar` | MiSans 字体组合与字重选择 |
 
+当前 Core 3.13.0 中，Minecraft 文本渲染路径可显示彩色 emoji；Core 文本控件（如 TextView）及 Canvas 对位图 emoji 存在留白限制。切换普通版与 MiSans 版不会消除这一限制。
+
 ## 配置
 
 - 普通版：`config/ModernUI/client-standard.toml`。
