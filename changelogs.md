@@ -4,6 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.10
 
+- 修复在当前界面切换模糊效果后未即时生效的问题，并保留屏幕排除规则与背景淡入。
 - 项目名为 ModernUI-MC-Lumen，游戏内显示为 ModernUI Lumen；保留原作者 BloCamLimb 署名，维护者为 MOPELotus。
 - 本分支面向 Minecraft 1.21.6–1.21.8，提供 Fabric、NeoForge 两种加载器的普通版与 MiSans 版。
 - 保留文字滚动、分数像素采样、裁剪与缓存适配，以及 tooltip uniform、输入参数与锁定键处理。

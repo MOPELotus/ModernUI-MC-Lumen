@@ -4,6 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.10
 
+- Fix live blur toggles on the current screen while preserving screen exclusions and background fade-in.
 - Repository name ModernUI-MC-Lumen and in-game name ModernUI Lumen; original author BloCamLimb credited, maintained by MOPELotus.
 - This branch targets Minecraft 1.21.6–1.21.8, with Fabric and NeoForge standard and MiSans editions.
 - Retains text scrolling, fractional sampling, clipping/cache adaptations, tooltip uniform and input parameter/lock-key handling.
