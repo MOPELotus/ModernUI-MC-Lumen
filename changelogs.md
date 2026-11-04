@@ -4,6 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.10
 
+- 修复在当前界面切换模糊效果后未即时生效的问题，并保留屏幕排除规则与背景淡入。
 - 在 Minecraft 1.21 与 1.21.1 的 Fabric / VulkanMod 0.6.7+1.21.1 组合中启用退出资源清理兼容处理。
 - Fork 更名为 ModernUI Lumen，仓库使用 ModernUI-MC-Lumen；保留 BloCamLimb 原作者署名并添加维护者 MOPELotus。模组 ID、API 和配置路径保持兼容。
 - 提供普通版与 MiSans 版，采用各自的客户端配置文件；详见[字体版本说明](docs/font-editions.md)。
