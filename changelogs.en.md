@@ -4,6 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.10
 
+- Enable shutdown resource cleanup compatibility for Minecraft 1.21 and 1.21.1 with Fabric / VulkanMod 0.6.7+1.21.1.
 - Rename the fork to ModernUI Lumen and the repository to ModernUI-MC-Lumen. Retain original author BloCamLimb and add maintainer MOPELotus. Preserve mod ID, API and configuration paths.
 - Provide standard and MiSans editions with separate client configuration files; see [font editions](docs/font-editions.en.md).
 - Maintain the eight Minecraft branches listed in the README, including shared 1.21.6–1.21.8 maintenance on `1.21.8`.

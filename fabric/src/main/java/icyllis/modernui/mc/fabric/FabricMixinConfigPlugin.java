@@ -11,7 +11,10 @@ public final class FabricMixinConfigPlugin extends MixinConfigPlugin {
                 mixinClassName.endsWith(".AccessFabricVulkanLevelRenderer")) {
             var loader = FabricLoader.getInstance();
             if (!loader.getModContainer("minecraft").map(mod ->
-                    mod.getMetadata().getVersion().getFriendlyString().equals("1.21.1")).orElse(false) ||
+                    switch (mod.getMetadata().getVersion().getFriendlyString()) {
+                        case "1.21", "1.21.1" -> true;
+                        default -> false;
+                    }).orElse(false) ||
                     !loader.getModContainer("vulkanmod").map(mod ->
                     mod.getMetadata().getVersion().getFriendlyString().equals("0.6.7+1.21.1")).orElse(false)) {
                 return false;
