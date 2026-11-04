@@ -9,6 +9,8 @@ Both editions use the same Minecraft adaptations and text scrolling, clipping an
 | Standard | ModernUI Lumen | `-universal.jar` | Customizable fonts |
 | MiSans | ModernUI Lumen (MiSans) | `-universal-misans.jar` | MiSans families and weight selection |
 
+With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+
 ## Configuration
 
 - Standard: `config/ModernUI/client-standard.toml`.
