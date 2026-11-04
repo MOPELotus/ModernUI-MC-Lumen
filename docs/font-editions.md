@@ -11,6 +11,8 @@
 
 完整文件名为 `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal[-misans].jar`。两版 ID 都是 `modernui`，每次只安装一版，切换时替换 JAR。
 
+当前 Core 3.13.0 中，Minecraft 文本渲染路径可显示彩色 emoji；Core 文本控件（如 TextView）及 Canvas 对位图 emoji 存在留白限制。切换普通版与 MiSans 版不会消除这一限制。
+
 ## 字体和配置
 
 普通版使用可配置的默认字体方案，支持选择首选字体及设置回退、注册列表。MiSans 版使用固定 MiSans 字体组合，提供 100–900 档位和缺失字体安装流程：用户阅读许可并主动下载后，从小米官方包获取、校验四套字体，共 28 个字体文件；支持失败重试和重启提示，已有字体可复用。
