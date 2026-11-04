@@ -19,9 +19,13 @@
 package icyllis.modernui.mc.mixin;
 
 import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.UIManager;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import org.objectweb.asm.Opcodes;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,6 +36,10 @@ import javax.annotation.Nullable;
 
 @Mixin(Gui.class)
 public abstract class MixinGui {
+
+    @Shadow
+    @Final
+    private GuiRenderState guiRenderState;
 
     @Shadow
     @Nullable
@@ -46,5 +54,15 @@ public abstract class MixinGui {
             opcode = Opcodes.PUTFIELD))
     private void onSetScreen(Screen newScreen, CallbackInfo ci) {
         MuiModApi.dispatchOnScreenChange(screen, newScreen);
+    }
+
+    // Gui owns extraction in 26.2. Consume pending UI frames even when no MUI
+    // screen is open, preserving the existing placement immediately before toasts.
+    @Inject(method = "extractRenderState",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;toastManager()" +
+                    "Lnet/minecraft/client/gui/components/toasts/ToastManager;"), require = 1)
+    private void onRenderToasts(DeltaTracker deltaTracker, boolean shouldRenderLevel,
+                                boolean resourcesLoaded, CallbackInfo ci) {
+        UIManager.getInstance().renderAbove(guiRenderState);
     }
 }

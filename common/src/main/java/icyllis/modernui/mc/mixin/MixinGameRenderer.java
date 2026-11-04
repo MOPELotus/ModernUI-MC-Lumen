@@ -20,10 +20,7 @@ package icyllis.modernui.mc.mixin;
 
 import com.mojang.blaze3d.resource.CrossFrameResourcePool;
 import icyllis.modernui.mc.BlurHandler;
-import icyllis.modernui.mc.UIManager;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.state.GameRenderState;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -43,10 +40,6 @@ public class MixinGameRenderer {
     @Final
     private CrossFrameResourcePool resourcePool;
 
-    @Shadow
-    @Final
-    private GameRenderState gameRenderState;
-
     @Inject(method = "processBlurEffect", at = @At("HEAD"), cancellable = true)
     private void onProcessBlurEffect(CallbackInfo ci) {
         if (BlurHandler.sOverrideVanillaBlur) {
@@ -61,12 +54,5 @@ public class MixinGameRenderer {
             index = 5)
     private int onGetBlurRadius(int option) {
         return BlurHandler.INSTANCE.getBlurRadius(option);
-    }
-
-    @Inject(method = "extractGui",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getToastManager()" +
-                    "Lnet/minecraft/client/gui/components/toasts/ToastManager;"))
-    private void onRenderToasts(DeltaTracker deltaTracker, boolean shouldRenderLevel, boolean resourcesLoaded, CallbackInfo ci) {
-        UIManager.getInstance().renderAbove(gameRenderState.guiRenderState);
     }
 }

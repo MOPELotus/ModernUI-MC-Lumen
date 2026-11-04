@@ -140,3 +140,23 @@ tasks.register('checkPreferredFontIdentifier', JavaExec) {
     }
 }
 check.dependsOn checkPreferredFontIdentifier
+
+tasks.register('checkGuiFrameConsumer', JavaExec) {
+    group = 'verification'
+    description = 'Resolves the compiled above-screen frame consumer against actual Minecraft bytecode.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.GuiFrameConsumerCheck'
+    doFirst {
+        def minecraftJar = configurations.compileClasspath.files.find { jar ->
+            jar.name.endsWith('.jar') && new java.util.jar.JarFile(jar).withCloseable { archive ->
+                archive.getJarEntry('net/minecraft/client/Minecraft.class') != null
+            }
+        }
+        if (minecraftJar == null) throw new GradleException('Missing actual Minecraft JAR for GUI frame consumer verification')
+        def targets = [minecraftJar.absolutePath]
+        if (project.hasProperty('gui_consumer_previous_jar')) targets.add(project.property('gui_consumer_previous_jar'))
+        setArgs(targets)
+    }
+}
+check.dependsOn checkGuiFrameConsumer
