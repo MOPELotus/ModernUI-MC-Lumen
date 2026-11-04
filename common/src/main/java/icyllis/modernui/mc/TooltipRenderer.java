@@ -583,6 +583,12 @@ public final class TooltipRenderer implements ScrollController.IListener {
                     tooltipWidth, tooltipHeight);
             tooltipX = pos.x();
             tooltipY = pos.y();
+            // Vanilla's default positioner does not clamp the top edge.
+            // Keep custom placement and oversized Exact-Off tooltips unchanged.
+            if (positioner instanceof DefaultTooltipPositioner && tooltipY < 6 &&
+                    tooltipHeight <= screenHeight - 12) {
+                tooltipY = 6;
+            }
             maxScroll = 0;
         } else {
             if (mLayoutRTL) {
