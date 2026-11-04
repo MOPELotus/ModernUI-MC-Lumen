@@ -4,6 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.10 · Minecraft 1.21.10
 
+- Fix live blur toggles on the current screen while preserving screen exclusions and background fade-in.
 - Provide Fabric and NeoForge builds in standard and MiSans editions. Standard defaults to Inter/Source Han Sans; MiSans offers license viewing, explicit downloading, retry and restart controls.
 - Improve small floating-point marquee steps, glyph padding and clipping. Shared A8 atlases on 1.21.10 use stable texture-level linear filtering.
 - Adapt this version’s tooltip parameters and 164-byte transform uniform, verify input-event parameter order and mask lock-state bits during Core shortcut matching.
