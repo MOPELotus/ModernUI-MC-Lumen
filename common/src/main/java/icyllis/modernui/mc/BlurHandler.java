@@ -83,6 +83,12 @@ public enum BlurHandler {
 
     private float mBlurRadius;
 
+    private boolean mLastBlurEffect;
+    private boolean mLastBlurForVanillaScreens;
+    private int mLastBlurRadius;
+    private List<Class<? extends Screen>> mLastBlurBlacklist = List.of();
+    private boolean mBlurConfigInitialized;
+
     /**
      * If a screen excluded, the other screens that opened after this screen won't be blurred, unless current screen
      * closed
@@ -95,30 +101,20 @@ public enum BlurHandler {
      * Use blur shader in game renderer post-processing.
      */
     public void blur(@Nullable Screen nextScreen) {
+        if (!mBlurConfigInitialized) {
+            mLastBlurEffect = sBlurEffect;
+            mLastBlurForVanillaScreens = sBlurForVanillaScreens;
+            mLastBlurRadius = sBlurRadius;
+            mLastBlurBlacklist = mBlacklist;
+            mBlurConfigInitialized = true;
+        }
         if (minecraft.level == null) {
             return;
         }
         boolean hasScreen = nextScreen != null;
 
-        boolean blocked = false;
-        if (hasScreen && sBlurEffect) {
-            if (nextScreen instanceof MuiScreen screen) {
-                ScreenCallback callback = screen.getCallback();
-                if (callback != null) {
-                    blocked = !callback.shouldBlurBackground();
-                }
-            } else if (sBlurForVanillaScreens) {
-                final Class<?> t = nextScreen.getClass();
-                for (Class<?> c : mBlacklist) {
-                    if (c.isAssignableFrom(t)) {
-                        blocked = true;
-                        break;
-                    }
-                }
-            } else {
-                blocked = true;
-            }
-        }
+        boolean blocked = hasScreen && sBlurEffect &&
+                isScreenBlocked(nextScreen, sBlurForVanillaScreens, mBlacklist);
 
         if (blocked && mBlurring) {
             mBlurring = false;
@@ -149,6 +145,51 @@ public enum BlurHandler {
         mHasScreen = hasScreen;
     }
 
+    private static boolean isScreenBlocked(Screen screen, boolean blurForVanillaScreens,
+                                           List<Class<? extends Screen>> blacklist) {
+        if (screen instanceof MuiScreen muiScreen) {
+            ScreenCallback callback = muiScreen.getCallback();
+            return callback != null && !callback.shouldBlurBackground();
+        }
+        if (!blurForVanillaScreens) {
+            return true;
+        }
+        for (Class<?> blockedClass : blacklist) {
+            if (blockedClass.isAssignableFrom(screen.getClass())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Reconcile live settings on the render owner, without replaying the screen-open fade. */
+    private void syncBlurConfig() {
+        boolean enabled = sBlurEffect;
+        boolean blurForVanillaScreens = sBlurForVanillaScreens;
+        int radius = sBlurRadius;
+        var blacklist = mBlacklist;
+        if (mLastBlurEffect == enabled && mLastBlurForVanillaScreens == blurForVanillaScreens &&
+                mLastBlurRadius == radius && mLastBlurBlacklist.equals(blacklist)) {
+            return;
+        }
+        mLastBlurEffect = enabled;
+        mLastBlurForVanillaScreens = blurForVanillaScreens;
+        mLastBlurRadius = radius;
+        mLastBlurBlacklist = blacklist;
+        mBlurConfigInitialized = true;
+
+        Screen screen = minecraft.screen;
+        if (!enabled || minecraft.level == null || screen == null || radius < 1 ||
+                isScreenBlocked(screen, blurForVanillaScreens, blacklist)) {
+            mBlurring = false;
+            return;
+        }
+        mBlurring = true;
+        if (mBlurring && !mFadingIn) {
+            updateRadius(radius);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public void loadBlacklist(@Nullable List<? extends String> names) {
         ArrayList<Class<? extends Screen>> blacklist = new ArrayList<>();
@@ -177,6 +218,7 @@ public enum BlurHandler {
      * Render tick, should called before rendering things
      */
     public void onRenderTick(long elapsedTimeMillis) {
+        syncBlurConfig();
         if (mFadingIn) {
             float p = Math.min((float) elapsedTimeMillis / sBackgroundDuration, 1.0f);
             if (mBlurring) {

@@ -4,6 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.10
 
+- Fix live blur toggles on the current screen while preserving screen exclusions and background fade-in.
 - Use ModernUI Lumen for the project and in-game display name, and ModernUI Lumen (MiSans) for that edition. Preserve original credits, licenses and compatibility identifiers.
 - Provide standard and MiSans editions with separate configurations for Fabric and NeoForge.
 - Improve slow text scrolling, glyph sampling, edge clipping and cache reuse; adapt input, tooltips and resource formats to each target Minecraft API.
