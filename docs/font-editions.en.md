@@ -12,6 +12,8 @@ ModernUI Lumen provides standard and MiSans editions with the same UI and text f
 
 Both editions use mod ID `modernui`. Install one edition at a time and replace the JAR when switching. `text.toml`, `common.toml` and bootstrap configuration are shared; font files are stored in `config/ModernUI/fonts`.
 
+With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+
 ## MiSans installation and weights
 
 The MiSans edition checks for missing fonts and provides an installer. Downloads begin when the user chooses them. It obtains MiSans, MiSans Latin, MiSans TC and MiSans L3 from Xiaomi’s official source, totaling 28 files. Installation includes license notices, file verification, retries and a restart prompt. Complete existing fonts need not be downloaded again. Read and comply with the font license in the installer.
