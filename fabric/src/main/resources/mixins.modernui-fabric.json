@@ -6,6 +6,7 @@
   "plugin": "icyllis.modernui.mc.fabric.FabricMixinConfigPlugin",
   "package": "icyllis.modernui.mc.mixin",
   "client": [
+    "MixinAudioTrack",
     "MixinSoundEngine",
     "AccessClientTextTooltip",
     "AccessGameRenderer",
