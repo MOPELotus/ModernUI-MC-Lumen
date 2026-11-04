@@ -4,6 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.10
 
+- Fix live blur toggles on the current screen while preserving screen exclusions and background fade-in.
 - Use ModernUI Lumen project, in-game and artifact names while retaining upstream credits/licenses and compatible mod ID/configuration paths.
 - Provide standard and MiSans editions with separate client configurations; MiSans includes user-confirmed font installation and nine weight presets.
 - Adapt Fabric and NeoForge to Minecraft 1.21.9, including tooltip parameters/uniforms, input modifiers, text sampling, view measurement and window behavior.
