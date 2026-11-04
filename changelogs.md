@@ -4,6 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.10
 
+- 修复在当前界面切换模糊效果后未即时生效的问题，并保留屏幕排除规则与背景淡入。
 - 项目与游戏内显示名称使用 ModernUI Lumen；MiSans 版使用 ModernUI Lumen (MiSans)。保留原作者署名、许可证及兼容标识。
 - 提供普通版、MiSans 版和各自配置，支持 Fabric 与 NeoForge。
 - 改善低速文字滚动、字形采样、边缘裁剪与缓存复用，并按目标 Minecraft API 适配输入、提示框与资源格式。
