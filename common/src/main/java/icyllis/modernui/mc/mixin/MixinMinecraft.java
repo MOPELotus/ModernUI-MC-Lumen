@@ -117,6 +117,12 @@ public abstract class MixinMinecraft {
         }
     }*/
 
+    @Inject(method = "close()V", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/sounds/SoundManager;destroy()V"), require = 1, allow = 1)
+    private void modernui$stopIntegratedAudio(CallbackInfo ci) {
+        UIManager.shutdownUiAndAudio();
+    }
+
     @Inject(method = "close", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/GpuSurface;close()V"))
     private void onClose(CallbackInfo ci) {
         if (icyllis.modernui.core.Core.peekImmediateContext() != null) UIManager.destroy();
