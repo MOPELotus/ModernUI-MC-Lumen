@@ -27,6 +27,7 @@
     "MixinMinecraft",
     "MixinNeoVulkanShutdown",
     "MixinNeoVulkanShutdownGate",
+    "MixinReforgedScreenshot",
     "MixinRenderSystem",
     "MixinSPIRVCodeGenerator",
     "MixinScreen",
