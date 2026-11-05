@@ -23,6 +23,7 @@ import icyllis.modernui.audio.*;
 import icyllis.modernui.core.Core;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import java.io.IOException;
@@ -36,6 +37,7 @@ import java.util.function.Consumer;
 public class MusicPlayer {
 
     private static volatile MusicPlayer sInstance;
+    private static boolean sFinalShutdown;
 
     private Track mCurrentTrack;
     private FFT mFFT;
@@ -52,6 +54,9 @@ public class MusicPlayer {
         }
         synchronized (MusicPlayer.class) {
             if (sInstance == null) {
+                if (sFinalShutdown) {
+                    throw new IllegalStateException("Music player is shutting down");
+                }
                 sInstance = new MusicPlayer();
             }
         }
@@ -80,27 +85,86 @@ public class MusicPlayer {
         mName = null;
     }
 
+    /** Does not create a player or mutate UI-owned current-track fields. */
+    static void beginFinalShutdown() {
+        synchronized (MusicPlayer.class) {
+            sFinalShutdown = true;
+        }
+    }
+
     public void replaceTrack(Path path) {
+        synchronized (MusicPlayer.class) {
+            if (sFinalShutdown) {
+                return;
+            }
+        }
         clearTrack();
         CompletableFuture.supplyAsync(() -> {
-            try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
-                ByteBuffer nativeEncodedData = Core.readIntoNativeBuffer(channel).flip();
-                VorbisPullDecoder decoder = new VorbisPullDecoder(nativeEncodedData);
-                return new Track(decoder);
-            } catch (IOException e) {
-                ModernUIMod.LOGGER.error("Failed to open Ogg Vorbis, {}", path, e);
+            try {
+                return loadTrack(path);
+            } catch (IOException failure) {
+                ModernUIMod.LOGGER.error("Failed to open Ogg Vorbis, {}", path, failure);
                 return null;
+            } catch (RuntimeException | Error failure) {
+                ModernUIMod.LOGGER.error("Failed to load Ogg Vorbis, {}", path, failure);
+                throw failure;
             }
         }).whenCompleteAsync((track, ex) -> {
-            mCurrentTrack = track;
-            if (track != null) {
-                track.setGain(mGain);
-                mName = path.getFileName().toString();
+            synchronized (MusicPlayer.class) {
+                if (sFinalShutdown) {
+                    // Already constructed Tracks are registered with AudioManager, whose
+                    // final snapshot owns cleanup even if this callback is never accepted.
+                    return;
+                }
+                mCurrentTrack = track;
+                if (track != null) {
+                    track.setGain(mGain);
+                    mName = path.getFileName().toString();
+                }
             }
             if (mOnTrackLoadCallback != null) {
                 mOnTrackLoadCallback.accept(track);
             }
         }, Core.getUiThreadExecutor());
+    }
+
+    private static Track loadTrack(Path path) throws IOException {
+        ByteBuffer encoded = null;
+        VorbisPullDecoder decoder = null;
+        Throwable failure = null;
+        try {
+            try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
+                encoded = Core.readIntoNativeBuffer(channel).flip();
+            }
+            decoder = new VorbisPullDecoder(encoded);
+            encoded = null; // ownership transferred to the successfully constructed decoder
+            synchronized (MusicPlayer.class) {
+                if (sFinalShutdown) {
+                    return null;
+                }
+                Track track = new Track(decoder);
+                decoder = null; // Track owns the decoder only after construction succeeds
+                return track;
+            }
+        } catch (Throwable error) {
+            failure = error;
+            throw error;
+        } finally {
+            try {
+                if (decoder != null) {
+                    decoder.close();
+                } else if (encoded != null) {
+                    MemoryUtil.memFree(encoded);
+                }
+            } catch (Throwable cleanupFailure) {
+                if (failure == null) {
+                    throw IntegratedAudioShutdown.rethrow(cleanupFailure);
+                }
+                if (failure != cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+        }
     }
 
     public void setOnTrackLoadCallback(Consumer<Track> onTrackLoadCallback) {
