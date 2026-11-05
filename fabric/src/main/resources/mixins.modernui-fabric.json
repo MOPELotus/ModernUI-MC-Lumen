@@ -48,6 +48,8 @@
     "MixinVulkanPipelineLifecycle",
     "MixinVulkanShutdownOrder",
     "MixinVulkanRenderer",
+    "MixinVulkanScreenshot",
+    "MixinVulkanScreenshotRenderer",
     "AccessVulkanDevice",
     "MixinVulkanDrawBuffersLifecycle"
   ]
