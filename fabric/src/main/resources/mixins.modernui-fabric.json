@@ -47,6 +47,8 @@
     "MixinVulkanDrawBuffersLifecycle",
     "MixinVulkanImage",
     "MixinVulkanRenderer",
+    "MixinVulkanScreenshot",
+    "MixinVulkanScreenshotRenderer",
     "MixinGpuBufferPoolAddress",
     "MixinParcelBufferFree",
     "MixinVulkanBindingBufferFree",
