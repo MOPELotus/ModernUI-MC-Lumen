@@ -23,6 +23,7 @@
     "MixinReforgedVulkanShutdown",
     "MixinReforgedScreenshot",
     "MixinReforgedScreenshotRenderer",
+    "MixinReforgedScreenBlur",
     "MixinInventoryScreen",
     "MixinKeyboardHandler",
     "MixinLevelRendererDBG",
