@@ -3,7 +3,7 @@
   "required": true,
   "mixinPriority": 1,
   "compatibilityLevel": "JAVA_21",
-  "plugin": "icyllis.modernui.mc.MixinConfigPlugin",
+  "plugin": "icyllis.modernui.mc.neoforge.NeoForgeMixinConfigPlugin",
   "package": "icyllis.modernui.mc.mixin",
   "client": [
     "MixinAudioTrack",
@@ -21,6 +21,8 @@
     "MixinGameRendererEXT",
     "MixinReforgedPresentSemaphores",
     "MixinReforgedVulkanShutdown",
+    "MixinReforgedScreenshot",
+    "MixinReforgedScreenshotRenderer",
     "MixinInventoryScreen",
     "MixinKeyboardHandler",
     "MixinLevelRendererDBG",
