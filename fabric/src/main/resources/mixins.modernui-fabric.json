@@ -35,6 +35,8 @@
     "MixinParcelBufferFree",
     "MixinGpuBufferPoolAddress",
     "MixinVulkanRenderer",
+    "MixinVulkanScreenshot",
+    "MixinVulkanScreenshotRenderer",
     "AccessVulkanGlFramebuffer",
     "MixinVulkanCommandEncoderOwnership",
     "AccessVulkanPipelines",

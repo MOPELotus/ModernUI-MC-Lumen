@@ -1,6 +1,7 @@
 package icyllis.modernui.mc.mixin;
 
 import icyllis.modernui.mc.VulkanAcquireToken;
+import icyllis.modernui.mc.VulkanScreenshotCapture;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import org.spongepowered.asm.mixin.Mixin;
@@ -40,6 +41,7 @@ public abstract class MixinVulkanRenderer {
                                      long semaphore, long fence, IntBuffer imageIndex) {
         int result = KHRSwapchain.vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, imageIndex);
         modernui$acquireToken().acquired(result, semaphore);
+        if (this instanceof VulkanScreenshotCapture capture) capture.modernui$screenshotAcquired(result);
         return result;
     }
 
