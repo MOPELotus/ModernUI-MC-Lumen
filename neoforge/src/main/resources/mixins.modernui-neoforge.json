@@ -40,6 +40,7 @@
     "MixinVulkanGpuResourceOwnership",
     "MixinVulkanCloudOwnership",
     "MixinVulkanImageUpload",
+    "MixinVulkanSwapChain",
     "MixinVulkanDeviceManager",
     "MixinVulkanImage",
     "MixinSPIRVCodeGenerator",
