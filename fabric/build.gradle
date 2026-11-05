@@ -63,6 +63,7 @@ dependencies {
     testImplementation 'org.ow2.asm:asm-tree:9.8'
     testImplementation 'org.ow2.asm:asm-commons:9.8'
     vulkanShutdownAudit('maven.modrinth:vulkanmod:2eqroDKD') { transitive = false }
+    modCompileOnly('maven.modrinth:vulkanmod:2eqroDKD') { transitive = false }
 
     ["dev.icyllis:arc3d-compiler"].each {
         implementation(it + ":${arc3d_version}")

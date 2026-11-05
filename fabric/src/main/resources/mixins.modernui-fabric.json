@@ -46,6 +46,8 @@
     "MixinVulkanDeviceManager",
     "MixinVulkanSwapChain",
     "MixinVulkanRenderer",
+    "MixinLegacyVulkanScreenshot",
+    "MixinLegacyVulkanScreenshotRenderer",
     "AccessFabricVulkanLevelRenderer",
     "MixinFabricVulkanShutdown"
   ]

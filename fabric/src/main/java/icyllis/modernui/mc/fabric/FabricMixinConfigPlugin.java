@@ -9,6 +9,8 @@ public final class FabricMixinConfigPlugin extends MixinConfigPlugin {
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         if (mixinClassName.endsWith(".MixinFabricVulkanShutdown") ||
                 mixinClassName.endsWith(".MixinVulkanRenderer") ||
+                mixinClassName.endsWith(".MixinLegacyVulkanScreenshot") ||
+                mixinClassName.endsWith(".MixinLegacyVulkanScreenshotRenderer") ||
                 mixinClassName.endsWith(".AccessFabricVulkanLevelRenderer")) {
             var loader = FabricLoader.getInstance();
             if (!loader.getModContainer("minecraft").map(mod ->
