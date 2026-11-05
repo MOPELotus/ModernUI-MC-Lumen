@@ -144,6 +144,18 @@ public class MusicPlayer {
                 }
                 Track track = new Track(decoder);
                 decoder = null; // Track owns the decoder only after construction succeeds
+                try {
+                    ((BackgroundMusicTrack) (Object) track).modernui$configureBackgroundPlayback();
+                } catch (Throwable configurationFailure) {
+                    try {
+                        track.close();
+                    } catch (Throwable cleanupFailure) {
+                        if (configurationFailure != cleanupFailure) {
+                            configurationFailure.addSuppressed(cleanupFailure);
+                        }
+                    }
+                    throw configurationFailure;
+                }
                 return track;
             }
         } catch (Throwable error) {
