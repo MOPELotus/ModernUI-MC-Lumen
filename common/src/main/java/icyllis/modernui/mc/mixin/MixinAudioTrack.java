@@ -4,6 +4,7 @@ import icyllis.modernui.audio.AudioManager;
 import icyllis.modernui.audio.FFT;
 import icyllis.modernui.audio.SoundSample;
 import icyllis.modernui.audio.Track;
+import icyllis.modernui.mc.BackgroundMusicTrack;
 import org.lwjgl.openal.AL11;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Final;
@@ -21,7 +22,7 @@ import java.util.function.Consumer;
 
 /** Core audio resources share this Track's monitor, including exceptional exits. */
 @Mixin(value = Track.class, remap = false)
-public abstract class MixinAudioTrack {
+public abstract class MixinAudioTrack implements BackgroundMusicTrack {
     @Shadow private int mSource;
     @Shadow @Final private SoundSample mSample;
     @Shadow private int[] mBuffers;
@@ -34,6 +35,13 @@ public abstract class MixinAudioTrack {
 
     @Unique private boolean modernui$closed;
     @Unique private Throwable modernui$closeFailure;
+
+    @Override
+    public synchronized void modernui$configureBackgroundPlayback() {
+        if (modernui$closed || mSource == 0) return;
+        AL11.alSourcei(mSource, AL11.AL_SOURCE_RELATIVE, AL11.AL_TRUE);
+        AL11.alSource3f(mSource, AL11.AL_POSITION, 0f, 0f, 0f);
+    }
 
     /** @author MOPELotus @reason Release source ownership before buffers, once per Track. */
     @Overwrite
