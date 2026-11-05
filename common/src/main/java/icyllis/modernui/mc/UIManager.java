@@ -117,6 +117,11 @@ public abstract class UIManager implements LifecycleOwner {
     private volatile Looper mLooper;
     private volatile boolean mRunning;
     private volatile boolean mShutdownRequested;
+    private boolean mUiAndAudioStopped;
+    private Throwable mUiAndAudioShutdownFailure;
+    private volatile Throwable mUiThreadTerminationFailure;
+    private static boolean sRendererDestroyed;
+    private static Throwable sRendererShutdownFailure;
 
     // the view root impl
     protected volatile ViewRootImpl mRoot;
@@ -224,30 +229,53 @@ public abstract class UIManager implements LifecycleOwner {
 
     @UiThread
     private void run() {
+        Throwable failure = null;
         try {
-            init();
-        } catch (Throwable e) {
-            LOGGER.fatal(MARKER, "UI manager failed to initialize", e);
-            return;
-        }
-        while (mRunning) {
             try {
-                Looper.loop();
-            } catch (Throwable e) {
-                LOGGER.error(MARKER, "An error occurred on UI thread", e);
-                // dev can add breakpoints
-                if (mRunning && ModernUIMod.isDeveloperMode()) {
-                    continue;
-                } else {
-                    minecraft.tell(this::dump);
-                    minecraft.delayCrashRaw(CrashReport.forThrowable(e, "Exception on UI thread"));
-                }
+                init();
+            } catch (Throwable error) {
+                failure = error;
+                LOGGER.fatal(MARKER, "UI manager failed to initialize", error);
+                return;
             }
-            break;
+            while (mRunning) {
+                try {
+                    Looper.loop();
+                } catch (Throwable error) {
+                    LOGGER.error(MARKER, "An error occurred on UI thread", error);
+                    if (mRunning && ModernUIMod.isDeveloperMode()) {
+                        continue;
+                    }
+                    failure = error;
+                    minecraft.tell(this::dump);
+                    minecraft.delayCrashRaw(CrashReport.forThrowable(error, "Exception on UI thread"));
+                }
+                break;
+            }
+        } catch (Throwable error) {
+            failure = IntegratedAudioShutdown.combine(failure, error);
+            throw IntegratedAudioShutdown.rethrow(failure);
+        } finally {
+            try {
+                if (mRoot != null) {
+                    mRoot.mSurface = RefCnt.move(mRoot.mSurface);
+                }
+            } catch (Throwable error) {
+                failure = IntegratedAudioShutdown.combine(failure, error);
+            }
+            try {
+                if (mLooper != null) {
+                    Core.requireUiRecordingContext().unref();
+                }
+            } catch (Throwable error) {
+                failure = IntegratedAudioShutdown.combine(failure, error);
+            }
+            mUiThreadTerminationFailure = failure;
+            if (failure != null) {
+                LOGGER.error(MARKER, "UI thread terminated with a failure", failure);
+            }
+            LOGGER.debug(MARKER, "Quited UI thread");
         }
-        mRoot.mSurface = RefCnt.move(mRoot.mSurface);
-        Core.requireUiRecordingContext().unref();
-        LOGGER.debug(MARKER, "Quited UI thread");
     }
 
     /**
@@ -1215,35 +1243,76 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
-    public static void destroy() {
-        LOGGER.debug(MARKER, "Quiting Modern UI");
-        if (sInstance != null) sInstance.requestShutdown();
-        BlurHandler.INSTANCE.closeEffect();
-        FontResourceManager.getInstance().close();
-        ImageStore.getInstance().clear();
-        if (sInstance != null) {
-            AudioManager.getInstance().close();
+    /** Stop producers and integrated audio while Minecraft still owns its AL context. */
+    public static void shutdownUiAndAudio() {
+        UIManager instance = sInstance;
+        if (instance == null) {
+            return;
+        }
+        Core.checkRenderThread();
+        if (instance.mUiAndAudioShutdownFailure != null) {
+            throw IntegratedAudioShutdown.rethrow(instance.mUiAndAudioShutdownFailure);
+        }
+        if (instance.mUiAndAudioStopped) {
+            return;
+        }
+        try {
+            MusicPlayer.beginFinalShutdown();
+            instance.requestShutdown();
             try {
-                sInstance.mUiThread.join(1000);
-            } catch (InterruptedException e) {
+                instance.mUiThread.join(1000);
+            } catch (InterruptedException failure) {
                 Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while stopping the UI thread", e);
+                throw new IllegalStateException("Interrupted while stopping the UI thread", failure);
             }
-            if (sInstance.mUiThread.isAlive()) {
-                throw new IllegalStateException("UI thread did not stop before renderer shutdown");
+            if (instance.mUiThread.isAlive()) {
+                throw new IllegalStateException("UI thread did not stop before audio shutdown");
             }
-            if (sInstance.mVulkanLayer != null) {
+            Throwable failure = instance.mUiThreadTerminationFailure;
+            try {
+                IntegratedAudioShutdown.close(AudioManager.getInstance());
+            } catch (Throwable audioFailure) {
+                failure = IntegratedAudioShutdown.combine(failure, audioFailure);
+            }
+            if (failure != null) {
+                throw IntegratedAudioShutdown.rethrow(failure);
+            }
+            instance.mUiAndAudioStopped = true;
+        } catch (Throwable failure) {
+            instance.mUiAndAudioShutdownFailure = failure;
+            throw IntegratedAudioShutdown.rethrow(failure);
+        }
+    }
+
+    public static void destroy() {
+        if (sRendererShutdownFailure != null) {
+            throw IntegratedAudioShutdown.rethrow(sRendererShutdownFailure);
+        }
+        if (sRendererDestroyed) {
+            return;
+        }
+        try {
+            shutdownUiAndAudio();
+            LOGGER.debug(MARKER, "Quiting Modern UI");
+            BlurHandler.INSTANCE.closeEffect();
+            FontResourceManager.getInstance().close();
+            ImageStore.getInstance().clear();
+            if (sInstance != null && sInstance.mVulkanLayer != null) {
                 sInstance.mVulkanLayer.close();
                 sInstance.mVulkanLayer = null;
             }
+            if (ModernUIMod.isVulkanModLoaded()) VulkanModIntegration.drainFrameOps();
+            System.gc();
+            Core.requireImmediateContext().unref();
+            if (ModernUIMod.isVulkanModLoaded()) {
+                VulkanModIntegration.closeContext(sInstance == null ? null : sInstance.mUiThread);
+            }
+            LOGGER.debug(MARKER, "Quited Modern UI");
+            sRendererDestroyed = true;
+        } catch (Throwable failure) {
+            sRendererShutdownFailure = failure;
+            throw IntegratedAudioShutdown.rethrow(failure);
         }
-        if (ModernUIMod.isVulkanModLoaded()) VulkanModIntegration.drainFrameOps();
-        System.gc();
-        Core.requireImmediateContext().unref();
-        if (ModernUIMod.isVulkanModLoaded()) {
-            VulkanModIntegration.closeContext(sInstance == null ? null : sInstance.mUiThread);
-        }
-        LOGGER.debug(MARKER, "Quited Modern UI");
     }
 
     @UiThread
