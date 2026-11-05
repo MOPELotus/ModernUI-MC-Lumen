@@ -42,6 +42,7 @@
     "MixinSPIRVCodeGenerator",
     "MixinVulkanImage",
     "MixinVulkanImageUpload",
+    "MixinVulkanSwapChain",
     "MixinVulkanDeviceManager"
   ]
 }

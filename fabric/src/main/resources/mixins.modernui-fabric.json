@@ -44,6 +44,7 @@
     "MixinVulkanImage",
     "MixinVulkanImageUpload",
     "MixinVulkanDeviceManager",
+    "MixinVulkanSwapChain",
     "AccessFabricVulkanLevelRenderer",
     "MixinFabricVulkanShutdown"
   ]
