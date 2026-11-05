@@ -185,3 +185,19 @@ tasks.register('checkVulkanPresentSemaphore', JavaExec) {
     doFirst { setArgs(configurations.vulkanApiAudit.files.collect { it.absolutePath }) }
 }
 check.dependsOn checkVulkanPresentSemaphore
+
+// The legacy F2 flush submits before submitFrame's acquire wait.
+tasks.register('checkVulkanAcquire', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.test.VulkanAcquireCheck'
+    doFirst {
+        def backend = configurations.vulkanApiAudit.resolvedConfiguration.resolvedArtifacts.find {
+            it.moduleVersion.id.group == 'maven.modrinth' && it.moduleVersion.id.name == 'vulkanmod'
+        }
+        if (backend == null) throw new GradleException('Missing audited Fabric VulkanMod release')
+        setArgs([backend.file.absolutePath])
+    }
+}
+check.dependsOn checkVulkanAcquire
