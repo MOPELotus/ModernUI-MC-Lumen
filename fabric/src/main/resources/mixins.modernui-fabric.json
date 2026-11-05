@@ -42,6 +42,7 @@
     "MixinVulkanGpuResourceOwnership",
     "MixinVulkanCloudOwnership",
     "MixinVulkanImageUpload",
+    "MixinVulkanSwapChain",
     "MixinVulkanDeviceManager",
     "MixinVulkanDrawBuffersLifecycle",
     "MixinVulkanImage",
