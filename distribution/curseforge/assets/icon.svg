@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>ModernUI Lumen</title>
+  <desc>Original ML monogram inside a window, drawn for the independently maintained ModernUI Lumen fork.</desc>
+  <rect width="512" height="512" rx="108" fill="#101f2f"/>
+  <rect x="52" y="80" width="408" height="352" rx="40" fill="none" stroke="#37596b" stroke-width="8"/>
+  <path d="M56 146H456" fill="none" stroke="#37596b" stroke-width="8"/>
+  <circle cx="88" cy="113" r="9" fill="#f1c67d"/>
+  <circle cx="119" cy="113" r="9" fill="#78ddd6"/>
+  <circle cx="150" cy="113" r="9" fill="#37596b"/>
+  <path d="M108 356V208L176 287L244 208V356" fill="none" stroke="#a8f5e4" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M306 208V356H408" fill="none" stroke="#f1c67d" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M382 216L394 188L406 216L434 228L406 240L394 268L382 240L354 228Z" fill="#e6fbf5"/>
+</svg>

@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # Dispatch the standard-only CurseForge workflow after a new release.
 
 jobs:
   build:
@@ -99,18 +100,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
           PRERELEASE: ${{ github.event.inputs.prerelease }}
+          CURSEFORGE_ENABLED: ${{ vars.CURSEFORGE_ENABLED }}
         run: |
           set -euo pipefail
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release upload "${RELEASE_TAG}" release/*.jar --clobber
+            # Keep both editions in CI artifacts; public releases contain only standard JARs.
+            gh release upload "${RELEASE_TAG}" release/*-universal.jar --clobber
           else
             prerelease_arg=()
             if [[ "${PRERELEASE}" == "true" ]]; then
               prerelease_arg=(--prerelease)
             fi
-            gh release create "${RELEASE_TAG}" release/*.jar \
+            gh release create "${RELEASE_TAG}" release/*-universal.jar \
               --title "${RELEASE_TAG}" \
               --target "${GITHUB_SHA}" \
               --generate-notes \
               "${prerelease_arg[@]}"
+            # GITHUB_TOKEN-created releases do not trigger another release workflow.
+            if [[ "${CURSEFORGE_ENABLED}" == "true" ]]; then
+              gh workflow run curseforge-release.yml --ref master \
+                -f publish=true -f tag="${RELEASE_TAG}"
+            fi
           fi

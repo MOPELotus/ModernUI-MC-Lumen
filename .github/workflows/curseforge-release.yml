@@ -1,0 +1,214 @@
+name: CurseForge 普通版
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 上传到 CurseForge（默认仅构建和校验）
+        type: boolean
+        default: false
+      tag:
+        description: 上传时必须填写与发布清单一致的版本标签
+        type: string
+        required: false
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: curseforge-standard-release
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: >-
+      github.repository == 'MOPELotus/ModernUI-MC-Lumen' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') ||
+       (github.event_name == 'release' && vars.CURSEFORGE_ENABLED == 'true'))
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      control_sha: ${{ steps.control.outputs.sha }}
+      publish: ${{ steps.mode.outputs.publish }}
+      tag: ${{ steps.mode.outputs.tag }}
+    steps:
+      # Publishing code and target pins come from master, not an arbitrary release tag.
+      - uses: actions/checkout@v5
+        with:
+          ref: master
+          persist-credentials: false
+      - id: control
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - id: plan
+        run: |
+          python3 scripts/curseforge_test.py
+          echo "matrix=$(python3 scripts/curseforge.py matrix)" >> "$GITHUB_OUTPUT"
+      - id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
+          INPUT_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          ENABLED: ${{ vars.CURSEFORGE_ENABLED }}
+          PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          HAS_TOKEN: ${{ secrets.CURSEFORGE_TOKEN != '' }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re
+          p = json.load(open('release/curseforge-targets.json'))
+          publish = os.environ['EVENT'] == 'release' or os.environ['INPUT_PUBLISH'] == 'true'
+          tag = os.environ['RELEASE_TAG'] if os.environ['EVENT'] == 'release' else os.environ['INPUT_TAG']
+          if publish:
+              assert os.environ['ENABLED'] == 'true', 'Set CURSEFORGE_ENABLED=true only when ready to publish'
+              assert os.environ['HAS_TOKEN'] == 'true', 'Missing CURSEFORGE_TOKEN secret'
+              assert re.fullmatch(r'[1-9]\d*', os.environ['PROJECT_ID']), 'Missing numeric CURSEFORGE_PROJECT_ID variable'
+              assert tag in (p['version'], 'v' + p['version']), 'Release tag does not match pinned plan'
+              assert os.environ['GITHUB_RUN_ATTEMPT'] == '1', 'Do not rerun upload jobs: inspect previously uploaded files first'
+          else:
+              tag = ''
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'publish={str(publish).lower()}\ntag={tag}\n')
+          PY
+
+  build:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: 获取固定的发布工具
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.control_sha }}
+          path: control
+          persist-credentials: false
+      - name: 获取已验收的分支提交
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.ref }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - uses: gradle/actions/setup-gradle@v5
+      - name: 核对源码和版本范围
+        env:
+          BRANCH: ${{ matrix.branch }}
+        run: python3 control/scripts/curseforge.py verify-source source --branch "$BRANCH"
+      - name: 仅构建普通版
+        working-directory: source
+        run: bash ./gradlew --no-daemon clean build -Pfont_variant=standard -Penabled_platforms=fabric,neoforge
+      - name: 按清单精确收集并校验两个 JAR
+        env:
+          BRANCH: ${{ matrix.branch }}
+        run: |
+          python3 - <<'PY'
+          import importlib.util, os, pathlib, shutil
+          spec = importlib.util.spec_from_file_location('cf', 'control/scripts/curseforge.py')
+          cf = importlib.util.module_from_spec(spec); spec.loader.exec_module(cf)
+          plan = cf.load_plan('control/release/curseforge-targets.json')
+          target = next(t for t in plan['targets'] if t['branch'] == os.environ['BRANCH'])
+          out = pathlib.Path('bundle'); out.mkdir()
+          for loader, name in cf.filenames(plan, target).items():
+              shutil.copyfile(pathlib.Path('source') / loader / 'build/libs' / name, out / name)
+          cf.validate_bundle(out, plan, os.environ['BRANCH'])
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: curseforge-standard-${{ matrix.minecraft }}
+          path: bundle/*.jar
+          if-no-files-found: error
+          retention-days: 7
+
+  validate:
+    needs: [plan, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.control_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: curseforge-standard-*
+          path: bundle
+          merge-multiple: true
+      - name: 在任何上传前校验完整 16 包
+        run: python3 scripts/curseforge.py validate bundle > curseforge-validation.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: curseforge-validated-standard-bundle
+          path: |
+            bundle/*.jar
+            curseforge-validation.json
+          retention-days: 7
+
+  publish:
+    needs: [plan, validate]
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.control_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: curseforge-validated-standard-bundle
+          path: validated
+      - name: 上传前只读检查平台版本标签
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+        run: python3 scripts/curseforge.py preflight validated/bundle --tag "$RELEASE_TAG"
+      - name: 持久预留本次版本，拒绝重复及不确定的重试
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          version = json.load(open('release/curseforge-targets.json'))['version']
+          marker = f'curseforge-upload-reservation-{version}.json'
+          # Both allowed spellings refer to one mod release, never two CF uploads.
+          for tag in (version, 'v' + version):
+              result = subprocess.run(['gh', 'api', f'repos/{os.environ["GITHUB_REPOSITORY"]}/releases/tags/{tag}'],
+                                      capture_output=True, text=True)
+              if result.returncode == 0:
+                  names = {a['name'] for a in json.loads(result.stdout)['assets']}
+                  assert marker not in names, 'An upload reservation exists: inspect CurseForge files and receipts before any retry'
+              else:
+                  assert tag != os.environ['RELEASE_TAG'] and 'HTTP 404' in result.stderr, 'Cannot verify existing release reservations; refusing upload'
+          state = {'version': version, 'state': 'reserved-before-first-upload',
+                   'workflow_url': os.environ['GITHUB_SERVER_URL'] + '/' + os.environ['GITHUB_REPOSITORY'] +
+                                   '/actions/runs/' + os.environ['GITHUB_RUN_ID']}
+          pathlib.Path(marker).write_text(json.dumps(state, indent=2) + '\n')
+          # No --clobber: the reservation must be a fresh release asset.
+          subprocess.run(['gh', 'release', 'upload', os.environ['RELEASE_TAG'], marker], check=True)
+          PY
+      - name: 发布普通版
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+        run: >-
+          python3 scripts/curseforge.py publish validated/bundle
+          --tag "$RELEASE_TAG"
+          --receipt curseforge-upload-receipt.json
+      - name: 保留成功及中途失败的上传回执
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: curseforge-upload-receipt
+          path: curseforge-upload-receipt.json
+          if-no-files-found: ignore
+          retention-days: 90
