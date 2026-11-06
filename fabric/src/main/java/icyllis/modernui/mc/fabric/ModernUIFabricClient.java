@@ -20,8 +20,6 @@ package icyllis.modernui.mc.fabric;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
-import fuzs.forgeconfigapiport.fabric.api.v5.ModConfigEvents;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
@@ -49,7 +47,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
-import net.neoforged.fml.config.ModConfig;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
@@ -140,8 +137,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });*/
 
-        ModConfigEvents.loading(ID).register(ConfigImpl::reloadAnyClient);
-        ModConfigEvents.reloading(ID).register(ConfigImpl::reloadAnyClient);
+        ConfigImpl.loadClientConfigs();
 
         ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
             UIManagerFabric.initializeRenderer();
@@ -197,12 +193,6 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                 }
             }
         });
-
-        icyllis.modernui.mc.FontVariantConfig.prepare(MuiPlatformFabric.BOOTSTRAP_PATH.getParent());
-        ConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
-                ModernUI.NAME_CPT + "/" + icyllis.modernui.mc.FontVariant.CLIENT_CONFIG_NAME);
-        ConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
-                ModernUI.NAME_CPT + "/text.toml");
 
         FontResourceManager.getInstance();
         if (ModernUIMod.isTextEngineEnabled()) {

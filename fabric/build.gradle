@@ -33,10 +33,6 @@ repositories {
     maven {
         url 'https://maven.izzel.io/releases/'
     }
-    maven {
-        url 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
-        content { includeGroup 'fuzs.forgeconfigapiport' }
-    }
     mavenLocal()
     flatDir {
         dir "${rootProject.projectDir}/libs"
@@ -51,8 +47,6 @@ dependencies {
     modApi "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
 
     modImplementation "com.terraformersmc:modmenu:${modmenu_version}"
-
-    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:21.8.1"
 
     implementation project(':common')
 
