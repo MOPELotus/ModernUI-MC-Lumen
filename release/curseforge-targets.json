@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "version": "3.13.0.10",
-  "changelog": "distribution/curseforge/changelog-3.13.0.10.md",
+  "changelog": "release/changelogs/3.13.0.10.md",
   "release_type": "release",
   "upstream_project": 352491,
   "targets": [

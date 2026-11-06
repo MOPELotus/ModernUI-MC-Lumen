@@ -30,7 +30,7 @@ def load_plan(path):
     require(re.fullmatch(r'\d+\.\d+\.\d+\.\d+', plan['version']), 'invalid mod version')
     require(plan['release_type'] in ('release', 'beta', 'alpha'), 'invalid release type')
     require(plan['upstream_project'] == 352491, 'upstream relation must identify Modern UI')
-    require(plan['changelog'] == f'distribution/curseforge/changelog-{plan["version"]}.md',
+    require(plan['changelog'] == f'release/changelogs/{plan["version"]}.md',
             'changelog must match the release version')
     targets = plan['targets']
     require(len(targets) == 8, 'expected all eight maintained branches')
