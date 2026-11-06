@@ -2,74 +2,89 @@
 
 # ModernUI Lumen
 
-**ModernUI Lumen** is **MOPELotus**’s independently maintained fork of [Modern UI for Minecraft](https://github.com/BloCamLimb/ModernUI-MC), originally created by **BloCamLimb**, based on the [ModernUI framework](https://github.com/BloCamLimb/ModernUI). It retains upstream credits and licenses and is not an official upstream release. The current mod version is **3.13.0.10**.
+ModernUI Lumen is a fork of [Modern UI for Minecraft](https://github.com/BloCamLimb/ModernUI-MC), maintained by **MOPELotus**. The original mod is by **BloCamLimb**.
 
-[Source](https://github.com/MOPELotus/ModernUI-MC-Lumen) · [Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues) · [Releases](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [Changelog](changelogs.en.md)
+Modern UI brings its interface framework to Minecraft and provides text layout and rendering for vanilla screens. You can choose fonts, change screen backgrounds and tooltips, and use its APIs to build interfaces for other mods.
+
+Lumen maintains the Minecraft versions listed below, with fixes for scrolling-lyric text jitter, tooltips, input, and rendering backends. The current development version is **3.13.0.10**.
+
+[Downloads](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [Changelog](changelogs.en.md) · [Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
 
 ## Features
 
-The mod provides a ModernUI application environment and development API inside Minecraft, together with text layout and rendering extensions for vanilla GUI. Features include font selection and fallback, TrueType/OpenType loading, antialiased text, bidirectional text and line breaking, editing undo/redo, smooth scrolling, configurable tooltips, background blur, window modes, inactive-window frame and volume controls, local music playback and spectrum display.
+Most features come from upstream. Press **Ctrl+K** to open the action center, then open **Preferences**:
 
-Marquee adaptations cover floating-point movement, sampling and clipping. Minecraft’s text engine and Core widgets use different glyph paths: vanilla color emoji rendering does not establish color emoji or IME preedit support in every Core widget. NeoForge provides the C-key zoom extension; Fabric does not. Compatibility with other rendering mods requires checks for the exact version, loader and backend.
+- Choose **Current Font** and edit the **Fallback Font Family List** and **Font Registration List**. TrueType and OpenType fonts are supported.
+- **Modern Text Engine** provides Unicode text layout, **Anti-aliasing**, and **Color Emoji**. **Emoji Shortcodes** are also available in chat.
+- Adjust **Blur Effect**, **Background Fade-in Duration**, and **Background Opacity**.
+- Change tooltip **Border Style**, **Rounded Corners**, **Center Title**, and **Adaptive Colors**.
+- Enable **Smooth Scrolling**, **Inventory Pause**, and **Ding**, or adjust **Window Mode** and the frame rate and volume when the window is inactive.
 
-## Font editions and installation
+Upstream's text-field undo/redo, local music playback, and spectrum display are also included.
 
-- **Standard**: defaults to `Inter Frozen Medium`, with fallback including `Source Han Sans CN Medium`. Preferred, fallback and registered font lists are configurable. Installing MiSans is unnecessary.
-- **MiSans**: displayed as `ModernUI Lumen (MiSans)`, with MiSans, MiSans L3, MiSans Latin and MiSans TC. Missing fonts open a setup interface with the license link, an explicit Download action, progress, retry and exit/restart controls. Four Xiaomi packages supply 28 TTF files; the installer also saves the license PDF and a download record.
+## Installation
 
-Both editions use the mod ID `modernui`. **Install only one edition at a time**, replacing the JAR when switching. Resource namespaces, Java packages, APIs and `config/ModernUI/` paths remain compatible. See [font editions](docs/font-editions.en.md) for configuration, weight mappings and downloading behavior.
+Put the JAR for your Minecraft version and loader in the client `mods` folder. Both Fabric and NeoForge are supported.
 
-## Maintained branches
+- **Fabric** requires Fabric API.
+- Configuration is built in. **Forge Config API Port is not required.** ModernUI Core is bundled too.
+- Install this instead of upstream Modern UI, as both use the `modernui` mod ID. Replace the JAR when switching.
 
-All eight families below are maintained. Maintenance scope does not mean every Minecraft/loader/backend combination has completed runtime acceptance. Functional, visual and physical-GPU checks are still being performed per combination. Use the matching branch’s mod metadata when installing.
+CurseForge releases will contain the standard edition only. See [font editions](docs/font-editions.en.md) for the differences between the standard and MiSans editions.
 
-| Branch | Minecraft maintenance range | Status |
-| --- | --- | --- |
-| `1.21.1` | 1.21–1.21.1 | Maintained |
-| `1.21.8` | 1.21.6–1.21.8 | Maintained |
-| `1.21.9` | 1.21.9 | Maintained |
-| `1.21.10` | 1.21.10 | Maintained |
-| `1.21.11` | 1.21.11 | Maintained |
-| `26.1` | 26.1 family | Maintained |
-| `26.2` | 26.2 | Maintained |
-| `master` | 26.3 | Maintained |
+## Supported versions
 
-`master` tracks 26.3. Branches keep their own toolchains and loader dependencies; sharing a JAR across families is not guaranteed.
+| Minecraft | Branch | Loaders | Java | Status |
+| --- | --- | --- | --- | --- |
+| 1.21–1.21.1 | `1.21.1` | Fabric / NeoForge | 21+ | Maintained |
+| 1.21.6–1.21.8 | `1.21.8` | Fabric / NeoForge | 21+ | Maintained |
+| 1.21.9 | `1.21.9` | Fabric / NeoForge | 21+ | Maintained |
+| 1.21.10 | `1.21.10` | Fabric / NeoForge | 21+ | Maintained |
+| 1.21.11 | `1.21.11` | Fabric / NeoForge | 21+ | Maintained |
+| 26.1–26.1.2 | `26.1` | Fabric / NeoForge | 25+ | Maintained |
+| 26.2 | `26.2` | Fabric / NeoForge | 25+ | Maintained |
+| 26.3 | `master` | Fabric / NeoForge | 25+ | Maintained |
 
-## This branch: Minecraft 1.21.10
+## Vulkan and compatibility notes
 
-Fabric and NeoForge each have standard and MiSans builds, producing four artifacts. OpenGL is a target for both loaders. Fabric’s Vulkan combination uses external VulkanMod 0.6.6, whose package metadata includes 1.21.9 and 1.21.10. The currently recorded NeoForge 1.21.10 Vulkan combination lacks a matching published package and is recorded as unavailable, not tested successfully.
+Minecraft 26.2 / 26.3 have a native Vulkan backend, so VulkanMod is not needed. Add `--graphicsBackend VULKAN` to the launcher's **game arguments**, or `--graphicsBackend OPENGL` to switch back. These are not JVM arguments.
 
-Vulkan integration uses the external backend’s device. A successful build, process launch or detected GPU alone does not establish acceptance. Graphics validation must confirm the physical device in client logs and operate and inspect the target pages. Tooltip, input-event and uniform interfaces still require version-specific checks.
+Earlier versions need a VulkanMod build for the matching Minecraft version and loader. Use OpenGL if no suitable build is available.
+
+<details>
+<summary>NeoForge early loading window</summary>
+
+Disable the early loading window for native Vulkan on 26.2. Add this line before any TOML section in the instance's `config/fml.toml`, then restart:
+
+```toml
+earlyWindowControl = false
+```
+
+The NeoForge 26.3.0.101 setup we tested on Linux / NVIDIA also needs this setting to avoid startup crashes or reports of unclosed GPU resources on exit. Other systems may behave differently.
+
+</details>
+
+<details>
+<summary>Remove Reloading Screen (26.3 / Fabric)</summary>
+
+If you use Remove Reloading Screen and encounter missing-shader errors at startup, change `[global]` → `hideOverlays` in its configuration from `"ALL"` to `"RELOADING"`, then restart. This keeps the initial loading screen and hides later resource reload screens.
+
+</details>
 
 ## Building
 
-Use **JDK 21** and this checkout’s Gradle wrapper and dependencies. Give 1.21.9 and 1.21.10 separate `GRADLE_USER_HOME` directories to avoid sharing Loom layered-mapping caches.
+Use the JDK required by your branch and run:
 
 ```sh
-export JAVA_HOME=/path/to/jdk-21
-export PATH="$JAVA_HOME/bin:$PATH"
-export GRADLE_USER_HOME="$HOME/.gradle-modernui-1.21.10"
-./gradlew clean build -Pfont_variant=standard
-# Collect the final standard JARs before the next clean.
-./gradlew clean build -Pfont_variant=misans
+./gradlew build -Pfont_variant=standard
 ```
 
-Final remapped artifacts are under `fabric/build/libs` and `neoforge/build/libs`:
+Output JARs are in `fabric/build/libs/` and `neoforge/build/libs/`. Use `-Pfont_variant=misans` to build the MiSans edition.
 
-- Standard: `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
-- MiSans: `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
+[CurseForge page materials and publishing setup](https://github.com/MOPELotus/ModernUI-MC-Lumen/tree/master/distribution/curseforge).
 
-Install final artifacts rather than `-shadow.jar` or development JARs. Omitting `font_variant` builds standard. This branch’s workflow builds on pushes to `1.21.10`, pull requests targeting it, manual dispatch and tag pushes. CI builds both editions and uploads `modernui-lumen-release-jars`; a normal branch push only builds artifacts. A tag push or a manual workflow with a nonempty release tag creates or updates a GitHub Release.
+## License and credits
 
-Gradle project names `ModernUI-Fabric`, `ModernUI-NeoForge`, `ModernUI-Forge` and Maven coordinates remain compatible. A project name does not imply every loader is enabled here or that this fork is published to upstream’s Maven repository.
+The original mod and [ModernUI Framework](https://github.com/BloCamLimb/ModernUI) are by **BloCamLimb and contributors**, under [LGPL-3.0-or-later](LICENSE). The Lumen fork is maintained by **MOPELotus**.
 
-## Credits and licenses
-
-- Modern UI for Minecraft: Copyright (C) 2019–2026 BloCamLimb et al., [LGPL-3.0-or-later](https://www.gnu.org/licenses/lgpl-3.0.en.html).
-- [Source Han Sans](https://github.com/adobe-fonts/source-han-sans): Adobe, OFL-1.1.
-- [JetBrains Mono](https://www.jetbrains.com/lp/mono/): JetBrains, OFL-1.1.
-- [Inter](https://github.com/rsms/inter): RSMS, OFL-1.1. The included modified Inter retains the original license and copyright notices.
-- MiSans is copyrighted by Xiaomi and governed by its Font License Agreement. The MiSans edition provides the official license link and download workflow; MiSans is not treated as a freely relicensable repository asset.
-
-The repository’s original license texts remain applicable. This documentation does not replace them.
+Bundled [Source Han Sans](https://github.com/adobe-fonts/source-han-sans), [JetBrains Mono](https://www.jetbrains.com/lp/mono/), and [Inter](https://github.com/rsms/inter) retain their OFL licenses and font copyright notices. MiSans uses Xiaomi's official license.

@@ -2,74 +2,89 @@
 
 # ModernUI Lumen
 
-**ModernUI Lumen** 是 **MOPELotus** 独立维护的 [Modern UI for Minecraft](https://github.com/BloCamLimb/ModernUI-MC) 分支，原作者为 **BloCamLimb**，基于 [ModernUI 框架](https://github.com/BloCamLimb/ModernUI)。项目保留上游署名和许可证，不属于上游官方发行版。当前模组版本为 **3.13.0.10**。
+ModernUI Lumen 是 [Modern UI for Minecraft](https://github.com/BloCamLimb/ModernUI-MC) 的维护分支，由 **MOPELotus** 维护，原作者是 **BloCamLimb**。
 
-[源码](https://github.com/MOPELotus/ModernUI-MC-Lumen) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues) · [发行页面](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [更新记录](changelogs.md)
+Modern UI 把自己的界面框架带进了 Minecraft，也为原版界面提供了新的文字排版和渲染。你可以换字体、调整背景和物品提示的样式，其他模组也可以用它来做界面。
+
+Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的文字抖动、tooltip、输入和不同渲染后端的问题。当前开发版本是 **3.13.0.10**。
+
+[下载](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [更新记录](changelogs.md) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
 
 ## 功能
 
-模组为 Minecraft 提供 ModernUI 界面运行环境、开发 API，以及原版 GUI 的现代文字排版和渲染扩展。主要功能包括字体选择与回退、TrueType/OpenType 字体加载、抗锯齿文字、双向文本与换行处理、文字编辑撤销/重做、平滑滚动、可配置 tooltip、背景模糊、窗口模式、失焦帧率与音量控制、本地音乐播放和频谱显示。
+大部分功能和上游相同，安装后按 **Ctrl+K** 打开操作中心，在「偏好设置」里调整：
 
-走马灯保留浮点位移、采样与裁剪适配。Minecraft 文字引擎与 Core 控件有不同的字形路径，不能将原版彩色 emoji 渲染能力等同于所有 Core 控件都支持彩色 emoji 或 IME 预编辑。NeoForge 提供 C 键缩放扩展；Fabric 不提供此扩展。与其他渲染模组的兼容性须按具体版本、加载器及后端验证。
+- 在「字体」页选择「当前字体」，设置「回退字体家族列表」和「字体注册列表」。支持 TrueType / OpenType 字体。
+- 「现代文本引擎」提供 Unicode 排版、「抗锯齿」和「彩色表情符号」；聊天中也可以使用「表情符号简码」。
+- 调整「模糊效果」「背景淡入时长」和「背景不透明度」。
+- 为物品提示设置「边框样式」「圆角化」「标题居中对齐」和「动态颜色」。
+- 开启「平滑滚动」「物品栏暂停」和「游戏加载提示音」，或调整「窗口模式」、窗口失焦后的帧率和音量。
 
-## 字体版本与安装
+还保留了上游的文本框撤销 / 重做、本地音乐播放和频谱显示。
 
-- **普通版（standard）**：默认首选 `Inter Frozen Medium`，回退包含 `Source Han Sans CN Medium`（思源黑体）等；可修改首选、回退及注册字体列表，无需安装 MiSans。
-- **MiSans 版**：显示名为 `ModernUI Lumen (MiSans)`，使用 MiSans、MiSans L3、MiSans Latin、MiSans TC 字体组合。字体缺失时提供许可查看、明确点击下载、进度、失败重试和退出重启入口；从小米获取四套字体包中的 28 个 TTF、许可 PDF，并保存下载记录。
+## 安装
 
-两版模组 ID 都是 `modernui`，**每次只安装其中一版**，切换时替换 JAR。资源命名空间、Java 包、API 和 `config/ModernUI/` 路径保持兼容。配置路径、字重映射和下载行为见[字体版本说明](docs/font-editions.md)。
+下载与你的 Minecraft 版本、加载器对应的 JAR，放进 `mods` 文件夹。支持 Fabric 和 NeoForge。
 
-## 维护分支
+- **Fabric** 需要 Fabric API。
+- 配置功能已内置，**不需要 Forge Config API Port**。ModernUI Core 也已打包在 JAR 里，无需另装。
+- 不能与上游 Modern UI 同时安装：两者使用相同的 `modernui` 模组 ID。切换时替换 JAR 即可。
 
-下列八个版本系列均在维护。维护范围不表示所有 Minecraft／加载器／后端组合已经完成运行验收；当前仍在逐组合核对功能、样式和物理显卡渲染结果。安装时以对应分支的模组元数据为准。
+CurseForge 将只发布普通版。普通版和 MiSans 版的区别见[字体版本说明](docs/font-editions.md)。
 
-| 分支 | Minecraft 维护范围 | 状态 |
-| --- | --- | --- |
-| `1.21.1` | 1.21–1.21.1 | 维护中 |
-| `1.21.8` | 1.21.6–1.21.8 | 维护中 |
-| `1.21.9` | 1.21.9 | 维护中 |
-| `1.21.10` | 1.21.10 | 维护中 |
-| `1.21.11` | 1.21.11 | 维护中 |
-| `26.1` | 26.1 系列 | 维护中 |
-| `26.2` | 26.2 | 维护中 |
-| `master` | 26.3 | 维护中 |
+## 支持版本
 
-`master` 跟进 26.3，各分支保留自己的工具链与加载器依赖，不保证跨系列共用 JAR。
+| Minecraft | 分支 | 加载器 | Java | 状态 |
+| --- | --- | --- | --- | --- |
+| 1.21–1.21.1 | `1.21.1` | Fabric / NeoForge | 21+ | 维护中 |
+| 1.21.6–1.21.8 | `1.21.8` | Fabric / NeoForge | 21+ | 维护中 |
+| 1.21.9 | `1.21.9` | Fabric / NeoForge | 21+ | 维护中 |
+| 1.21.10 | `1.21.10` | Fabric / NeoForge | 21+ | 维护中 |
+| 1.21.11 | `1.21.11` | Fabric / NeoForge | 21+ | 维护中 |
+| 26.1–26.1.2 | `26.1` | Fabric / NeoForge | 25+ | 维护中 |
+| 26.2 | `26.2` | Fabric / NeoForge | 25+ | 维护中 |
+| 26.3 | `master` | Fabric / NeoForge | 25+ | 维护中 |
 
-## 本分支：Minecraft 1.21.10
+## Vulkan 和已知兼容问题
 
-提供 Fabric 与 NeoForge、普通版与 MiSans 版，共四种构建产物。两种加载器以 OpenGL 为目标后端；Fabric 的 Vulkan 组合使用外部 VulkanMod 0.6.6，其包元数据包含 1.21.9 和 1.21.10。当前记录的 NeoForge 1.21.10 Vulkan 组合缺少对应发行包，明确列为缺包组合，不计作已测试通过。
+26.2 / 26.3 可以使用 Minecraft 自带的 Vulkan，不需要 VulkanMod。在启动器的**游戏参数**中填写 `--graphicsBackend VULKAN`；切回 OpenGL 用 `--graphicsBackend OPENGL`。不要把它们填进 JVM 参数。
 
-Vulkan 集成使用外部后端的设备；不能仅凭构建成功、程序启动或检测到显卡判断完成验收。实际图形验收须确认客户端日志中的物理设备，并操作和查看目标页面。tooltip、输入事件和 uniform 接口仍需按版本分别核对。
+更早的版本需要对应 Minecraft 和加载器的 VulkanMod。没有合适的包时，使用 OpenGL 即可。
+
+<details>
+<summary>NeoForge 早期加载窗口</summary>
+
+26.2 的原生 Vulkan 需要关闭早期加载窗口。在实例的 `config/fml.toml` 中添加下面这一行，放在所有 TOML 节之前，然后重启：
+
+```toml
+earlyWindowControl = false
+```
+
+我们在 Linux / NVIDIA 上测试的 NeoForge 26.3.0.101 也需要这个设置，否则可能启动崩溃或在退出时报 GPU 资源未释放。其他系统不一定有同样表现。
+
+</details>
+
+<details>
+<summary>Remove Reloading Screen（26.3 / Fabric）</summary>
+
+如果同时使用 Remove Reloading Screen，并在启动时遇到缺少着色器的报错，可以把它配置中的 `[global]` → `hideOverlays` 从 `"ALL"` 改成 `"RELOADING"`，然后重启。这样会保留首次加载画面，只隐藏之后的资源重载画面。
+
+</details>
 
 ## 构建
 
-使用 **JDK 21**，依赖及 Gradle wrapper 以本分支为准。请为 1.21.9 与 1.21.10 使用独立 `GRADLE_USER_HOME`，避免 Loom 分层映射缓存混用。
+使用对应分支要求的 JDK，在仓库根目录运行：
 
 ```sh
-export JAVA_HOME=/path/to/jdk-21
-export PATH="$JAVA_HOME/bin:$PATH"
-export GRADLE_USER_HOME="$HOME/.gradle-modernui-1.21.10"
-./gradlew clean build -Pfont_variant=standard
-# 先复制普通版最终 JAR，再进行下一次 clean。
-./gradlew clean build -Pfont_variant=misans
+./gradlew build -Pfont_variant=standard
 ```
 
-最终重映射产物位于 `fabric/build/libs` 和 `neoforge/build/libs`：
+成品在 `fabric/build/libs/` 和 `neoforge/build/libs/`。构建 MiSans 版时将参数改为 `-Pfont_variant=misans`。
 
-- 普通版：`ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal.jar`
-- MiSans 版：`ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal-misans.jar`
+[CurseForge 页面材料与自动发布设置](https://github.com/MOPELotus/ModernUI-MC-Lumen/tree/master/distribution/curseforge)。
 
-安装最终产物，不使用 `-shadow.jar` 或开发 JAR。省略 `font_variant` 时构建普通版。本分支工作流在推送到 `1.21.10`、向该分支提交 PR 或手动运行时构建，也接受标签推送。CI 构建两种字体版本并上传 `modernui-lumen-release-jars`；普通分支推送只构建产物；标签推送或手动工作流填写非空 release tag 时，工作流创建或更新 GitHub Release。
+## 许可证与致谢
 
-Gradle 项目名 `ModernUI-Fabric`、`ModernUI-NeoForge`、`ModernUI-Forge` 及 Maven 坐标保持兼容；项目名存在不代表本分支启用了全部加载器，也不表示本分支已发布到上游 Maven 仓库。
+原模组及 [ModernUI Framework](https://github.com/BloCamLimb/ModernUI) 由 **BloCamLimb 及贡献者**开发，采用 [LGPL-3.0-or-later](LICENSE)。Lumen 分支由 **MOPELotus** 维护。
 
-## 署名与许可证
-
-- Modern UI for Minecraft：Copyright (C) 2019–2026 BloCamLimb et al.，采用 [LGPL-3.0-or-later](https://www.gnu.org/licenses/lgpl-3.0.en.html)。
-- [Source Han Sans](https://github.com/adobe-fonts/source-han-sans)：Adobe，OFL-1.1。
-- [JetBrains Mono](https://www.jetbrains.com/lp/mono/)：JetBrains，OFL-1.1。
-- [Inter](https://github.com/rsms/inter)：RSMS，OFL-1.1；所含修改版 Inter 保留原始许可证与版权声明。
-- MiSans 字体版权归 Xiaomi，使用须遵守其字体知识产权许可协议；MiSans 版提供官方许可入口和下载流程，不将 MiSans 字体作为仓库内自由再许可资产。
-
-仓库中的许可证原文保持适用；本说明不替代任何许可证。
+随附的 [思源黑体](https://github.com/adobe-fonts/source-han-sans)、[JetBrains Mono](https://www.jetbrains.com/lp/mono/) 和 [Inter](https://github.com/rsms/inter) 使用 OFL 许可；原许可证和字体内版权声明均予以保留。MiSans 使用小米官方许可。
