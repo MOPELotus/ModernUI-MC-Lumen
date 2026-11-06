@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -37,6 +39,10 @@ final class SimpleConfigSpec {
     private final Path file;
     private final List<ConfigValue<?>> values;
     private final Map<List<String>, ValueSpec> specs;
+    @Nullable
+    private Document document;
+    private boolean writable = true;
+    private final Map<List<String>, String> loadedValues = new HashMap<>();
 
     private SimpleConfigSpec(@Nonnull Path file,
                              @Nonnull List<ConfigValue<?>> values,
@@ -51,27 +57,65 @@ final class SimpleConfigSpec {
     }
 
     public void load() {
-        Map<List<String>, String> rawValues;
+        Map<List<String>, String> rawValues = Collections.emptyMap();
+        document = null;
+        writable = false;
         try {
-            rawValues = readToml(file);
-        } catch (IOException e) {
-            LOGGER.warn(MARKER, "Failed to read config {}, defaults will be used", file, e);
-            rawValues = Collections.emptyMap();
+            if (Files.notExists(file)) {
+                writable = true;
+            } else {
+                document = Document.parse(Files.readString(file, StandardCharsets.UTF_8));
+                rawValues = document.values;
+                writable = true;
+            }
+        } catch (IOException | IllegalArgumentException e) {
+            LOGGER.warn(MARKER, "Failed to read config {}, defaults will be used; original file will not be overwritten", file, e);
         }
+        loadedValues.clear();
         for (ConfigValue<?> value : values) {
             value.load(rawValues.get(value.getPath()));
+            loadedValues.put(value.getPath(), formatValue(value.get()));
         }
     }
 
     public void save() {
+        if (!writable) {
+            LOGGER.warn(MARKER, "Not overwriting unreadable or unsupported config {}", file);
+            return;
+        }
+        Path temporary = null;
         try {
-            Path parent = file.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
+            // Do not replace edits made by another application after this spec was loaded.
+            if (document == null ? !Files.notExists(file)
+                    : !Files.readString(file, StandardCharsets.UTF_8).equals(document.source)) {
+                throw new IOException("Config changed on disk; reload before saving");
             }
-            Files.writeString(file, writeToml(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
+            String output = document == null ? writeToml() : document.update(values, loadedValues);
+            Document replacement = Document.parse(output);
+            Path absolute = file.toAbsolutePath();
+            Files.createDirectories(absolute.getParent());
+            temporary = Files.createTempFile(absolute.getParent(), absolute.getFileName().toString(), ".tmp");
+            Files.writeString(temporary, output, StandardCharsets.UTF_8);
+            try {
+                Files.move(temporary, absolute, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(temporary, absolute, StandardCopyOption.REPLACE_EXISTING);
+            }
+            temporary = null;
+            document = replacement;
+            for (ConfigValue<?> value : values) {
+                loadedValues.put(value.getPath(), formatValue(value.get()));
+            }
+        } catch (IOException | IllegalArgumentException e) {
             LOGGER.error(MARKER, "Failed to save config {}", file, e);
+        } finally {
+            if (temporary != null) {
+                try {
+                    Files.deleteIfExists(temporary);
+                } catch (IOException e) {
+                    LOGGER.warn(MARKER, "Failed to remove temporary config {}", temporary, e);
+                }
+            }
         }
     }
 
@@ -89,7 +133,7 @@ final class SimpleConfigSpec {
                 for (String comment : value.spec.comments) {
                     builder.append("# ").append(comment).append('\n');
                 }
-                builder.append('[').append(String.join(".", section)).append("]\n");
+                builder.append('[').append(formatPath(section)).append("]\n");
                 lastSection = section;
                 first = false;
             } else if (!first) {
@@ -98,7 +142,7 @@ final class SimpleConfigSpec {
             for (String comment : value.spec.comments) {
                 builder.append("# ").append(comment).append('\n');
             }
-            builder.append(path.get(path.size() - 1))
+            builder.append(formatKey(path.get(path.size() - 1)))
                     .append(" = ")
                     .append(formatValue(value.get()))
                     .append('\n');
@@ -107,59 +151,234 @@ final class SimpleConfigSpec {
         return builder.toString();
     }
 
-    private static Map<List<String>, String> readToml(@Nonnull Path file) throws IOException {
-        if (!Files.isRegularFile(file)) {
-            return Collections.emptyMap();
+    /**
+     * The subset written by this spec and NightConfig: regular tables, bare/quoted keys,
+     * single-line basic/literal strings, booleans, decimal numbers and flat string arrays.
+     * Unsupported TOML is deliberately rejected, never silently rewritten as defaults.
+     */
+    private static final class Document {
+        private final String source;
+        private final Map<List<String>, String> values = new LinkedHashMap<>();
+        private final List<Entry> entries = new ArrayList<>();
+        private final Map<List<String>, Integer> sectionEnds = new LinkedHashMap<>();
+
+        private Document(String source) {
+            this.source = source;
         }
-        Map<List<String>, String> values = new HashMap<>();
-        List<String> section = Collections.emptyList();
-        for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
-            String trimmed = stripComment(line).trim();
-            if (trimmed.isEmpty()) {
-                continue;
+
+        static Document parse(String source) {
+            Document result = new Document(source);
+            Cursor cursor = new Cursor(source);
+            List<String> section = List.of();
+            Set<List<String>> tables = new HashSet<>();
+            while (true) {
+                cursor.space(true);
+                if (cursor.end()) break;
+                int statement = cursor.pos;
+                if (cursor.peek() == '[') {
+                    result.sectionEnds.put(section, statement);
+                    cursor.pos++;
+                    ArrayList<String> parts = new ArrayList<>();
+                    do {
+                        cursor.space(false);
+                        parts.add(cursor.key());
+                        cursor.space(false);
+                        if (cursor.peek() != '.') break;
+                        cursor.pos++;
+                    } while (true);
+                    cursor.expect(']');
+                    section = List.copyOf(parts);
+                    if (!tables.add(section)) throw cursor.error("Duplicate table");
+                    cursor.lineEnd();
+                } else {
+                    String key = cursor.key();
+                    cursor.space(false);
+                    cursor.expect('=');
+                    cursor.space(false);
+                    int start = cursor.pos;
+                    cursor.value();
+                    int end = cursor.pos;
+                    cursor.lineEnd();
+                    ArrayList<String> parts = new ArrayList<>(section);
+                    parts.add(key);
+                    List<String> path = List.copyOf(parts);
+                    // TOML does not permit a scalar/array key to also be a table.
+                    for (List<String> existing : result.values.keySet()) {
+                        if (prefix(existing, path) || prefix(path, existing)) throw cursor.error("Conflicting key");
+                    }
+                    if (result.values.putIfAbsent(path, source.substring(start, end)) != null) {
+                        throw cursor.error("Duplicate key");
+                    }
+                    result.entries.add(new Entry(path, start, end));
+                }
             }
-            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                String name = trimmed.substring(1, trimmed.length() - 1).trim();
-                section = name.isEmpty() ? Collections.emptyList() : List.of(name.split("\\."));
-                continue;
+            result.sectionEnds.put(section, source.length());
+            for (List<String> table : tables) {
+                for (List<String> path : result.values.keySet()) {
+                    if (prefix(path, table)) throw cursor.error("Key conflicts with table");
+                }
             }
-            int equals = trimmed.indexOf('=');
-            if (equals < 0) {
-                continue;
-            }
-            String key = trimmed.substring(0, equals).trim();
-            if (key.isEmpty()) {
-                continue;
-            }
-            ArrayList<String> path = new ArrayList<>(section);
-            path.add(key);
-            values.put(List.copyOf(path), trimmed.substring(equals + 1).trim());
+            return result;
         }
-        return values;
+
+        private static boolean prefix(List<String> first, List<String> second) {
+            return first.size() <= second.size() && second.subList(0, first.size()).equals(first);
+        }
+
+        String update(List<ConfigValue<?>> config, Map<List<String>, String> loaded) {
+            record Edit(int start, int end, String text) {}
+            List<Edit> edits = new ArrayList<>();
+            Map<List<String>, ConfigValue<?>> known = new HashMap<>();
+            for (ConfigValue<?> value : config) known.put(value.getPath(), value);
+            for (Entry entry : entries) {
+                ConfigValue<?> value = known.get(entry.path);
+                if (value != null && !formatValue(value.get()).equals(loaded.get(entry.path))) {
+                    edits.add(new Edit(entry.start, entry.end, formatValue(value.get())));
+                }
+            }
+            Map<List<String>, StringBuilder> missing = new LinkedHashMap<>();
+            for (ConfigValue<?> value : config) {
+                if (values.containsKey(value.getPath())) continue;
+                List<String> path = value.getPath();
+                List<String> section = path.subList(0, path.size() - 1);
+                StringBuilder builder = missing.computeIfAbsent(section, ignored -> new StringBuilder("\n"));
+                for (String comment : value.spec.comments) builder.append("# ").append(comment).append('\n');
+                builder.append(formatKey(path.get(path.size() - 1))).append(" = ")
+                        .append(formatValue(value.get())).append('\n');
+            }
+            StringBuilder suffix = new StringBuilder();
+            for (var item : missing.entrySet()) {
+                Integer position = sectionEnds.get(item.getKey());
+                if (position != null) {
+                    edits.add(new Edit(position, position, item.getValue().toString()));
+                } else {
+                    suffix.append("\n[").append(formatPath(item.getKey())).append("]\n").append(item.getValue());
+                }
+            }
+            StringBuilder output = new StringBuilder(source);
+            edits.sort(Comparator.comparingInt(Edit::start).reversed());
+            for (Edit edit : edits) output.replace(edit.start, edit.end, edit.text);
+            output.append(suffix);
+            // Validate before touching the user's file, including newly introduced table conflicts.
+            parse(output.toString());
+            return output.toString();
+        }
     }
 
-    private static String stripComment(@Nonnull String line) {
-        boolean inString = false;
-        boolean escaped = false;
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            if (escaped) {
-                escaped = false;
-                continue;
-            }
-            if (c == '\\' && inString) {
-                escaped = true;
-                continue;
-            }
-            if (c == '"') {
-                inString = !inString;
-                continue;
-            }
-            if (c == '#' && !inString) {
-                return line.substring(0, i);
+    private record Entry(List<String> path, int start, int end) {}
+
+    private static String formatKey(String key) {
+        return key.matches("[A-Za-z0-9_-]+") ? key : "\"" + escape(key) + "\"";
+    }
+
+    private static String formatPath(List<String> path) {
+        StringJoiner joiner = new StringJoiner(".");
+        for (String key : path) joiner.add(formatKey(key));
+        return joiner.toString();
+    }
+
+    private static final class Cursor {
+        private final String source;
+        private int pos;
+
+        Cursor(String source) { this.source = source; }
+        boolean end() { return pos == source.length(); }
+        char peek() { return end() ? '\0' : source.charAt(pos); }
+        IllegalArgumentException error(String message) {
+            return new IllegalArgumentException(message + " at character " + pos);
+        }
+        void expect(char expected) {
+            if (peek() != expected) throw error("Expected " + expected);
+            pos++;
+        }
+        void space(boolean lines) {
+            while (!end()) {
+                char c = peek();
+                if (c == ' ' || c == '\t' || (lines && (c == '\n' || c == '\r'))) pos++;
+                else if (lines && c == '#') {
+                    while (!end() && peek() != '\n' && peek() != '\r') pos++;
+                } else break;
             }
         }
-        return line;
+        void lineEnd() {
+            space(false);
+            if (peek() == '#') while (!end() && peek() != '\n' && peek() != '\r') pos++;
+            if (!end() && peek() != '\n' && peek() != '\r') throw error("Unexpected text after value");
+        }
+        String key() {
+            if (peek() == '\'' || peek() == '"') return string();
+            int start = pos;
+            while (!end() && (peek() >= 'A' && peek() <= 'Z' || peek() >= 'a' && peek() <= 'z'
+                    || peek() >= '0' && peek() <= '9' || peek() == '_' || peek() == '-')) pos++;
+            if (start == pos) throw error("Expected key");
+            return source.substring(start, pos);
+        }
+        Object value() {
+            if (peek() == '"' || peek() == '\'') return string();
+            if (peek() == '[') return strings();
+            int start = pos;
+            while (!end() && peek() != '#' && peek() != '\n' && peek() != '\r'
+                    && peek() != ' ' && peek() != '\t' && peek() != ',' && peek() != ']') pos++;
+            String token = source.substring(start, pos);
+            if (!token.equals("true") && !token.equals("false")
+                    && !token.matches("[+-]?(?:0|[1-9](?:_?[0-9])*)(?:\\.[0-9](?:_?[0-9])*)?(?:[eE][+-]?[0-9](?:_?[0-9])*)?")) {
+                throw error("Unsupported or malformed value");
+            }
+            return token;
+        }
+        List<String> strings() {
+            expect('[');
+            ArrayList<String> values = new ArrayList<>();
+            space(true);
+            if (peek() == ']') { pos++; return List.of(); }
+            while (true) {
+                if (peek() != '"' && peek() != '\'') throw error("Expected quoted string in array");
+                values.add(string());
+                space(true);
+                if (peek() == ']') { pos++; break; }
+                expect(',');
+                space(true);
+                if (peek() == ']') { pos++; break; }
+            }
+            return List.copyOf(values);
+        }
+        String string() {
+            char quote = peek();
+            if (quote != '"' && quote != '\'') throw error("Expected quoted string");
+            pos++;
+            StringBuilder value = new StringBuilder();
+            while (!end()) {
+                char c = source.charAt(pos++);
+                if (c == quote) return value.toString();
+                if (c < 0x20 && c != '\t' || c == 0x7f) throw error("Control character in string");
+                if (c == '\\' && quote == '"') {
+                    if (end()) throw error("Unterminated escape");
+                    char escaped = source.charAt(pos++);
+                    switch (escaped) {
+                        case 'b' -> value.append('\b');
+                        case 't' -> value.append('\t');
+                        case 'n' -> value.append('\n');
+                        case 'f' -> value.append('\f');
+                        case 'r' -> value.append('\r');
+                        case '"', '\\' -> value.append(escaped);
+                        case 'u', 'U' -> {
+                            int digits = escaped == 'u' ? 4 : 8;
+                            if (source.length() - pos < digits) throw error("Incomplete Unicode escape");
+                            long code = 0;
+                            for (int i = 0; i < digits; i++) {
+                                int digit = Character.digit(source.charAt(pos++), 16);
+                                if (digit < 0) throw error("Invalid Unicode escape");
+                                code = code * 16 + digit;
+                            }
+                            if (code > 0x10ffff || code >= 0xd800 && code <= 0xdfff) throw error("Invalid Unicode scalar");
+                            value.appendCodePoint((int) code);
+                        }
+                        default -> throw error("Unsupported escape");
+                    }
+                } else value.append(c);
+            }
+            throw error("Unterminated string");
+        }
     }
 
     private static String formatValue(@Nullable Object value) {
@@ -180,65 +399,38 @@ final class SimpleConfigSpec {
     }
 
     private static String escape(@Nonnull String string) {
-        return string.replace("\\", "\\\\").replace("\"", "\\\"");
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < string.length(); i++) {
+            char c = string.charAt(i);
+            switch (c) {
+                case '\\' -> result.append("\\\\");
+                case '"' -> result.append("\\\"");
+                case '\b' -> result.append("\\b");
+                case '\t' -> result.append("\\t");
+                case '\n' -> result.append("\\n");
+                case '\f' -> result.append("\\f");
+                case '\r' -> result.append("\\r");
+                default -> {
+                    if (c < 0x20 || c == 0x7f) result.append(String.format(Locale.ROOT, "\\u%04X", (int) c));
+                    else result.append(c);
+                }
+            }
+        }
+        return result.toString();
     }
 
     private static String unquote(@Nonnull String raw) {
-        String value = raw.trim();
-        if (value.length() >= 2 && value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"') {
-            value = value.substring(1, value.length() - 1);
-        }
-        StringBuilder builder = new StringBuilder(value.length());
-        boolean escaped = false;
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (escaped) {
-                builder.append(c);
-                escaped = false;
-            } else if (c == '\\') {
-                escaped = true;
-            } else {
-                builder.append(c);
-            }
-        }
-        if (escaped) {
-            builder.append('\\');
-        }
-        return builder.toString();
+        Cursor cursor = new Cursor(raw);
+        String value = cursor.string();
+        if (!cursor.end()) throw cursor.error("Unexpected text after string");
+        return value;
     }
 
     private static List<String> parseStringList(@Nonnull String raw) {
-        String value = raw.trim();
-        if (!value.startsWith("[") || !value.endsWith("]")) {
-            return List.of(unquote(value));
-        }
-        value = value.substring(1, value.length() - 1);
-        ArrayList<String> result = new ArrayList<>();
-        StringBuilder current = new StringBuilder();
-        boolean inString = false;
-        boolean escaped = false;
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (escaped) {
-                current.append(c);
-                escaped = false;
-            } else if (c == '\\' && inString) {
-                escaped = true;
-            } else if (c == '"') {
-                inString = !inString;
-            } else if (c == ',' && !inString) {
-                result.add(current.toString().trim());
-                current.setLength(0);
-            } else {
-                current.append(c);
-            }
-        }
-        String last = current.toString().trim();
-        if (!last.isEmpty()) {
-            result.add(last);
-        }
-        result.replaceAll(SimpleConfigSpec::unquote);
-        return List.copyOf(result);
+        Cursor cursor = new Cursor(raw);
+        List<String> values = cursor.strings();
+        if (!cursor.end()) throw cursor.error("Unexpected text after array");
+        return values;
     }
 
     static final class Builder {
@@ -363,11 +555,12 @@ final class SimpleConfigSpec {
             try {
                 Object parsed;
                 if (valueType == Boolean.class) {
-                    parsed = Boolean.parseBoolean(raw);
+                    if (!raw.equals("true") && !raw.equals("false")) throw new IllegalArgumentException("Expected boolean");
+                    parsed = Boolean.valueOf(raw);
                 } else if (valueType == Integer.class) {
-                    parsed = Integer.parseInt(raw);
+                    parsed = Integer.parseInt(raw.replace("_", ""));
                 } else if (valueType == Double.class) {
-                    parsed = Double.parseDouble(raw);
+                    parsed = Double.parseDouble(raw.replace("_", ""));
                 } else if (valueType == String.class) {
                     parsed = unquote(raw);
                 } else if (valueType == List.class) {
@@ -396,6 +589,7 @@ final class SimpleConfigSpec {
                     int n = Math.max(min.intValue(), Math.min(max.intValue(), number.intValue()));
                     value = n;
                 } else if (valueType == Double.class) {
+                    if (!Double.isFinite(number.doubleValue())) return defaultValue;
                     double n = Math.max(min.doubleValue(), Math.min(max.doubleValue(), number.doubleValue()));
                     value = n;
                 }
@@ -407,6 +601,7 @@ final class SimpleConfigSpec {
                     }
                 }
             }
+            if (value instanceof List<?> list) value = List.copyOf(list);
             return (T) value;
         }
     }
