@@ -81,8 +81,6 @@ Use the JDK required by your branch and run:
 
 Output JARs are in `fabric/build/libs/` and `neoforge/build/libs/`. Use `-Pfont_variant=misans` to build the MiSans edition.
 
-[CurseForge page materials and publishing setup](https://github.com/MOPELotus/ModernUI-MC-Lumen/tree/master/distribution/curseforge).
-
 ## License and credits
 
 The original mod and [ModernUI Framework](https://github.com/BloCamLimb/ModernUI) are by **BloCamLimb and contributors**, under [LGPL-3.0-or-later](LICENSE). The Lumen fork is maintained by **MOPELotus**.

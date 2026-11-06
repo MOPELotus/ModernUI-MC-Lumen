@@ -81,8 +81,6 @@ earlyWindowControl = false
 
 成品在 `fabric/build/libs/` 和 `neoforge/build/libs/`。构建 MiSans 版时将参数改为 `-Pfont_variant=misans`。
 
-[CurseForge 页面材料与自动发布设置](https://github.com/MOPELotus/ModernUI-MC-Lumen/tree/master/distribution/curseforge)。
-
 ## 许可证与致谢
 
 原模组及 [ModernUI Framework](https://github.com/BloCamLimb/ModernUI) 由 **BloCamLimb 及贡献者**开发，采用 [LGPL-3.0-or-later](LICENSE)。Lumen 分支由 **MOPELotus** 维护。
