@@ -21,8 +21,6 @@ package icyllis.modernui.mc.fabric;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
-import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeModConfigEvents;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
@@ -53,7 +51,6 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.neoforged.fml.config.ModConfig;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -155,8 +152,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });
 
-        NeoForgeModConfigEvents.loading(ID).register(ConfigImpl::reloadAnyClient);
-        NeoForgeModConfigEvents.reloading(ID).register(ConfigImpl::reloadAnyClient);
+        ConfigImpl.loadClientConfigs();
 
         ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
             UIManagerFabric.initializeRenderer();
@@ -212,12 +208,6 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                 }
             }
         });
-
-        FontVariantConfig.prepare(FabricLoader.getInstance().getConfigDir().resolve(ModernUI.NAME_CPT));
-        NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
-                ModernUI.NAME_CPT + "/" + FontVariant.CLIENT_CONFIG_NAME);
-        NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
-                ModernUI.NAME_CPT + "/text.toml");
 
         FontResourceManager.getInstance();
         if (ModernUIMod.isTextEngineEnabled()) {

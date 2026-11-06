@@ -32,12 +32,6 @@ repositories {
         }
     }
     maven {
-        url 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
-        content {
-            includeGroup 'fuzs.forgeconfigapiport'
-        }
-    }
-    maven {
         url 'https://maven.izzel.io/releases/'
     }
     mavenLocal()
@@ -54,7 +48,6 @@ dependencies {
     modApi "net.fabricmc.fabric-api:fabric-api:0.104.0+1.21.1"
 
     modImplementation "com.terraformersmc:modmenu:11.0.2"
-    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${minecraft_version == '1.21' ? '21.0.8' : '21.1.0'}"
 
     implementation project(':common')
     compileOnly("org.lwjgl:lwjgl-vulkan:${lwjgl_version}")
