@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "version": "3.13.0.10",
-  "changelog": "release/changelogs/3.13.0.10.md",
+  "version": "3.13.0.11",
+  "changelog": "release/changelogs/3.13.0.11.md",
   "release_type": "release",
   "upstream_project": 352491,
   "targets": [
     {
       "branch": "1.21.1",
-      "ref": "9bfa646fa2c4905737b4f7081c4e930b09f51461",
+      "ref": "4bbaf2a01a40c9a640722bb2508a6657d164e025",
       "minecraft": "1.21.1",
       "game_versions": [
         "1.21",
@@ -22,7 +22,8 @@
             "fabricloader": ">=0.15.0",
             "minecraft": ">=1.21 <1.21.2",
             "java": ">=21",
-            "fabric-api": ">=0.90.7"
+            "fabric-api": ">=0.90.7",
+            "mixinextras": ">=0.5.5"
           }
         },
         "neoforge": {
@@ -32,7 +33,7 @@
     },
     {
       "branch": "1.21.8",
-      "ref": "321dca074d91b6735579ac47aa964db22842e6c1",
+      "ref": "87c3d85f3cc852ec140e317563c6d5e2024012f9",
       "minecraft": "1.21.8",
       "game_versions": [
         "1.21.6",
@@ -48,7 +49,8 @@
             "fabricloader": ">=0.15.0",
             "minecraft": ">=1.21.6 <1.21.9",
             "java": ">=21",
-            "fabric-api": ">=0.90.7"
+            "fabric-api": ">=0.90.7",
+            "mixinextras": ">=0.5.5"
           }
         },
         "neoforge": {
@@ -58,7 +60,7 @@
     },
     {
       "branch": "1.21.9",
-      "ref": "0551015b19d6574a6863f78744ffbaaa72708945",
+      "ref": "fabaa5d71908979ff1896aba31b59c0f451be25f",
       "minecraft": "1.21.9",
       "game_versions": [
         "1.21.9"
@@ -72,7 +74,8 @@
             "fabricloader": ">=0.15.0",
             "minecraft": ">=1.21.9 <1.21.10",
             "java": ">=21",
-            "fabric-api": ">=0.90.7"
+            "fabric-api": ">=0.90.7",
+            "mixinextras": ">=0.5.5"
           }
         },
         "neoforge": {
@@ -82,7 +85,7 @@
     },
     {
       "branch": "1.21.10",
-      "ref": "2c8d907144cab73054aab4c72c5cbbda8feaaa47",
+      "ref": "0684e7ccbfd9de9657593a8630bfac1bde47487c",
       "minecraft": "1.21.10",
       "game_versions": [
         "1.21.10"
@@ -96,7 +99,8 @@
             "fabricloader": ">=0.15.0",
             "minecraft": ">=1.21.10 <1.21.11",
             "java": ">=21",
-            "fabric-api": ">=0.90.7"
+            "fabric-api": ">=0.90.7",
+            "mixinextras": ">=0.5.5"
           }
         },
         "neoforge": {
@@ -106,7 +110,7 @@
     },
     {
       "branch": "1.21.11",
-      "ref": "443ced4bca097f02c6b3d298b29909633d589dc8",
+      "ref": "e8ce0b316b213b872945e0c45aa8c148a8a76b4d",
       "minecraft": "1.21.11",
       "game_versions": [
         "1.21.11"
@@ -120,7 +124,8 @@
             "fabricloader": ">=0.15.0",
             "minecraft": ">=1.21.11 <1.21.12",
             "java": ">=21",
-            "fabric-api": ">=0.90.7"
+            "fabric-api": ">=0.90.7",
+            "mixinextras": ">=0.5.5"
           }
         },
         "neoforge": {
@@ -130,7 +135,7 @@
     },
     {
       "branch": "26.1",
-      "ref": "854ca710bc882c9e0970e78eebc778125602dbce",
+      "ref": "d7fe183b3d47eb55d7978e72b3437bb44492b615",
       "minecraft": "26.1.2",
       "game_versions": [
         "26.1",
@@ -146,7 +151,8 @@
             "fabricloader": ">=0.15.0",
             "minecraft": ">=26.1 <26.2",
             "java": ">=25",
-            "fabric-api": ">=0.90.7"
+            "fabric-api": ">=0.90.7",
+            "mixinextras": ">=0.5.5"
           }
         },
         "neoforge": {
@@ -156,7 +162,7 @@
     },
     {
       "branch": "26.2",
-      "ref": "ea0f726b00d2c9d14055eb076e30cd345486d32a",
+      "ref": "85b004e9900adfc188106a97affa5ad0be8c2c3d",
       "minecraft": "26.2",
       "game_versions": [
         "26.2"
@@ -170,7 +176,8 @@
             "fabricloader": ">=0.15.0",
             "minecraft": ">=26.2 <26.3",
             "java": ">=25",
-            "fabric-api": ">=0.90.7"
+            "fabric-api": ">=0.90.7",
+            "mixinextras": ">=0.5.5"
           }
         },
         "neoforge": {
@@ -180,7 +187,7 @@
     },
     {
       "branch": "master",
-      "ref": "7bd447e901d1e4b57b3bdb6192a4026bbef6423f",
+      "ref": "b02d1671a4f2236cb5829ddfcefb29bb5fa54baf",
       "minecraft": "26.3",
       "game_versions": [
         "26.3"
@@ -194,7 +201,8 @@
             "fabricloader": ">=0.19.5",
             "minecraft": "~26.3",
             "java": ">=25",
-            "fabric-api": ">=0.160.5"
+            "fabric-api": ">=0.160.5",
+            "mixinextras": ">=0.5.5"
           }
         },
         "neoforge": {
