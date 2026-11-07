@@ -6,9 +6,9 @@ ModernUI Lumen is a fork of [Modern UI for Minecraft](https://github.com/BloCamL
 
 Modern UI brings its interface framework to Minecraft and provides text layout and rendering for vanilla screens. You can choose fonts, change screen backgrounds and tooltips, and use its APIs to build interfaces for other mods.
 
-Lumen maintains the Minecraft versions listed below, with fixes for scrolling-lyric text jitter, tooltips, input, and rendering backends. The current release is **3.13.0.10**.
+Lumen maintains the Minecraft versions listed below, with fixes for scrolling-lyric text jitter, tooltips, input, and rendering backends. The current release is **3.13.0.11**.
 
-[Downloads](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.10) · [Changelog](changelogs.en.md) · [Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
+[Downloads](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.11) · [Changelog](changelogs.en.md) · [Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
 
 ## Features
 
