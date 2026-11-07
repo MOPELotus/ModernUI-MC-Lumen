@@ -6,9 +6,9 @@ ModernUI Lumen 是 [Modern UI for Minecraft](https://github.com/BloCamLimb/Moder
 
 Modern UI 把自己的界面框架带进了 Minecraft，也为原版界面提供了新的文字排版和渲染。你可以换字体、调整背景和物品提示的样式，其他模组也可以用它来做界面。
 
-Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的文字抖动、tooltip、输入和不同渲染后端的问题。当前发布版本是 **3.13.0.10**。
+Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的文字抖动、tooltip、输入和不同渲染后端的问题。当前发布版本是 **3.13.0.11**。
 
-[下载](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.10) · [更新记录](changelogs.md) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
+[下载](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.11) · [更新记录](changelogs.md) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
 
 ## 功能
 
