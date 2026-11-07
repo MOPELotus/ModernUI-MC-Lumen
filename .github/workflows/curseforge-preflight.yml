@@ -25,6 +25,10 @@ jobs:
           plan = cf.load_plan('release/curseforge-targets.json')
           labels = cf.api_json('/game/versions', os.environ['CURSEFORGE_TOKEN'])
           rows = [{'game_versions': t['game_versions']} for t in plan['targets']]
+          names = {v for r in rows for v in r['game_versions']} | {'Fabric', 'NeoForge', 'Client'}
+          for name in sorted(names):
+              print('Label diagnostic', name, [v for v in labels if v.get('name') == name])
+          print('Response entries:', len(labels), 'sample:', labels[:3])
           print('Required version labels:', cf.resolve_versions(labels, rows))
           print('Read-only token/labels check passed; project upload permission is not tested by this GET.')
           PY
