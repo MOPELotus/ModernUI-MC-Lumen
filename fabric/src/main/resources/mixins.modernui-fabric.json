@@ -8,6 +8,8 @@
   "client": [
     "AccessAudioManager",
     "MixinAudioTrack",
+    "MixinSpanSet",
+    "MixinGLTexture",
     "MixinSoundEngine",
     "AccessClientTextTooltip",
     "AccessGameRenderer",
