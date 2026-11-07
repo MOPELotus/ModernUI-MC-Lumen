@@ -7,7 +7,7 @@
   "targets": [
     {
       "branch": "1.21.1",
-      "ref": "4bbaf2a01a40c9a640722bb2508a6657d164e025",
+      "ref": "ea6cd340428de8cc419792b55486e357a2757b50",
       "minecraft": "1.21.1",
       "game_versions": [
         "1.21",
@@ -33,7 +33,7 @@
     },
     {
       "branch": "1.21.8",
-      "ref": "87c3d85f3cc852ec140e317563c6d5e2024012f9",
+      "ref": "da9ac4b2c8f82defffc54ab686d64879ba185c74",
       "minecraft": "1.21.8",
       "game_versions": [
         "1.21.6",
@@ -60,7 +60,7 @@
     },
     {
       "branch": "1.21.9",
-      "ref": "fabaa5d71908979ff1896aba31b59c0f451be25f",
+      "ref": "f856e8015da93d82d7b96e04c36e3b5927073735",
       "minecraft": "1.21.9",
       "game_versions": [
         "1.21.9"
@@ -85,7 +85,7 @@
     },
     {
       "branch": "1.21.10",
-      "ref": "0684e7ccbfd9de9657593a8630bfac1bde47487c",
+      "ref": "2f2958122338ff4e19890e3b8e7bb7ef0f52253f",
       "minecraft": "1.21.10",
       "game_versions": [
         "1.21.10"
@@ -110,7 +110,7 @@
     },
     {
       "branch": "1.21.11",
-      "ref": "e8ce0b316b213b872945e0c45aa8c148a8a76b4d",
+      "ref": "6d354c5a1fee40a6e62b68e844cd2d99bb6ce5ae",
       "minecraft": "1.21.11",
       "game_versions": [
         "1.21.11"
@@ -135,7 +135,7 @@
     },
     {
       "branch": "26.1",
-      "ref": "d7fe183b3d47eb55d7978e72b3437bb44492b615",
+      "ref": "8cb19bd6e43893937f7e21541fd60cdce1bf31d7",
       "minecraft": "26.1.2",
       "game_versions": [
         "26.1",
@@ -162,7 +162,7 @@
     },
     {
       "branch": "26.2",
-      "ref": "85b004e9900adfc188106a97affa5ad0be8c2c3d",
+      "ref": "5785eff2f56a0b77214955ce8cf97d1c65c00fb9",
       "minecraft": "26.2",
       "game_versions": [
         "26.2"
@@ -187,7 +187,7 @@
     },
     {
       "branch": "master",
-      "ref": "b02d1671a4f2236cb5829ddfcefb29bb5fa54baf",
+      "ref": "fc37dc010788572449f5c0f9acdd908a6d4f0a15",
       "minecraft": "26.3",
       "game_versions": [
         "26.3"
