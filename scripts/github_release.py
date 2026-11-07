@@ -2,6 +2,7 @@
 """Validate the complete GitHub release: eight branches, both loaders and font editions."""
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -10,6 +11,12 @@ import tomllib
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+# One import-safe validator is also used by the standalone bundle check.
+_BUNDLE_SPEC = importlib.util.spec_from_file_location(
+    'lumen_mixinextras_bundle', Path(__file__).with_name('check-mixinextras-bundle.py'))
+_BUNDLE_CHECK = importlib.util.module_from_spec(_BUNDLE_SPEC)
+_BUNDLE_SPEC.loader.exec_module(_BUNDLE_CHECK)
+
 LOADERS = {'fabric': 'Fabric', 'neoforge': 'NeoForge'}
 EDITIONS = ('standard', 'misans')
 
@@ -29,6 +36,7 @@ def load_plan():
     for t in p['targets']:
         require(re.fullmatch(r'[0-9a-f]{40}', t['ref']), 'source must be pinned to a full SHA')
         require(t['java'] == (21 if t['minecraft'].startswith('1.21') else 25), 'wrong Java')
+        require(t['metadata']['fabric']['depends'].get('mixinextras') == '>=0.5.5', 'missing bundled MixinExtras requirement')
     require(p['changelog'] == f'release/changelogs/{p["version"]}.md', 'wrong changelog')
     return p
 
@@ -69,6 +77,7 @@ def validate(directory, plan, branch=None):
                 require(fields.get('Implementation-Title') == 'ModernUI-Lumen-' + LOADERS[loader], 'wrong loader')
                 if loader == 'fabric':
                     m = json.loads(z.read('fabric.mod.json'))
+                    _BUNDLE_CHECK.validate_fabric_bundle(z, m)
                     ident, display, version = m['id'], m['name'], m['version']
                     require(m['depends'] == target['metadata']['fabric']['depends'], 'wrong Fabric dependencies')
                     require('forgeconfigapiport' not in m['depends'], 'FCAP dependency')

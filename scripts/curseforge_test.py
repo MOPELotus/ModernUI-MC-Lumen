@@ -3,6 +3,7 @@
 import copy
 import importlib.util
 import json
+import io
 from pathlib import Path
 import tempfile
 import unittest
@@ -14,14 +15,22 @@ SPEC.loader.exec_module(cf)
 PLAN = cf.load_plan(cf.ROOT / 'release/curseforge-targets.json')
 
 
-def write_jar(path, target, loader, *, variant='standard', version=None, installer=False):
+def write_jar(path, target, loader, *, variant='standard', version=None, installer=False, mixin_version='0.5.5', mixin_registered=True, mixin_payload=True, mixin_class=True):
     manifest = ('Manifest-Version: 1.0\r\nModernUI-Font-Variant: ' + variant + '\r\n' +
                 'Implementation-Title: ModernUI-Lumen-' + cf.LOADERS[loader] + '\r\n')
     with zipfile.ZipFile(path, 'w') as jar:
         jar.writestr('META-INF/MANIFEST.MF', manifest)
         if loader == 'fabric':
-            jar.writestr('fabric.mod.json', json.dumps({'id': 'modernui', 'name': 'ModernUI Lumen',
-                'version': version or PLAN['version'], 'depends': target['metadata']['fabric']['depends']}))
+            meta = {'id': 'modernui', 'name': 'ModernUI Lumen', 'version': version or PLAN['version'],
+                    'depends': target['metadata']['fabric']['depends']}
+            if mixin_registered: meta['jars'] = [{'file': 'META-INF/jars/mixinextras-fabric.jar'}]
+            jar.writestr('fabric.mod.json', json.dumps(meta))
+            if mixin_payload:
+                nested = io.BytesIO()
+                with zipfile.ZipFile(nested, 'w') as child:
+                    child.writestr('fabric.mod.json', json.dumps({'id': 'mixinextras', 'version': mixin_version}))
+                    if mixin_class: child.writestr('com/llamalad7/mixinextras/wrapper/factory/FactoryRedirectWrapperMixinTransformer.class', b'fixture')
+                jar.writestr('META-INF/jars/mixinextras-fabric.jar', nested.getvalue())
             jar.writestr('icyllis/modernui/mc/fabric/SimpleConfigSpec.class', b'test fixture')
         else:
             jar.writestr('META-INF/neoforge.mods.toml',
@@ -163,6 +172,16 @@ class Guards(unittest.TestCase):
         self.assertIn('[redacted]', text)
         self.assertNotIn('test-secret', text)
         self.assertNotIn('private', text)
+
+    def test_mixinextras_must_be_registered_and_bundled(self):
+        target = PLAN['targets'][0]
+        path = self.root / cf.filenames(PLAN, target)['fabric']
+        for options in ({'mixin_payload': False}, {'mixin_version': '0.4.1'},
+                        {'mixin_registered': False}, {'mixin_class': False}):
+            with self.subTest(options=options):
+                write_jar(path, target, 'fabric', **options)
+                with self.assertRaises(ValueError):
+                    cf.validate_jar(path, PLAN, target, 'fabric')
 
     def test_all_fabric_targets_are_independent_of_config_port(self):
         branches = {t['branch'] for t in PLAN['targets'] if

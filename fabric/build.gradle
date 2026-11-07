@@ -40,6 +40,10 @@ repositories {
 }
 
 dependencies {
+    // Fabric Mixin 0.17.4+ emits array-valued Redirect.at; older MixinExtras cannot read it.
+    // Bundle the compatible library so no separate installation or loader upgrade is required.
+    include(implementation("io.github.llamalad7:mixinextras-fabric:0.5.5"))
+
     minecraft "com.mojang:minecraft:${minecraft_version}"
 
     implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"

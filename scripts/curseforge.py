@@ -2,6 +2,7 @@
 """Build-plan validation and standard-only CurseForge uploads (Python 3.11+)."""
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,12 @@ import uuid
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+# One import-safe validator is also used by the standalone bundle check.
+_BUNDLE_SPEC = importlib.util.spec_from_file_location(
+    'lumen_mixinextras_bundle', Path(__file__).with_name('check-mixinextras-bundle.py'))
+_BUNDLE_CHECK = importlib.util.module_from_spec(_BUNDLE_SPEC)
+_BUNDLE_SPEC.loader.exec_module(_BUNDLE_CHECK)
+
 API = 'https://minecraft.curseforge.com/api'
 LOADERS = {'fabric': 'Fabric', 'neoforge': 'NeoForge'}
 
@@ -46,8 +53,10 @@ def load_plan(path):
         require('forgeconfigapiport' not in t['metadata']['fabric']['depends'],
                 'Forge Config API Port is forbidden in maintained Fabric releases')
         require(set(t['metadata']['fabric']['depends']) <=
-                {'fabricloader', 'minecraft', 'java', 'fabric-api'},
+                {'fabricloader', 'minecraft', 'java', 'fabric-api', 'mixinextras'},
                 'new required dependency needs an explicit CurseForge relation mapping')
+        require(t['metadata']['fabric']['depends'].get('mixinextras') == '>=0.5.5',
+                'Fabric must declare the bundled MixinExtras requirement')
         for version in t['game_versions']:
             for loader in LOADERS:
                 require(supports(t['metadata'][loader]['minecraft'], version),
@@ -91,6 +100,7 @@ def validate_jar(path, plan, target, loader):
                 f'wrong implementation title: {path.name}')
         if loader == 'fabric':
             meta = json.loads(jar.read('fabric.mod.json'))
+            _BUNDLE_CHECK.validate_fabric_bundle(jar, meta)
             ident, name, version = meta['id'], meta['name'], meta['version']
             minecraft = meta['depends']['minecraft']
             java = meta['depends']['java']
