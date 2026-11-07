@@ -25,6 +25,10 @@ jobs:
           plan = cf.load_plan('release/curseforge-targets.json')
           labels = cf.api_json('/game/versions', os.environ['CURSEFORGE_TOKEN'])
           rows = [{'game_versions': t['game_versions']} for t in plan['targets']]
+          try:
+              print('Version type diagnostic:', cf.api_json('/game/version-types', os.environ['CURSEFORGE_TOKEN']))
+          except RuntimeError as error:
+              print('Version type endpoint unavailable:', str(error))
           names = {v for r in rows for v in r['game_versions']} | {'Fabric', 'NeoForge', 'Client'}
           for name in sorted(names):
               print('Label diagnostic', name, [v for v in labels if v.get('name') == name])
