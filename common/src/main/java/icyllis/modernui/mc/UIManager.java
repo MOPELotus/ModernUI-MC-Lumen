@@ -127,11 +127,11 @@ public abstract class UIManager implements LifecycleOwner {
     private volatile Looper mLooper;
     private volatile boolean mRunning;
     private volatile boolean mShutdownRequested;
+    private final Object mUiEventLock = new Object();
     private boolean mUiAndAudioStopped;
     private Throwable mUiAndAudioShutdownFailure;
     private volatile Throwable mUiThreadTerminationFailure;
-    private static boolean sRendererDestroyed;
-    private static Throwable sRendererShutdownFailure;
+    private static final RendererShutdownState sRendererShutdown = new RendererShutdownState();
 
     // the view root impl
     protected volatile ViewRootImpl mRoot;
@@ -356,6 +356,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public void setShowingLayoutBounds(boolean debugLayout) {
+        if (mShutdownRequested) return;
         mDebugLayout = debugLayout;
         mRoot.loadSystemProperties(() -> mDebugLayout);
     }
@@ -378,6 +379,7 @@ public abstract class UIManager implements LifecycleOwner {
     // Called when open a screen from Modern UI, or back to the screen
     @MainThread
     public void initScreen(@Nonnull MuiScreen screen) {
+        if (mShutdownRequested) return;
         if (mScreen != screen) {
             if (mScreen != null) {
                 LOGGER.warn(MARKER, "You cannot set multiple screens.");
@@ -523,18 +525,28 @@ public abstract class UIManager implements LifecycleOwner {
 
         // must delay, some messages are not enqueued
         // currently it is a bit longer than a game tick
-        mRoot.mHandler.postDelayed(mLooper::quitSafely, 60);
+        ViewRootImpl root = mRoot;
+        root.mHandler.postDelayed(UiQueueShutdown.wrap(
+                root::unscheduleForShutdown,
+                phase -> root.mChoreographer.removeCallbacks(phase, null, null),
+                new int[]{Choreographer.CALLBACK_INPUT, Choreographer.CALLBACK_ANIMATION,
+                        Choreographer.CALLBACK_TRAVERSAL, Choreographer.CALLBACK_COMMIT},
+                mLooper::quitSafely), 60);
     }
 
     private void requestShutdown() {
-        if (mShutdownRequested) {
+        final boolean alreadyRequested;
+        synchronized (mUiEventLock) {
+            alreadyRequested = mShutdownRequested;
+            mShutdownRequested = true;
+        }
+        if (alreadyRequested) {
             ViewRootImpl root = mRoot;
             if (root != null) {
                 root.cancelPendingFrame();
             }
             return;
         }
-        mShutdownRequested = true;
         mRunning = false;
 
         ViewRootImpl root = mRoot;
@@ -547,6 +559,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     private void scheduleHoverMoveForScroll() {
+        if (mShutdownRequested) return;
         mRoot.mHandler.removeCallbacks(mSyntheticHoverMove);
         mRoot.mHandler.postDelayed(mSyntheticHoverMove, 60);
     }
@@ -561,6 +574,7 @@ public abstract class UIManager implements LifecycleOwner {
      */
     @MainThread
     public void onHoverMove(boolean natural) {
+        if (mShutdownRequested) return;
         final long now = Core.timeNanos();
         float x = (float) (minecraft.mouseHandler.xpos() *
                 minecraft.getWindow().getWidth() / minecraft.getWindow().getScreenWidth());
@@ -578,6 +592,7 @@ public abstract class UIManager implements LifecycleOwner {
 
     // Hook method, DO NOT CALL
     public void onScroll(double scrollX, double scrollY) {
+        if (mShutdownRequested) return;
         if (mScreen != null) {
             final long now = Core.timeNanos();
             final Window window = minecraft.getWindow();
@@ -611,6 +626,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public void onPostMouseInput(int button, int action, int mods) {
+        if (mShutdownRequested) return;
         mods = normalizeModifiers(mods);
         // We should ensure (overlay == null && screen != null)
         // and the screen must be a mui screen
@@ -647,6 +663,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public void onKeyPress(int keyCode, int scanCode, int mods) {
+        if (mShutdownRequested) return;
         mods = normalizeModifiers(mods);
         KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_DOWN, keyCode, 0,
                 mods, scanCode, 0);
@@ -654,6 +671,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public void onKeyRelease(int keyCode, int scanCode, int mods) {
+        if (mShutdownRequested) return;
         mods = normalizeModifiers(mods);
         KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_UP, keyCode, 0,
                 mods, scanCode, 0);
@@ -661,6 +679,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     protected void onPreKeyInput(int action, net.minecraft.client.input.KeyEvent event) {
+        if (mShutdownRequested) return;
         if (TooltipRenderer.sTooltip) {
             if (action != GLFW_RELEASE) {
                 switch (event.key()) {
@@ -919,6 +938,7 @@ public abstract class UIManager implements LifecycleOwner {
 
     @MainThread
     public boolean onCharTyped(int ch) {
+        if (mShutdownRequested) return false;
         /*if (popup != null) {
             return popup.charTyped(codePoint, modifiers);
         }*/
@@ -935,28 +955,36 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     private void commitCharInput() {
-        if (mCharInputBuffer.isEmpty()) {
-            return;
-        }
-        final String input = mCharInputBuffer.toString();
-        mCharInputBuffer.setLength(0);
-        Message msg = Message.obtain(mRoot.mHandler, () -> {
-            if (mDecor.findFocus() instanceof EditText text) {
-                final Editable content = text.getText();
-                int selStart = text.getSelectionStart();
-                int selEnd = text.getSelectionEnd();
-                if (selStart >= 0 && selEnd >= 0) {
-                    Selection.setSelection(content, Math.max(selStart, selEnd));
-                    content.replace(Math.min(selStart, selEnd), Math.max(selStart, selEnd), input);
-                }
+        synchronized (mUiEventLock) {
+            if (mShutdownRequested) {
+                mCharInputBuffer.setLength(0);
+                return;
             }
-        });
-        msg.setAsynchronous(true);
-        msg.sendToTarget();
+            if (mCharInputBuffer.isEmpty()) {
+                return;
+            }
+            final String input = mCharInputBuffer.toString();
+            mCharInputBuffer.setLength(0);
+            Message msg = Message.obtain(mRoot.mHandler, () -> {
+                if (mShutdownRequested) return;
+                if (mDecor.findFocus() instanceof EditText text) {
+                    final Editable content = text.getText();
+                    int selStart = text.getSelectionStart();
+                    int selEnd = text.getSelectionEnd();
+                    if (selStart >= 0 && selEnd >= 0) {
+                        Selection.setSelection(content, Math.max(selStart, selEnd));
+                        content.replace(Math.min(selStart, selEnd), Math.max(selStart, selEnd), input);
+                    }
+                }
+            });
+            msg.setAsynchronous(true);
+            msg.sendToTarget();
+        }
     }
 
     @RenderThread
     public void render(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float deltaTick) {
+        if (mShutdownRequested) return;
         if (mNoRender) {
             /*if (mScreen != null) {
                 String error = Language.getInstance().getOrDefault("error.modernui.gl_caps");
@@ -1101,14 +1129,17 @@ public abstract class UIManager implements LifecycleOwner {
      */
     @MainThread
     void resize(int width, int height) {
-        if (mRoot != null) {
-            mRoot.mHandler.post(() -> mRoot.setFrame(width, height));
+        ViewRootImpl root = mRoot;
+        if (!mShutdownRequested && root != null) {
+            root.mHandler.post(() -> {
+                if (!mShutdownRequested) root.setFrame(width, height);
+            });
         }
     }
 
     @UiThread
     public void updateLayoutDir(boolean forceRTL) {
-        if (mDecor == null) {
+        if (mShutdownRequested || mDecor == null) {
             return;
         }
         boolean layoutRtl = forceRTL ||
@@ -1123,6 +1154,10 @@ public abstract class UIManager implements LifecycleOwner {
         MuiScreen screen = mScreen;
         if (target != screen) {
             LOGGER.warn(MARKER, "No screen to remove, try to remove {}, but have {}", target, screen);
+            return;
+        }
+        if (mShutdownRequested) {
+            mScreen = null;
             return;
         }
         mRoot.mHandler.post(this::suppressLayoutTransition);
@@ -1194,6 +1229,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public void onRenderFrame(long frame, int stage) {
+        if (mShutdownRequested) return;
         if (stage == MuiModApi.RENDER_STAGE_UPDATE) {
             final long lastFrameTime = mFrameTimeNanos;
             mFrameTimeNanos = Core.timeNanos();
@@ -1255,6 +1291,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     protected void onClientTick(boolean isEnd) {
+        if (mShutdownRequested) return;
         if (isEnd) {
             BlurHandler.INSTANCE.onClientTick();
             if (mTestChars) {
@@ -1274,7 +1311,7 @@ public abstract class UIManager implements LifecycleOwner {
 
     private void closeVulkanLayer() {
         if (mLayerTextureView_Vulkan == null) return;
-        mLayerTextureView_Vulkan.close();
+        NativeVulkanIntegration.closeLayerView(mLayerTextureView_Vulkan);
         VulkanImage image = mLayerImage_Vulkan;
         NativeVulkanIntegration.addFrameOp(image::unref);
         mLayerTextureView_Vulkan = null;
@@ -1325,13 +1362,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     public static void destroy() {
-        if (sRendererShutdownFailure != null) {
-            throw IntegratedAudioShutdown.rethrow(sRendererShutdownFailure);
-        }
-        if (sRendererDestroyed) {
-            return;
-        }
-        try {
+        sRendererShutdown.run(() -> {
             shutdownUiAndAudio();
             LOGGER.debug(MARKER, "Quitting Modern UI");
             if (sInstance != null) {
@@ -1345,7 +1376,9 @@ public abstract class UIManager implements LifecycleOwner {
             }
             FontResourceManager.getInstance().close();
             ImageStore.getInstance().clear();
+        }, () -> {
             if (ModernUIMod.isVulkanBackend()) NativeVulkanIntegration.drainForShutdown();
+        }, () -> {
             var context = Core.requireImmediateContext();
             context.unref();
             if (ModernUIMod.isVulkanBackend()) {
@@ -1365,12 +1398,7 @@ public abstract class UIManager implements LifecycleOwner {
                 LOGGER.info(MARKER, "Released Modern UI native Vulkan allocator and features after draining GPU work");
             }
             LOGGER.debug(MARKER, "Quit Modern UI");
-
-            sRendererDestroyed = true;
-        } catch (Throwable failure) {
-            sRendererShutdownFailure = failure;
-            throw IntegratedAudioShutdown.rethrow(failure);
-        }
+        }, failure -> failure instanceof OwnedGpuRetirements.GpuWaitFailure);
     }
 
     @UiThread
@@ -1388,6 +1416,29 @@ public abstract class UIManager implements LifecycleOwner {
 
         ArrayList<MinecraftDrawHandler.Operation> mPendingRawDrawHandlerOperations = new ArrayList<>();
         ArrayList<MinecraftDrawHandler> mRawDrawHandlers = new ArrayList<>();
+
+        /** UI thread only: remove both the traversal callback and its message barrier. */
+        private void unscheduleForShutdown() {
+            mHandler.removeCallbacks(mSyntheticHoverMove);
+            mHandler.removeMessages(MSG_PROCESS_INPUT_EVENTS);
+            unscheduleTraversals();
+        }
+
+        @Override
+        protected void scheduleTraversals() {
+            if (!mShutdownRequested) super.scheduleTraversals();
+        }
+
+        @Override
+        public void enqueueInputEvent(InputEvent event) {
+            synchronized (mUiEventLock) {
+                if (mShutdownRequested) {
+                    event.recycle();
+                    return;
+                }
+                super.enqueueInputEvent(event);
+            }
+        }
 
         @Override
         protected boolean dispatchTouchEvent(MotionEvent event) {

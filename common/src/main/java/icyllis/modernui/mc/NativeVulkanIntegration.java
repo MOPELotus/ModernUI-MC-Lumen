@@ -57,9 +57,11 @@ import java.nio.LongBuffer;
 @ApiStatus.Internal
 public final class NativeVulkanIntegration {
 
+    private static final OwnedGpuRetirements RETIREMENTS = new OwnedGpuRetirements();
+    private static boolean sShutdownSubmitted;
+
     private static final Unsafe UNSAFE;
     private static final Field BACKEND_FIELD;
-    private static final Field DESTROY_QUEUE_FIELD;
 
     private static final long GPU_TEXTURE_FORMAT;
     private static final long GPU_TEXTURE_WIDTH;
@@ -76,6 +78,7 @@ public final class NativeVulkanIntegration {
     private static final long VULKAN_TEXTURE_VIEWS;
 
     private static final long VULKAN_VIEW_IMAGE_VIEW;
+    private static final long VULKAN_VIEW_CLOSED;
 
     static {
         try {
@@ -85,8 +88,6 @@ public final class NativeVulkanIntegration {
 
             BACKEND_FIELD = GpuDevice.class.getDeclaredField("backend");
             BACKEND_FIELD.setAccessible(true);
-            DESTROY_QUEUE_FIELD = VulkanCommandEncoder.class.getDeclaredField("destroyQueue");
-            DESTROY_QUEUE_FIELD.setAccessible(true);
 
             GPU_TEXTURE_FORMAT = offset(GpuTexture.class, "format");
             GPU_TEXTURE_WIDTH = offset(GpuTexture.class, "width");
@@ -103,6 +104,7 @@ public final class NativeVulkanIntegration {
             VULKAN_TEXTURE_VIEWS = offset(VulkanGpuTexture.class, "views");
 
             VULKAN_VIEW_IMAGE_VIEW = offset(VulkanGpuTextureView.class, "vkImageView");
+            VULKAN_VIEW_CLOSED = offset(VulkanGpuTextureView.class, "closed");
         } catch (ReflectiveOperationException e) {
             throw new ExceptionInInitializerError(e);
         }
@@ -339,20 +341,44 @@ public final class NativeVulkanIntegration {
         return ((VulkanGpuTexture) vulkanTexture).vkImage() == arc3dVulkanImage.vkImage();
     }
 
-    /** Finish native submissions and release delayed image views before closing our allocator. */
-    public static void drainForShutdown() {
-        VulkanDevice device = device();
-        VulkanCommandEncoder encoder = device.createCommandEncoder();
-        encoder.submit();
-        device.graphicsQueue().waitIdle();
-        try {
-            ((AutoCloseable) DESTROY_QUEUE_FIELD.get(encoder)).close();
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to drain Minecraft Vulkan destruction queue", e);
+    /**
+     * Close a view created by this bridge over its non-owning Arc3D image wrapper.
+     * Keep its destruction in our ledger so shutdown need not drain Minecraft's entire queue.
+     */
+    public static void closeLayerView(GpuTextureView view) {
+        Core.checkRenderThread();
+        if (!(view instanceof VulkanGpuTextureView vulkanView)) {
+            throw new IllegalArgumentException("Expected a Lumen native Vulkan layer view");
         }
+        if (vulkanView.isClosed()) return;
+        if (UNSAFE.getLong(vulkanView.texture(), VULKAN_TEXTURE_ALLOCATION) != 0L) {
+            throw new IllegalArgumentException("Cannot retire a Minecraft-owned Vulkan allocation");
+        }
+        Runnable destroyView = RETIREMENTS.track(vulkanView::destroy);
+        // Match the host's close bookkeeping, but register its GPU destruction with
+        // our once-only callback before a later image unref can close the allocator.
+        UNSAFE.putBoolean(vulkanView, VULKAN_VIEW_CLOSED, true);
+        vulkanView.texture().removeViews();
+        device().createCommandEncoder().queueForDestroy(destroyView::run);
+    }
+
+    /** Finish native submissions and only our releases before closing the Arc3D allocator. */
+    public static void drainForShutdown() {
+        Core.checkRenderThread();
+        VulkanDevice device = device();
+        if (!sShutdownSubmitted) {
+            VulkanCommandEncoder encoder = device.createCommandEncoder();
+            encoder.submit();
+            sShutdownSubmitted = true;
+        }
+        // Minecraft's VulkanQueue.waitIdle currently discards its VkResult. Check
+        // the real device wait instead; failed waits must leave releases pending.
+        RETIREMENTS.close(() -> VKUtil._CHECK_(VK10.vkDeviceWaitIdle(device.vkDevice())));
+        ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Drained Lumen native Vulkan layer retirements before allocator shutdown");
     }
 
     public static void addFrameOp(Runnable runnable) {
-        device().createCommandEncoder().queueForDestroy(runnable::run);
+        Runnable guarded = RETIREMENTS.track(runnable);
+        device().createCommandEncoder().queueForDestroy(guarded::run);
     }
 }
