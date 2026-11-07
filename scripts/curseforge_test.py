@@ -128,6 +128,23 @@ class Guards(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'version type missing or ambiguous'):
             cf.resolve_versions(available, rows, [t for t in types if t['slug'] != 'modloader'])
 
+    def test_http_error_diagnostic_redacts_token(self):
+        import io
+        import urllib.error
+        from unittest import mock
+        error = urllib.error.HTTPError('https://example.invalid', 400, 'Bad Request', {},
+            io.BytesIO(b'{"errorCode":1001,"errorMessage":"bad test-secret","headers":"private"}'))
+        opener = mock.Mock()
+        opener.open.side_effect = error
+        with mock.patch.object(cf.urllib.request, 'build_opener', return_value=opener):
+            with self.assertRaises(RuntimeError) as caught:
+                cf.api_json('/test', 'test-secret')
+        text = str(caught.exception)
+        self.assertIn('1001', text)
+        self.assertIn('[redacted]', text)
+        self.assertNotIn('test-secret', text)
+        self.assertNotIn('private', text)
+
     def test_all_fabric_targets_are_independent_of_config_port(self):
         branches = {t['branch'] for t in PLAN['targets'] if
                     'forgeconfigapiport' in t['metadata']['fabric']['depends']}

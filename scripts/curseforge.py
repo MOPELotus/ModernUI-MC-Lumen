@@ -178,7 +178,17 @@ def api_json(path, token, data=None, content_type=None):
         with urllib.request.build_opener(NoRedirect).open(request, timeout=180) as response:
             return json.load(response)
     except urllib.error.HTTPError as error:
-        raise RuntimeError(f'CurseForge HTTP {error.code}; no automatic upload retry') from None
+        # Retain only structured diagnostic fields, never headers, tokens or arbitrary HTML.
+        detail = ''
+        try:
+            body = json.loads(error.read(65536))
+            if isinstance(body, dict):
+                fields = {k: body[k] for k in ('errorCode', 'errorMessage', 'message', 'code', 'error', 'detail')
+                          if k in body and isinstance(body[k], (str, int))}
+                detail = json.dumps(fields, ensure_ascii=True).replace(token, '[redacted]')[:800]
+        except (ValueError, OSError):
+            pass
+        raise RuntimeError(f'CurseForge HTTP {error.code}; {detail}; no automatic upload retry') from None
     except urllib.error.URLError:
         raise RuntimeError('CurseForge connection failed; check remote files before retrying') from None
 
