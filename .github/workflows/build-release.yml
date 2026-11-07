@@ -171,12 +171,10 @@ jobs:
           python3 - <<'PY'
           import json, os, subprocess
           version = json.load(open('release/github-targets.json'))['version']
-          for tag in (version, 'v' + version):
-              r = subprocess.run(['gh', 'api', f'repos/{os.environ["GITHUB_REPOSITORY"]}/releases/tags/{tag}'], capture_output=True, text=True)
-              if r.returncode == 0:
-                  raise SystemExit('Release or draft already exists; inspect it before retrying')
-              if 'HTTP 404' not in r.stderr:
-                  raise SystemExit('Cannot establish release absence; stopping')
+          repo = os.environ['GITHUB_REPOSITORY']
+          pages = json.loads(subprocess.check_output(['gh', 'api', '--paginate', '--slurp', f'repos/{repo}/releases?per_page=100'], text=True))
+          if any(r['tag_name'] in (version, 'v' + version) for page in pages for r in page):
+              raise SystemExit('Release or draft already exists; inspect it before retrying')
           # --target only controls new tags. An existing tag must resolve to this control commit.
           repo = os.environ['GITHUB_REPOSITORY']
           tag = os.environ['RELEASE_TAG']
@@ -200,12 +198,18 @@ jobs:
           gh release create "$RELEASE_TAG" bundle/*.jar bundle/SHA256SUMS.txt bundle/release-validation.json \
             --draft --title "ModernUI Lumen $RELEASE_TAG" --target "$CONTROL_SHA" --notes-file "$notes" "${flags[@]}"
           # The draft must hold all 32 JARs and both verification files before publication.
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > /tmp/release-draft.json
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > /tmp/release-drafts.json
           python3 - <<'PY'
-          import json, pathlib
-          draft = json.load(open('/tmp/release-draft.json'))
+          import json, os, pathlib, subprocess
+          matches = [r for page in json.load(open('/tmp/release-drafts.json')) for r in page
+                     if r['tag_name'] == os.environ['RELEASE_TAG']]
+          assert len(matches) == 1, 'Expected exactly one matching draft'
+          draft = matches[0]
           assert draft['draft'], 'Expected an unpublished draft'
-          actual = {a['name']: a['size'] for a in draft['assets']}
+          repo = os.environ['GITHUB_REPOSITORY']
+          pages = json.loads(subprocess.check_output(['gh', 'api', '--paginate', '--slurp',
+              f'repos/{repo}/releases/{draft["id"]}/assets?per_page=100'], text=True))
+          actual = {a['name']: a['size'] for page in pages for a in page}
           expected = {p.name: p.stat().st_size for p in pathlib.Path('bundle').iterdir() if p.is_file()}
           assert actual == expected, 'Draft asset set or sizes differ; leaving draft unpublished'
           PY
