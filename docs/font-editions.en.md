@@ -35,4 +35,4 @@ Use JDK 25 on `master` and the appropriate toolchain on other branches. Omitting
 ./gradlew clean build -Pfont_variant=misans
 ```
 
-CI builds both editions and uploads `modernui-lumen-release-jars`. Normal branch pushes do not create Releases.
+The unified GitHub workflow collects all 32 JARs in `github-release-complete-32`. Normal branch pushes do not publish a Release.
