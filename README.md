@@ -6,9 +6,9 @@ ModernUI Lumen is a fork of [Modern UI for Minecraft](https://github.com/BloCamL
 
 Modern UI brings its interface framework to Minecraft and provides text layout and rendering for vanilla screens. You can choose fonts, change screen backgrounds and tooltips, and use its APIs to build interfaces for other mods.
 
-Lumen maintains the Minecraft versions listed below, with fixes for scrolling-lyric text jitter, tooltips, input, and rendering backends. The current development version is **3.13.0.10**.
+Lumen maintains the Minecraft versions listed below, with fixes for scrolling-lyric text jitter, tooltips, input, and rendering backends. The current release is **3.13.0.10**.
 
-[Downloads](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [Changelog](changelogs.en.md) · [Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
+[Downloads](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.10) · [Changelog](changelogs.en.md) · [Issues](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
 
 ## Features
 
@@ -26,11 +26,13 @@ Upstream's text-field undo/redo, local music playback, and spectrum display are 
 
 Put the JAR for your Minecraft version and loader in the client `mods` folder. Both Fabric and NeoForge are supported.
 
+Use the version ranges in the table below when choosing a file. The `1.21.8` JAR supports 1.21.6–1.21.8, and the `26.1.2` JAR supports 26.1–26.1.2.
+
 - **Fabric** requires Fabric API.
 - Configuration is built in. **Forge Config API Port is not required.** ModernUI Core is bundled too.
 - Install this instead of upstream Modern UI, as both use the `modernui` mod ID. Replace the JAR when switching.
 
-CurseForge releases will contain the standard edition only. See [font editions](docs/font-editions.en.md) for the differences between the standard and MiSans editions.
+GitHub releases include both editions; only the standard edition is submitted to CurseForge. See [font editions](docs/font-editions.en.md) for the differences between the standard and MiSans editions.
 
 ## Supported versions
 
