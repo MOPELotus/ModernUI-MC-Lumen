@@ -1,28 +1,16 @@
-name: Build and Release
+name: Build
 
 on:
   push:
     branches:
-      - 1.21.10
-    tags:
-      - '*'
+      - '1.21.10'
   pull_request:
     branches:
-      - 1.21.10
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Release tag to create or update. Leave empty to only build artifacts.
-        required: false
-        type: string
-      prerelease:
-        description: Mark the GitHub release as a prerelease when creating it.
-        required: false
-        default: false
-        type: boolean
+      - '1.21.10'
+  workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -69,48 +57,3 @@ jobs:
           name: modernui-lumen-release-jars
           path: release/*.jar
           if-no-files-found: error
-
-      - name: Resolve release tag
-        id: release
-        shell: bash
-        env:
-          INPUT_TAG: ${{ github.event.inputs.tag }}
-        run: |
-          set -euo pipefail
-          tag=""
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            tag="${GITHUB_REF_NAME}"
-          elif [[ -n "${INPUT_TAG}" ]]; then
-            tag="${INPUT_TAG}"
-          fi
-
-          if [[ -n "${tag}" ]]; then
-            echo "enabled=true" >> "${GITHUB_OUTPUT}"
-            echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
-          else
-            echo "enabled=false" >> "${GITHUB_OUTPUT}"
-            echo "tag=" >> "${GITHUB_OUTPUT}"
-          fi
-
-      - name: Create or update GitHub release
-        if: steps.release.outputs.enabled == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag }}
-          PRERELEASE: ${{ github.event.inputs.prerelease }}
-        run: |
-          set -euo pipefail
-          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release upload "${RELEASE_TAG}" release/*.jar --clobber
-          else
-            prerelease_arg=()
-            if [[ "${PRERELEASE}" == "true" ]]; then
-              prerelease_arg=(--prerelease)
-            fi
-            gh release create "${RELEASE_TAG}" release/*.jar \
-              --title "${RELEASE_TAG}" \
-              --target "${GITHUB_SHA}" \
-              --generate-notes \
-              "${prerelease_arg[@]}"
-          fi
