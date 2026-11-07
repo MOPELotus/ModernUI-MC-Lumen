@@ -9,7 +9,7 @@
 - Rename the fork to ModernUI Lumen and the repository to ModernUI-MC-Lumen. Retain original author BloCamLimb and add maintainer MOPELotus. Preserve mod ID, API and configuration paths.
 - Provide standard and MiSans editions with separate client configuration files; see [font editions](docs/font-editions.en.md).
 - Maintain the eight Minecraft branches listed in the README, including shared 1.21.6–1.21.8 maintenance on `1.21.8`.
-- Include fractional-position marquee layout/sampling, tooltip and input parameter checks, and version-specific backend adaptations. See the [README](README.en.md) for compatibility conditions and validation limits.
+- Include fractional-position marquee layout/sampling, tooltip and input parameter checks, and version-specific backend adaptations. See the [README](README.md) for compatibility conditions and validation limits.
 - Runtime acceptance remains specific to Minecraft version, loader, backend and font edition. This version number and changelog do not imply a published Release or a fully passing matrix.
 
 ## Upstream history
