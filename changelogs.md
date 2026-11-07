@@ -8,7 +8,7 @@
 - Fork 更名为 ModernUI Lumen，仓库使用 ModernUI-MC-Lumen；保留 BloCamLimb 原作者署名并添加维护者 MOPELotus。模组 ID、API 和配置路径保持兼容。
 - 提供普通版与 MiSans 版，采用各自的客户端配置文件；详见[字体版本说明](docs/font-editions.md)。
 - 维护 README 所列八个 Minecraft 版本分支，包括由 `1.21.8` 统一覆盖的 1.21.6–1.21.8。
-- 包含走马灯分数像素布局与采样、tooltip uniform 布局、输入修饰键及逐版本后端适配。兼容条件和验证边界见 [README](README.md)。
+- 包含走马灯分数像素布局与采样、tooltip uniform 布局、输入修饰键及逐版本后端适配。兼容条件和验证边界见 [README](README.zh-CN.md)。
 - 当前版本仍按准确 Minecraft / 加载器 / 后端 / 字体版本进行验收；版本号和本记录不代表已发布 Release 或全部组合已通过。
 
 ## 上游历史概览
