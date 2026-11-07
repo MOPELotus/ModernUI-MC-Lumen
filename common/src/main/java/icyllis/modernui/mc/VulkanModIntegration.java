@@ -50,6 +50,8 @@ import java.util.Objects;
 @ApiStatus.Internal
 public final class VulkanModIntegration {
 
+    private static final OwnedGpuRetirements RETIREMENTS = new OwnedGpuRetirements();
+
     private static Field MAIN_IMAGE_VIEW;
 
     static {
@@ -182,6 +184,14 @@ public final class VulkanModIntegration {
     }
 
     public static void addFrameOp(Runnable runnable) {
-        MemoryManager.getInstance().addFrameOp(runnable);
+        MemoryManager.getInstance().addFrameOp(RETIREMENTS.track(runnable));
+    }
+
+    /** Called after UI producers stop and before releasing the Arc3D context/allocator. */
+    public static void drainFrameOps() {
+        // Arc3D VulkanDevice.waitForQueue is empty in Core 3.13.0. Wait on the real
+        // borrowed device, without releasing Minecraft's device or other mods' callbacks.
+        RETIREMENTS.close(() -> VKUtil._CHECK_(VK10.vkDeviceWaitIdle(DeviceManager.vkDevice)));
+        ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Drained Lumen VulkanMod frame retirements before allocator shutdown");
     }
 }
