@@ -230,6 +230,8 @@ public class FontResourceManager implements PreparableReloadListener {
                     GlyphManager.EMOJI_SPACING,
                     GlyphManager.EMOJI_BASE,
                     map, files);
+            ((icyllis.modernui.mc.text.EmojiTypeface.Provider) (Object) results.mEmojiFont)
+                    .modernui$bindEmojiResources(resources);
         } else {
             LOGGER.info(GlyphManager.MARKER, "No Emoji font was found");
         }
