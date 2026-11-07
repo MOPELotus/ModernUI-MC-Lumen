@@ -10,9 +10,6 @@ import org.lwjgl.vulkan.*;
 
 import java.lang.reflect.*;
 import java.util.Objects;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -20,7 +17,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public final class VulkanModIntegration {
     private VulkanModIntegration() {}
 
-    private static final List<Runnable> RETIREMENTS = new ArrayList<>();
+    private static final OwnedGpuRetirements RETIREMENTS = new OwnedGpuRetirements();
 
     // Loaded only on the Vulkan path. The two 1.21.1 distributions have different GL facades.
     private static final class Api {
@@ -162,26 +159,15 @@ public final class VulkanModIntegration {
     }
 
     public static void addFrameOp(Runnable action) {
-        AtomicBoolean done = new AtomicBoolean();
-        Runnable guarded = new Runnable() {
-            @Override public void run() {
-                if (!done.compareAndSet(false, true)) return;
-                try { action.run(); }
-                finally { synchronized (RETIREMENTS) { RETIREMENTS.remove(this); } }
-            }
-        };
-        synchronized (RETIREMENTS) { RETIREMENTS.add(guarded); }
+        Runnable guarded = RETIREMENTS.track(action);
         Object memory = call(Api.MEMORY, null, "getInstance", new Class<?>[0]);
         call(Api.MEMORY, memory, "addFrameOp", new Class<?>[]{Runnable.class}, guarded);
     }
 
-    /** Call after the UI thread stops and before dropping the Arc3D immediate context. */
+    /** Finish our deferred releases before dropping the immediate context or its allocator. */
     public static void drainFrameOps() {
-        beforeSubmit(null);
-        VKUtil._CHECK_(vkDeviceWaitIdle(device()));
-        List<Runnable> actions;
-        synchronized (RETIREMENTS) { actions = List.copyOf(RETIREMENTS); }
-        actions.forEach(Runnable::run);
+        RETIREMENTS.close(() -> VKUtil._CHECK_(vkDeviceWaitIdle(device())));
+        ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Drained Lumen VulkanMod frame retirements before allocator shutdown");
     }
 
     static void replaceMainImageView(Object image, short swizzle) {
