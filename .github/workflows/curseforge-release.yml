@@ -73,6 +73,7 @@ jobs:
           PY
 
   build:
+    if: needs.plan.outputs.publish != 'true'
     needs: plan
     runs-on: ubuntu-latest
     strategy:
@@ -127,6 +128,9 @@ jobs:
           retention-days: 7
 
   validate:
+    if: >-
+      !cancelled() && needs.plan.result == 'success' &&
+      (needs.build.result == 'success' || needs.build.result == 'skipped')
     needs: [plan, build]
     runs-on: ubuntu-latest
     steps:
@@ -135,10 +139,22 @@ jobs:
           ref: ${{ needs.plan.outputs.control_sha }}
           persist-credentials: false
       - uses: actions/download-artifact@v8
+        if: needs.plan.outputs.publish != 'true'
         with:
           pattern: curseforge-standard-*
           path: bundle
           merge-multiple: true
+      - name: 发布时复用 GitHub Release 的普通版文件
+        if: needs.plan.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p bundle
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern '*-universal.jar' --dir bundle
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern SHA256SUMS.txt --dir bundle
+          (cd bundle && sha256sum --check --ignore-missing SHA256SUMS.txt)
       - name: 在任何上传前校验完整 16 包
         run: python3 scripts/curseforge.py validate bundle > curseforge-validation.json
       - uses: actions/upload-artifact@v7
@@ -151,7 +167,9 @@ jobs:
 
   publish:
     needs: [plan, validate]
-    if: needs.plan.outputs.publish == 'true'
+    if: >-
+      !cancelled() && needs.plan.result == 'success' && needs.validate.result == 'success' &&
+      needs.plan.outputs.publish == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
