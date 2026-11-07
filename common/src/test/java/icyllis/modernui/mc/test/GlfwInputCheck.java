@@ -101,6 +101,10 @@ public final class GlfwInputCheck {
         var buffer = new StringBuilder();
         probe.getField("mCharInputBuffer").set(input, buffer);
         probe.getField("mCommitCharInput").set(input, (Runnable) () -> {});
+        // The UI manager starts its thread before mRunning becomes true. Admission must
+        // depend on an explicit shutdown request, not that transient initialization state.
+        probe.getField("mRunning").setBoolean(input, false);
+        probe.getField("mShutdownRequested").setBoolean(input, false);
         var charTyped = probe.getMethod("onCharTyped", char.class);
         for (char ch : "A测😀𠮷".toCharArray()) {
             if (!(boolean) charTyped.invoke(input, ch)) throw new AssertionError("UTF-16 unit rejected");
@@ -111,10 +115,21 @@ public final class GlfwInputCheck {
             if ((boolean) charTyped.invoke(input, ch)) throw new AssertionError("NUL/DEL accepted");
         }
         if (scheduled != 6 || !buffer.toString().equals("A测😀𠮷")) throw new AssertionError("Rejected input mutated buffer");
+        String beforeShutdown = buffer.toString();
+        int scheduledBeforeShutdown = scheduled;
+        probe.getField("mShutdownRequested").setBoolean(input, true);
+        for (char ch : new char[]{'Z', '测', '\ud83d', '\ude00', 0, 127}) {
+            if ((boolean) charTyped.invoke(input, ch)) {
+                throw new AssertionError("Shutdown must reject late UTF-16 input");
+            }
+        }
+        if (scheduled != scheduledBeforeShutdown || !buffer.toString().equals(beforeShutdown)) {
+            throw new AssertionError("Shutdown input must neither mutate text nor enqueue a commit");
+        }
         var commit = method(ui, "commitCharInput", "()V");
         call(commit, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;");
         call(commit, "java/lang/StringBuilder", "setLength", "(I)V");
-        System.out.println("1.21.8 raw GLFW descriptors and forwarding, both loaders' Simple/MenuScreen, actual Core obtain/scancode/mods, four lock states and UTF-16 buffering passed");
+        System.out.println("1.21.8 raw GLFW descriptors and forwarding, both loaders' Simple/MenuScreen, actual Core obtain/scancode/mods, four lock states, UTF-16 buffering and shutdown input rejection passed");
     }
 
     public static void schedule(Runnable runnable) { scheduled++; }
@@ -124,14 +139,27 @@ public final class GlfwInputCheck {
         node.version = V21; node.access = ACC_PUBLIC; node.name = PROBE; node.superName = "java/lang/Object";
         node.fields.add(new FieldNode(ACC_PUBLIC, "mCharInputBuffer", "Ljava/lang/StringBuilder;", null, null));
         node.fields.add(new FieldNode(ACC_PUBLIC, "mCommitCharInput", "Ljava/lang/Runnable;", null, null));
+        node.fields.add(new FieldNode(ACC_PUBLIC | ACC_VOLATILE, "mShutdownRequested", "Z", null, null));
+        node.fields.add(new FieldNode(ACC_PUBLIC | ACC_VOLATILE, "mRunning", "Z", null, null));
+        node.fields.add(new FieldNode(ACC_PUBLIC | ACC_FINAL, "mUiEventLock", "Ljava/lang/Object;", null, null));
         var init = new MethodNode(ACC_PUBLIC, "<init>", "()V", null, null);
         init.instructions.add(new VarInsnNode(ALOAD, 0));
         init.instructions.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
+        init.instructions.add(new VarInsnNode(ALOAD, 0));
+        init.instructions.add(new TypeInsnNode(NEW, "java/lang/Object"));
+        init.instructions.add(new InsnNode(DUP));
+        init.instructions.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
+        init.instructions.add(new FieldInsnNode(PUTFIELD, PROBE, "mUiEventLock", "Ljava/lang/Object;"));
         init.instructions.add(new InsnNode(RETURN)); node.methods.add(init);
         for (MethodNode method : List.of(normalize, chars)) {
             method.access = ACC_PUBLIC | (method == normalize ? ACC_STATIC : 0);
             for (AbstractInsnNode instruction : method.instructions) {
-                if (instruction instanceof FieldInsnNode field && field.owner.equals(UI)) field.owner = PROBE;
+                if (instruction instanceof FieldInsnNode field && field.owner.equals(UI)) {
+                    boolean modeled = node.fields.stream().anyMatch(candidate ->
+                            candidate.name.equals(field.name) && candidate.desc.equals(field.desc));
+                    if (!modeled) throw new AssertionError("InputProbe missing production field " + field.name + field.desc);
+                    field.owner = PROBE;
+                }
                 if (instruction instanceof MethodInsnNode call && call.owner.equals("icyllis/modernui/core/Core")
                         && call.name.equals("postOnMainThread") && call.desc.equals("(Ljava/lang/Runnable;)V")) {
                     call.owner = HERE; call.name = "schedule";
