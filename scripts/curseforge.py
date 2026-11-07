@@ -244,12 +244,12 @@ def publish(args, plan):
                     'releaseType': plan['release_type'],
                     'gameVersions': [ids[v] for v in row['game_versions']] +
                                     [ids[LOADERS[row['loader']]], ids['Client']],
-                    'relations': {'projects': [{'slug': 'modern-ui', 'projectID': '352491',
+                    'relations': {'projects': [{'slug': 'modern-ui', 'projectID': 352491,
                                                  'type': 'incompatible'}]}}
         if row['loader'] == 'fabric':
             target = next(t for t in plan['targets'] if t['branch'] == row['branch'])
             dependencies = target['metadata']['fabric']['depends']
-            for mod, slug, project_id in [('fabric-api', 'fabric-api', '306612')]:
+            for mod, slug, project_id in [('fabric-api', 'fabric-api', 306612)]:
                 if mod in dependencies:
                     metadata['relations']['projects'].append({'slug': slug, 'projectID': project_id,
                                                              'type': 'requiredDependency'})

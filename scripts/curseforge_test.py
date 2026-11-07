@@ -128,6 +128,25 @@ class Guards(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'version type missing or ambiguous'):
             cf.resolve_versions(available, rows, [t for t in types if t['slug'] != 'modloader'])
 
+    def test_upload_relation_project_ids_are_json_integers(self):
+        from types import SimpleNamespace
+        from unittest import mock
+        name = cf.filenames(PLAN, PLAN['targets'][0])['fabric']
+        (self.root / name).write_bytes(b'test upload bytes')
+        rows = [{'file': name, 'loader': 'fabric', 'branch': PLAN['targets'][0]['branch'],
+                 'game_versions': ['1.21', '1.21.1']}]
+        args = SimpleNamespace(directory=self.root, receipt=self.root / 'receipt.json')
+        ready = (rows, '1788481', 'test-secret', 'notes',
+                 {'1.21': 1, '1.21.1': 2, 'Fabric': 3, 'Client': 4})
+        with mock.patch.object(cf, 'prepare_upload', return_value=ready), \
+             mock.patch.object(cf, 'api_json', return_value={'id': 123}) as api:
+            cf.publish(args, PLAN)
+        body = api.call_args.args[2]
+        metadata = json.loads(body.split(b'\r\n\r\n', 1)[1].split(b'\r\n--', 1)[0])
+        relations = metadata['relations']['projects']
+        self.assertEqual([r['projectID'] for r in relations], [352491, 306612])
+        self.assertTrue(all(type(r['projectID']) is int for r in relations))
+
     def test_http_error_diagnostic_redacts_token(self):
         import io
         import urllib.error
