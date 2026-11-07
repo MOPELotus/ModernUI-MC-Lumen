@@ -4,6 +4,10 @@ on:
   push:
     branches: [master]
     tags: ['*']
+    paths-ignore:
+      - 'README*.md'
+      - 'docs/**'
+      - 'release/changelogs/**'
   pull_request:
     branches: [master]
   workflow_dispatch:
