@@ -183,12 +183,24 @@ def api_json(path, token, data=None, content_type=None):
         raise RuntimeError('CurseForge connection failed; check remote files before retrying') from None
 
 
-def resolve_versions(available, rows):
+def resolve_versions(available, rows, version_types):
     needed = {v for row in rows for v in row['game_versions']} | set(LOADERS.values()) | {'Client'}
     found = {}
     for label in sorted(needed):
-        matches = [v for v in available if v['name'] == label]
-        require(len(matches) == 1, f'CurseForge label missing or ambiguous: {label}; do not drop tags')
+        if label in LOADERS.values():
+            slug = 'modloader'
+        elif label == 'Client':
+            slug = 'environment'
+        else:
+            require(re.fullmatch(r'\d+\.\d+(?:\.\d+)?', label), 'invalid Minecraft version label')
+            slug = 'minecraft-' + '-'.join(label.split('.')[:2])
+        types = [t for t in version_types if t.get('slug') == slug]
+        require(len(types) == 1, f'CurseForge version type missing or ambiguous: {slug}')
+        # The API also returns identically named Bukkit/Addons versions. Only the
+        # Minecraft Mods family, loader, or environment type is valid here.
+        matches = [v for v in available if v['name'] == label and
+                   v.get('gameVersionTypeID') == types[0]['id']]
+        require(len(matches) == 1, f'CurseForge label missing or ambiguous: {label} ({slug}); do not drop tags')
         found[label] = matches[0]['id']
     return found
 
@@ -202,7 +214,9 @@ def prepare_upload(args, plan):
     require(project != str(plan['upstream_project']), 'refusing to upload to the upstream project')
     changelog = Path(args.changelog or ROOT / plan['changelog']).read_text()
     require(changelog.strip(), 'empty changelog')
-    ids = resolve_versions(api_json('/game/versions', token), rows)
+    available = api_json('/game/versions', token)
+    version_types = api_json('/game/version-types', token)
+    ids = resolve_versions(available, rows, version_types)
     return rows, project, token, changelog, ids
 
 

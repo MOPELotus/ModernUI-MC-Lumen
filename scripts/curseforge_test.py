@@ -83,12 +83,50 @@ class Guards(unittest.TestCase):
 
     def test_missing_or_ambiguous_remote_label_fails(self):
         rows = [{'game_versions': ['1.21.1']}]
-        versions = [{'name': name, 'id': i} for i, name in enumerate(['1.21.1', 'Fabric', 'NeoForge', 'Client'])]
-        self.assertEqual(len(cf.resolve_versions(versions, rows)), 4)
+        types = [{'slug': 'minecraft-1-21', 'id': 31}, {'slug': 'modloader', 'id': 32},
+                 {'slug': 'environment', 'id': 33}]
+        versions = [{'name': name, 'id': i, 'gameVersionTypeID': type_id}
+                    for i, (name, type_id) in enumerate([
+                        ('1.21.1', 31), ('Fabric', 32), ('NeoForge', 32), ('Client', 33)])]
+        self.assertEqual(len(cf.resolve_versions(versions, rows, types)), 4)
         with self.assertRaisesRegex(ValueError, 'missing or ambiguous'):
-            cf.resolve_versions(versions[1:], rows)
+            cf.resolve_versions(versions[1:], rows, types)
         with self.assertRaisesRegex(ValueError, 'missing or ambiguous'):
-            cf.resolve_versions(versions + [versions[0]], rows)
+            cf.resolve_versions(versions + [versions[0]], rows, types)
+
+    def test_minecraft_mod_types_exclude_same_name_plugin_and_addon_versions(self):
+        labels = sorted({v for target in PLAN['targets'] for v in target['game_versions']})
+        rows = [{'game_versions': labels}]
+        slugs = {'minecraft-' + '-'.join(v.split('.')[:2]) for v in labels}
+        slugs |= {'modloader', 'environment'}
+        types = [{'slug': slug, 'id': 100 + i} for i, slug in enumerate(sorted(slugs))]
+        type_ids = {t['slug']: t['id'] for t in types}
+        types += [{'slug': 'addons', 'id': 615}]
+        available = []
+        expected = {}
+        for i, label in enumerate(labels):
+            expected[label] = 200 + i
+            available += [{'name': label, 'id': 1000 + i, 'gameVersionTypeID': 1},
+                          {'name': label, 'id': 2000 + i, 'gameVersionTypeID': 615},
+                          {'name': label, 'id': expected[label], 'gameVersionTypeID':
+                           type_ids['minecraft-' + '-'.join(label.split('.')[:2])]}]
+        for i, label in enumerate(['Fabric', 'NeoForge', 'Client']):
+            expected[label] = 300 + i
+            slug = 'environment' if label == 'Client' else 'modloader'
+            available += [{'name': label, 'id': expected[label], 'gameVersionTypeID': type_ids[slug]},
+                          {'name': label, 'id': 3000 + i, 'gameVersionTypeID': 615}]
+        self.assertEqual(cf.resolve_versions(available, rows, types), expected)
+        duplicate = next(v for v in available if v['name'] == labels[0] and
+                         v['id'] == expected[labels[0]])
+        with self.assertRaisesRegex(ValueError, 'label missing or ambiguous'):
+            cf.resolve_versions(available + [dict(duplicate, id=9999)], rows, types)
+        wrong_types_only = [v for v in available if v != duplicate]
+        with self.assertRaisesRegex(ValueError, 'label missing or ambiguous'):
+            cf.resolve_versions(wrong_types_only, rows, types)
+        with self.assertRaisesRegex(ValueError, 'version type missing or ambiguous'):
+            cf.resolve_versions(available, rows, types + [types[0]])
+        with self.assertRaisesRegex(ValueError, 'version type missing or ambiguous'):
+            cf.resolve_versions(available, rows, [t for t in types if t['slug'] != 'modloader'])
 
     def test_all_fabric_targets_are_independent_of_config_port(self):
         branches = {t['branch'] for t in PLAN['targets'] if
