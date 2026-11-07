@@ -2,123 +2,215 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - master
-    tags:
-      - '*'
+    branches: [master]
+    tags: ['*']
   pull_request:
-    branches:
-      - master
+    branches: [master]
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag to create or update. Leave empty to only build artifacts.
+        description: 完整版本标签；留空仅构建，不发布
         required: false
         type: string
       prerelease:
-        description: Mark the GitHub release as a prerelease when creating it.
-        required: false
+        description: 标记为预发布
         default: false
         type: boolean
 
 permissions:
-  contents: write
-  actions: write # Dispatch the standard-only CurseForge workflow after a new release.
+  contents: read
+
+concurrency:
+  group: github-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build configured loaders
+  plan:
     runs-on: ubuntu-latest
-
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      control_sha: ${{ steps.plan.outputs.control_sha }}
+      tag: ${{ steps.plan.outputs.tag }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v5
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          python3 scripts/github_release_test.py
+          tag=""
+          if [[ "$REF_TYPE" == tag ]]; then tag="$REF_NAME"; fi
+          if [[ "$EVENT" == workflow_dispatch ]]; then
+            [[ "$REF_NAME" == master ]]
+            tag="$INPUT_TAG"
+          fi
+          if [[ -n "$tag" ]]; then python3 scripts/github_release.py check-tag "$tag"; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "control_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "matrix=$(python3 scripts/github_release.py matrix)" >> "$GITHUB_OUTPUT"
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v5
+  build:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.control_sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.ref }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
-
-      - name: Build and collect both font editions
-        shell: bash
+          java-version: ${{ matrix.java }}
+      - uses: gradle/actions/setup-gradle@v5
+      - name: 核对固定源码和版本
+        env:
+          BRANCH: ${{ matrix.branch }}
+        run: python3 control/scripts/github_release.py verify-source source --branch "$BRANCH"
+      - name: 构建普通版和 MiSans 版，分别保留两加载器成品
+        working-directory: source
+        env:
+          MC: ${{ matrix.minecraft }}
+          VERSION: ${{ matrix.version }}
         run: |
           set -euo pipefail
-          chmod +x ./gradlew
-          mkdir -p release
-          for variant in standard misans; do
-            ./gradlew --no-daemon clean build -Pfont_variant="$variant"
+          mkdir -p ../staged
+          for edition in standard misans; do
+            bash ./gradlew --no-daemon clean build -Pfont_variant="$edition" -Penabled_platforms=fabric,neoforge
             suffix=universal
-            if [[ "$variant" == misans ]]; then suffix=universal-misans; fi
+            if [[ "$edition" == misans ]]; then suffix=universal-misans; fi
             for loader in fabric neoforge; do
-              jars=("$loader"/build/libs/ModernUI-Lumen-*-"$suffix".jar)
-              [[ ${#jars[@]} -eq 1 && -f "${jars[0]}" ]]
-              cp -- "${jars[0]}" release/
+              case "$loader" in fabric) label=Fabric;; neoforge) label=NeoForge;; esac
+              cp -- "$loader/build/libs/ModernUI-Lumen-$label-$MC-$VERSION-$suffix.jar" ../staged/
             done
           done
-          python3 scripts/check-release-variants.py release fabric neoforge
-          ls -lh release
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: modernui-lumen-release-jars
-          path: release/*.jar
-          if-no-files-found: error
-
-      - name: Resolve release tag
-        id: release
-        shell: bash
+      - name: 校验每个分支的四个成品
         env:
-          INPUT_TAG: ${{ github.event.inputs.tag }}
+          BRANCH: ${{ matrix.branch }}
+        run: |
+          python3 source/scripts/check-release-variants.py staged fabric neoforge
+          python3 control/scripts/github_release.py validate staged --branch "$BRANCH"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: github-release-${{ matrix.minecraft }}
+          path: staged/*.jar
+          if-no-files-found: error
+          retention-days: 7
+
+  bundle:
+    needs: [plan, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.control_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: github-release-*
+          path: bundle
+          merge-multiple: true
+      - name: 核对完整 32 包并生成校验文件
         run: |
           set -euo pipefail
-          tag=""
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            tag="${GITHUB_REF_NAME}"
-          elif [[ -n "${INPUT_TAG}" ]]; then
-            tag="${INPUT_TAG}"
-          fi
+          python3 scripts/github_release.py validate bundle > bundle/release-validation.json
+          (cd bundle && sha256sum *.jar > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: github-release-complete-32
+          path: bundle/*
+          if-no-files-found: error
+          retention-days: 14
 
-          if [[ -n "${tag}" ]]; then
-            echo "enabled=true" >> "${GITHUB_OUTPUT}"
-            echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
-          else
-            echo "enabled=false" >> "${GITHUB_OUTPUT}"
-            echo "tag=" >> "${GITHUB_OUTPUT}"
-          fi
-
-      - name: Create or update GitHub release
-        if: steps.release.outputs.enabled == 'true'
-        shell: bash
+  publish:
+    needs: [plan, bundle]
+    if: needs.plan.outputs.tag != '' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: github-release-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.control_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: github-release-complete-32
+          path: bundle
+      - name: 完整校验后创建草稿，上传齐全再公开
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag }}
-          PRERELEASE: ${{ github.event.inputs.prerelease }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+          CONTROL_SHA: ${{ needs.plan.outputs.control_sha }}
+          PRERELEASE: ${{ inputs.prerelease }}
           CURSEFORGE_ENABLED: ${{ vars.CURSEFORGE_ENABLED }}
         run: |
           set -euo pipefail
-          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            # Keep both editions in CI artifacts; public releases contain only standard JARs.
-            gh release upload "${RELEASE_TAG}" release/*-universal.jar --clobber
-          else
-            prerelease_arg=()
-            if [[ "${PRERELEASE}" == "true" ]]; then
-              prerelease_arg=(--prerelease)
-            fi
-            gh release create "${RELEASE_TAG}" release/*-universal.jar \
-              --title "${RELEASE_TAG}" \
-              --target "${GITHUB_SHA}" \
-              --generate-notes \
-              "${prerelease_arg[@]}"
-            # GITHUB_TOKEN-created releases do not trigger another release workflow.
-            if [[ "${CURSEFORGE_ENABLED}" == "true" ]]; then
-              gh workflow run curseforge-release.yml --ref master \
-                -f publish=true -f tag="${RELEASE_TAG}"
-            fi
+          python3 scripts/github_release.py check-tag "$RELEASE_TAG"
+          python3 scripts/github_release.py validate bundle > /tmp/release-validation-recheck.json
+          cmp bundle/release-validation.json /tmp/release-validation-recheck.json
+          (cd bundle && sha256sum --check SHA256SUMS.txt)
+          # Refuse existing releases, including partial drafts; never replace published files.
+          python3 - <<'PY'
+          import json, os, subprocess
+          version = json.load(open('release/github-targets.json'))['version']
+          for tag in (version, 'v' + version):
+              r = subprocess.run(['gh', 'api', f'repos/{os.environ["GITHUB_REPOSITORY"]}/releases/tags/{tag}'], capture_output=True, text=True)
+              if r.returncode == 0:
+                  raise SystemExit('Release or draft already exists; inspect it before retrying')
+              if 'HTTP 404' not in r.stderr:
+                  raise SystemExit('Cannot establish release absence; stopping')
+          # --target only controls new tags. An existing tag must resolve to this control commit.
+          repo = os.environ['GITHUB_REPOSITORY']
+          tag = os.environ['RELEASE_TAG']
+          r = subprocess.run(['gh', 'api', f'repos/{repo}/git/ref/tags/{tag}'], capture_output=True, text=True)
+          if r.returncode == 0:
+              obj = json.loads(r.stdout)['object']
+              for _ in range(8):
+                  if obj['type'] == 'commit':
+                      break
+                  if obj['type'] != 'tag':
+                      raise SystemExit('Release tag does not point to a commit')
+                  obj = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/git/tags/{obj["sha"]}'], text=True))['object']
+              if obj['type'] != 'commit' or obj['sha'] != os.environ['CONTROL_SHA']:
+                  raise SystemExit('Existing release tag points to different source; stopping')
+          elif 'HTTP 404' not in r.stderr:
+              raise SystemExit('Cannot establish tag target; stopping')
+          PY
+          notes=$(python3 -c 'import json; print(json.load(open("release/github-targets.json"))["changelog"])')
+          flags=()
+          if [[ "$PRERELEASE" == true ]]; then flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" bundle/*.jar bundle/SHA256SUMS.txt bundle/release-validation.json \
+            --draft --title "ModernUI Lumen $RELEASE_TAG" --target "$CONTROL_SHA" --notes-file "$notes" "${flags[@]}"
+          # The draft must hold all 32 JARs and both verification files before publication.
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > /tmp/release-draft.json
+          python3 - <<'PY'
+          import json, pathlib
+          draft = json.load(open('/tmp/release-draft.json'))
+          assert draft['draft'], 'Expected an unpublished draft'
+          actual = {a['name']: a['size'] for a in draft['assets']}
+          expected = {p.name: p.stat().st_size for p in pathlib.Path('bundle').iterdir() if p.is_file()}
+          assert actual == expected, 'Draft asset set or sizes differ; leaving draft unpublished'
+          PY
+          gh release edit "$RELEASE_TAG" --draft=false
+          # Keep the existing optional CurseForge handoff; CF builds only standard editions.
+          if [[ "$CURSEFORGE_ENABLED" == true ]]; then
+            gh workflow run curseforge-release.yml --ref master -f publish=true -f tag="$RELEASE_TAG"
           fi
