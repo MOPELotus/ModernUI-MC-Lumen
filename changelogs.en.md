@@ -8,7 +8,7 @@
 - Use ModernUI Lumen for the project and in-game display name, and ModernUI Lumen (MiSans) for that edition. Preserve original credits, licenses and compatibility identifiers.
 - Provide standard and MiSans editions with separate configurations for Fabric and NeoForge.
 - Improve slow text scrolling, glyph sampling, edge clipping and cache reuse; adapt input, tooltips and resource formats to each target Minecraft API.
-- Improve cross-backend resource handoff, volume fading and window/zoom behavior. See [README](README.en.md) for exact compatibility conditions and capability limits.
+- Improve cross-backend resource handoff, volume fading and window/zoom behavior. See [README](README.md) for exact compatibility conditions and capability limits.
 - Provide MiSans checks, user-initiated downloads, verification, retries and weight selection; see [font editions](docs/font-editions.en.md).
 
 ## Historical overview
