@@ -80,6 +80,17 @@ tasks.register('checkTextMarquee', JavaExec) {
 }
 check.dependsOn checkTextMarquee
 
+tasks.register('checkEmojiTypeface', JavaExec) {
+    group = 'verification'
+    description = 'Checks native color emoji glyph pixels, positioning, caching and resource reloads.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'icyllis.modernui.mc.text.EmojiTypefaceCheck'
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
+}
+
+check.dependsOn checkEmojiTypeface
+
 tasks.register('checkTooltipUniform', JavaExec) {
     group = 'verification'
     dependsOn testClasses
