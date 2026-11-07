@@ -9,6 +9,8 @@
     "MixinAudioTrack",
     "MixinSpanSet",
     "MixinGLTexture",
+    "MixinEmojiFont",
+    "MixinRasterTextStep",
     "AccessAudioManager",
     "MixinSoundEngine",
     "AccessClientTextTooltip",
