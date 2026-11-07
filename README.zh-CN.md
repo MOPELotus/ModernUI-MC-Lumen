@@ -6,9 +6,9 @@ ModernUI Lumen 是 [Modern UI for Minecraft](https://github.com/BloCamLimb/Moder
 
 Modern UI 把自己的界面框架带进了 Minecraft，也为原版界面提供了新的文字排版和渲染。你可以换字体、调整背景和物品提示的样式，其他模组也可以用它来做界面。
 
-Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的文字抖动、tooltip、输入和不同渲染后端的问题。当前开发版本是 **3.13.0.10**。
+Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的文字抖动、tooltip、输入和不同渲染后端的问题。当前发布版本是 **3.13.0.10**。
 
-[下载](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases) · [更新记录](changelogs.md) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
+[下载](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.10) · [更新记录](changelogs.md) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
 
 ## 功能
 
@@ -26,11 +26,13 @@ Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的
 
 下载与你的 Minecraft 版本、加载器对应的 JAR，放进 `mods` 文件夹。支持 Fabric 和 NeoForge。
 
+选文件时看下方表格中的兼容范围：文件名中的 `1.21.8` 对应 1.21.6–1.21.8，`26.1.2` 对应 26.1–26.1.2。
+
 - **Fabric** 需要 Fabric API。
 - 配置功能已内置，**不需要 Forge Config API Port**。ModernUI Core 也已打包在 JAR 里，无需另装。
 - 不能与上游 Modern UI 同时安装：两者使用相同的 `modernui` 模组 ID。切换时替换 JAR 即可。
 
-CurseForge 将只发布普通版。普通版和 MiSans 版的区别见[字体版本说明](docs/font-editions.md)。
+GitHub 提供普通版和 MiSans 版，向 CurseForge 提交的只有普通版。普通版和 MiSans 版的区别见[字体版本说明](docs/font-editions.md)。
 
 ## 支持版本
 
