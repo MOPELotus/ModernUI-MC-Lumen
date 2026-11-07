@@ -8,7 +8,7 @@
 - 项目与游戏内显示名称使用 ModernUI Lumen；MiSans 版使用 ModernUI Lumen (MiSans)。保留原作者署名、许可证及兼容标识。
 - 提供普通版、MiSans 版和各自配置，支持 Fabric 与 NeoForge。
 - 改善低速文字滚动、字形采样、边缘裁剪与缓存复用，并按目标 Minecraft API 适配输入、提示框与资源格式。
-- 完善图形后端之间的资源交接、音量淡出和窗口/缩放行为；具体兼容条件及能力限制见 [README](README.md)。
+- 完善图形后端之间的资源交接、音量淡出和窗口/缩放行为；具体兼容条件及能力限制见 [README](README.zh-CN.md)。
 - 提供 MiSans 字体检查、用户主动下载、校验、重试与字重选择，详见[字体版本说明](docs/font-editions.md)。
 
 ## 上游历史概览
