@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "version": "3.13.0.11",
-  "changelog": "release/changelogs/3.13.0.11.md",
+  "version": "3.13.0.12",
+  "changelog": "release/changelogs/3.13.0.12.md",
   "targets": [
     {
       "branch": "1.21.1",
-      "ref": "ea6cd340428de8cc419792b55486e357a2757b50",
+      "ref": "9c1421e7fa30dbc8bf8c59658322da8db442b688",
       "minecraft": "1.21.1",
       "game_versions": [
         "1.21",
@@ -31,7 +31,7 @@
     },
     {
       "branch": "1.21.8",
-      "ref": "da9ac4b2c8f82defffc54ab686d64879ba185c74",
+      "ref": "cd0a4fea6466f139de5d0755fd62158388986ac2",
       "minecraft": "1.21.8",
       "game_versions": [
         "1.21.6",
@@ -58,7 +58,7 @@
     },
     {
       "branch": "1.21.9",
-      "ref": "f856e8015da93d82d7b96e04c36e3b5927073735",
+      "ref": "fbac59d39858b9fb832528efe8e085be80f71756",
       "minecraft": "1.21.9",
       "game_versions": [
         "1.21.9"
@@ -83,7 +83,7 @@
     },
     {
       "branch": "1.21.10",
-      "ref": "2f2958122338ff4e19890e3b8e7bb7ef0f52253f",
+      "ref": "d242aecfd884f1cb4811207bc66b4850f7885119",
       "minecraft": "1.21.10",
       "game_versions": [
         "1.21.10"
@@ -108,7 +108,7 @@
     },
     {
       "branch": "1.21.11",
-      "ref": "6d354c5a1fee40a6e62b68e844cd2d99bb6ce5ae",
+      "ref": "eaea5e53359d504ec5d046f9c020d40cfaf554dd",
       "minecraft": "1.21.11",
       "game_versions": [
         "1.21.11"
@@ -133,7 +133,7 @@
     },
     {
       "branch": "26.1",
-      "ref": "8cb19bd6e43893937f7e21541fd60cdce1bf31d7",
+      "ref": "06ce538674d6f16a2f83d6f1045948475b1f084c",
       "minecraft": "26.1.2",
       "game_versions": [
         "26.1",
@@ -160,7 +160,7 @@
     },
     {
       "branch": "26.2",
-      "ref": "5785eff2f56a0b77214955ce8cf97d1c65c00fb9",
+      "ref": "40318461bd24f07f72e092e1f7f521436fe62655",
       "minecraft": "26.2",
       "game_versions": [
         "26.2"
@@ -185,7 +185,7 @@
     },
     {
       "branch": "master",
-      "ref": "fc37dc010788572449f5c0f9acdd908a6d4f0a15",
+      "ref": "719bdeaf15c6e9654f9c4688ed5dc1d6e6447207",
       "minecraft": "26.3",
       "game_versions": [
         "26.3"
