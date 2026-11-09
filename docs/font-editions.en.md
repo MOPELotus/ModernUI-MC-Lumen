@@ -9,7 +9,7 @@ Both editions use the same Minecraft adaptations and text scrolling, clipping an
 | Standard | ModernUI Lumen | `-universal.jar` | Customizable fonts |
 | MiSans | ModernUI Lumen (MiSans) | `-universal-misans.jar` | MiSans families and weight selection |
 
-With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+Starting with Lumen 3.13.0.11, both editions display color emoji in native TextView and Canvas text.
 
 ## Configuration
 
@@ -24,4 +24,4 @@ The MiSans edition checks for missing fonts and provides an installation screen.
 
 Weights are nine discrete presets from 100 to 900, in increasing order: Thin, ExtraLight, Light, Regular, Medium, Demibold, Semibold, Bold and Heavy. The default is **400 / Regular**; **600 selects Demibold and 700 selects Semibold**. MiSans, MiSans Latin and MiSans TC share these presets; MiSans L3 always uses Regular.
 
-See [README](../README.en.md) for builds and artifact locations.
+See [README](../README.md) for builds and artifact locations.
