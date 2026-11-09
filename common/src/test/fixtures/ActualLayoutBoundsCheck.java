@@ -3,7 +3,9 @@ package icyllis.modernui.mc;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.graphics.text.LineBreaker;
 import icyllis.modernui.graphics.text.MeasuredText;
+import icyllis.modernui.text.DynamicLayout;
 import icyllis.modernui.text.Layout;
+import icyllis.modernui.text.SpannableStringBuilder;
 import icyllis.modernui.text.StaticLayout;
 import icyllis.modernui.text.TextPaint;
 import icyllis.modernui.text.TextUtils;
@@ -12,10 +14,11 @@ import java.util.Arrays;
 
 /** Headless behavior checks for the layout fixes on transformed Core classes. */
 public final class ActualLayoutBoundsCheck {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ReflectiveOperationException {
         checkCache();
         checkIndents();
-        System.out.println("PASS actual Core layout cache and StaticLayout indents");
+        checkPooledDirections();
+        System.out.println("PASS actual Core layout cache, StaticLayout indents and pooled directions");
     }
 
     private static void checkCache() {
@@ -65,6 +68,29 @@ public final class ActualLayoutBoundsCheck {
             }
             require(Arrays.equals(shortSide, new int[]{40}) && Arrays.equals(zeros, new int[]{0, 0, 0}), "caller arrays unchanged");
         }
+    }
+
+    private static void checkPooledDirections() throws ReflectiveOperationException {
+        var paint = new TextPaint();
+        paint.setTextSize(12);
+        var text = new SpannableStringBuilder("a \u05d0\u05d1 z\n".repeat(32));
+        var layout = DynamicLayout.builder(text, paint, 120).build();
+        require(layout.getLineCount() > 32, "long mixed-direction text grew the line tables");
+        var pool = DynamicLayout.class.getDeclaredField("sStaticLayout");
+        pool.setAccessible(true);
+        var directions = StaticLayout.class.getDeclaredField("mLineDirections");
+        directions.setAccessible(true);
+        for (int pass = 0; pass < 2; pass++) {
+            var scratch = (StaticLayout) pool.get(null);
+            var stored = (Object[]) directions.get(scratch);
+            require(Arrays.stream(stored).allMatch(value -> value == null), "scratch layout retains no line directions");
+            require(scratch.getText() == null && scratch.getPaint() == null, "scratch layout never owns the text or paint");
+            for (int line = 0; line < layout.getLineCount(); line++) {
+                require(layout.getLineDirections(line) != null, "active layout still owns line directions at " + line);
+            }
+            if (pass == 0) text.replace(0, text.length(), "a");
+        }
+        require(layout.getLineCount() == 1 && layout.getLineEnd(0) == 1, "long-to-short reflow still updates active lines");
     }
 
     private static void require(boolean condition, String message) {
