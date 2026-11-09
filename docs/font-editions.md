@@ -2,16 +2,16 @@
 
 # 普通版与 MiSans 版
 
-模组版本为 **3.13.0.10**。两版提供相同的 Minecraft 适配与修复；每个已维护的构建目标分别生成 Fabric / NeoForge 普通版和 MiSans 版。准确兼容范围以所选分支元数据为准。
+两版提供相同的 Minecraft 适配与修复；每个已维护的构建目标分别生成 Fabric / NeoForge 普通版和 MiSans 版。准确兼容范围以所选分支元数据为准。
 
 | 字体版本 | JAR 后缀 | 游戏内名称 |
 | --- | --- | --- |
 | 普通版 | `-universal.jar` | ModernUI Lumen |
 | MiSans 版 | `-universal-misans.jar` | ModernUI Lumen (MiSans) |
 
-完整文件名为 `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal[-misans].jar`。两版 ID 都是 `modernui`，每次只安装一版，切换时替换 JAR。
+完整文件名为 `ModernUI-Lumen-{Loader}-{Minecraft}-{LumenVersion}-universal[-misans].jar`。两版 ID 都是 `modernui`，每次只安装一版，切换时替换 JAR。
 
-当前 Core 3.13.0 中，Minecraft 文本渲染路径可显示彩色 emoji；Core 文本控件（如 TextView）及 Canvas 对位图 emoji 存在留白限制。切换普通版与 MiSans 版不会消除这一限制。
+从 Lumen 3.13.0.11 起，普通版和 MiSans 版都支持在原生 TextView 和 Canvas 中显示彩色 Emoji。
 
 ## 字体和配置
 
