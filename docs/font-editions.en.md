@@ -12,7 +12,7 @@ ModernUI Lumen provides standard and MiSans editions with the same UI and text f
 
 Both editions use mod ID `modernui`. Install one edition at a time and replace the JAR when switching. `text.toml`, `common.toml` and bootstrap configuration are shared; font files are stored in `config/ModernUI/fonts`.
 
-With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+Starting with Lumen 3.13.0.11, both editions display color emoji in native TextView and Canvas text.
 
 ## MiSans installation and weights
 
@@ -32,4 +32,4 @@ MiSans, MiSans Latin and MiSans TC offer nine presets ordered from thin to heavy
 | 800 | Bold |
 | 900 | Heavy |
 
-See [README](../README.en.md) for installation, version compatibility and build instructions.
+See [README](../README.md) for installation, version compatibility and build instructions.
