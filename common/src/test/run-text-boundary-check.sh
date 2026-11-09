@@ -21,12 +21,14 @@ mixins=(
     MixinLayoutCache MixinStaticLayoutBuilder MixinPackedObjectVector
     MixinLayoutPiece MixinShapedText MixinShapedTextGlyphsBuilder
     MixinDirections MixinMeasuredParagraphBidiLevels MixinLayoutBidiLevels MixinTextLineBidiLevels
+    MixinDynamicLayout AccessStaticLayoutDirections
 )
 targets=(
     icyllis.modernui.text.MeasuredParagraph icyllis.modernui.text.SpannableStringInternal icyllis.modernui.text.SpanSet
     icyllis.modernui.graphics.text.LayoutCache 'icyllis.modernui.text.StaticLayout$Builder' icyllis.modernui.text.PackedObjectVector
     icyllis.modernui.graphics.text.LayoutPiece icyllis.modernui.graphics.text.ShapedText 'icyllis.modernui.graphics.text.ShapedText$GlyphsBuilder'
     icyllis.modernui.text.Directions icyllis.modernui.text.Layout icyllis.modernui.text.TextLine
+    icyllis.modernui.text.StaticLayout icyllis.modernui.text.DynamicLayout
 )
 tests=(
     icyllis.modernui.mc.text.MeasuredParagraphCheck icyllis.modernui.mc.ActualSpanCopyCheck
