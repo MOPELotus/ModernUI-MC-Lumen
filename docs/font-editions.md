@@ -11,7 +11,7 @@ Minecraft 1.21.10 的 Fabric 与 NeoForge 均提供两种字体版本。两版�
 
 两版模组 ID 都是 `modernui`，**每次只安装一版**；切换时替换原 JAR。
 
-当前 Core 3.13.0 中，Minecraft 文本渲染路径可显示彩色 emoji；Core 文本控件（如 TextView）及 Canvas 对位图 emoji 存在留白限制。切换普通版与 MiSans 版不会消除这一限制。
+从 Lumen 3.13.0.11 起，普通版和 MiSans 版都支持在原生 TextView 和 Canvas 中显示彩色 Emoji。
 
 ## 字体策略
 

@@ -2,6 +2,24 @@
 
 # Changelog
 
+## ModernUI Lumen 3.13.0.12
+
+- Fix crashes when a replacement span measures text in later paragraphs, including word-by-word lyrics.
+- Fix paragraph spans in slices and missing-span lookups in copies with many spans.
+- Fix empty and uneven layout indents, and avoid retaining large copies of long words in the layout cache.
+- Clear references to deleted objects in text layout buffers.
+- Keep cursor movement correct in deeply nested bidirectional text, and preserve glyph font selection when a layout uses more than 256 distinct fonts.
+
+## ModernUI Lumen 3.13.0.11
+
+- Wait for GPU completion and drain Lumen-owned Vulkan retirements before closing the allocator. Keep Minecraft-owned devices and other mods’ retirement queues intact.
+- Close remaining layer views during shutdown, including when the UI has already stopped. Allow a failed GPU wait to be retried without repeating resource teardown.
+- Cancel pending UI frame callbacks before quitting, reject late input during shutdown, and keep stale screen callbacks from detaching a newer screen.
+- Preserve span boundaries and flags when `SpanSet` grows beyond its initial capacity.
+- Skip queued OpenGL texture label updates if the texture has been destroyed.
+- Bundle MixinExtras 0.5.5 in Fabric builds to handle newer `@Redirect` annotations without requiring a separate installation.
+- Render color emoji in native TextView and Canvas text, including combined emoji sequences and text retained across resource reloads.
+
 ## ModernUI Lumen 3.13.0.10 · Minecraft 1.21.10
 
 - Fix live blur toggles on the current screen while preserving screen exclusions and background fade-in.

@@ -11,7 +11,7 @@ Fabric and NeoForge for Minecraft 1.21.10 each provide two font editions. They s
 
 Both use the `modernui` mod ID. **Install one edition at a time**, replacing the JAR when switching.
 
-With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+Starting with Lumen 3.13.0.11, both editions display color emoji in native TextView and Canvas text.
 
 ## Font policies
 
@@ -36,4 +36,4 @@ MiSans is copyrighted by Xiaomi and governed by its Font License Agreement. The 
 - MiSans configuration: `config/ModernUI/client-misans.toml`.
 - Font directory: `config/ModernUI/fonts`.
 
-See [README](../README.en.md) for build commands, artifact locations and backend targets. Runtime acceptance continues per combination; a successful build does not establish acceptance of every feature.
+See [README](../README.md) for build commands, artifact locations and backend targets. Runtime acceptance continues per combination; a successful build does not establish acceptance of every feature.
