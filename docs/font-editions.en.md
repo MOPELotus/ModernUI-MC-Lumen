@@ -2,16 +2,16 @@
 
 # Standard and MiSans editions
 
-Mod version: **3.13.0.10**. Both editions share the Minecraft adaptations and fixes. Each maintained build target produces standard and MiSans artifacts for Fabric / NeoForge; exact compatibility is defined by the selected branch's metadata.
+Both editions share the Minecraft adaptations and fixes. Each maintained build target produces standard and MiSans artifacts for Fabric / NeoForge; exact compatibility is defined by the selected branch's metadata.
 
 | Edition | JAR suffix | In-game name |
 | --- | --- | --- |
 | Standard | `-universal.jar` | ModernUI Lumen |
 | MiSans | `-universal-misans.jar` | ModernUI Lumen (MiSans) |
 
-Full filename: `ModernUI-Lumen-{Loader}-{Minecraft}-3.13.0.10-universal[-misans].jar`. Both use mod ID `modernui`. Install one at a time and replace the JAR when switching.
+Full filename: `ModernUI-Lumen-{Loader}-{Minecraft}-{LumenVersion}-universal[-misans].jar`. Both use mod ID `modernui`. Install one at a time and replace the JAR when switching.
 
-With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+Starting with Lumen 3.13.0.11, both editions display color emoji in native TextView and Canvas text.
 
 ## Fonts and configuration
 
@@ -35,4 +35,4 @@ Use JDK 21 on this branch and the appropriate toolchain on other branches. Omitt
 ./gradlew clean build -Pfont_variant=misans
 ```
 
-Select this branch when manually running **Build and Release** in Actions to build both editions and upload `modernui-lumen-release-jars`. Normal pushes to this branch do not trigger automatic builds. An empty release tag does not create a Release.
+Run **Build and Release** from `master` in Actions to build both editions for all maintained branches. Leave the release tag blank to build without publishing.
