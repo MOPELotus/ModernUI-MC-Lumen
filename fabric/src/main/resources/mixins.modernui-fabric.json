@@ -12,6 +12,8 @@
     "MixinSpannableStringInternal",
     "MixinLayoutCache",
     "MixinStaticLayoutBuilder",
+    "MixinDynamicLayout",
+    "AccessStaticLayoutDirections",
     "MixinPackedObjectVector",
     "MixinLayoutPiece",
     "MixinShapedText",
