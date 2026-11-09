@@ -10,6 +10,10 @@ import java.util.jar.*;
 /** Tests the patched actual Core SpanSet with 64 real MetricAffectingSpan objects. */
 public final class ActualSpanSetCheck {
     public static void main(String[] args) throws Exception {
+        if (args.length == 0) {
+            check(Class.forName("icyllis.modernui.text.SpanSet"));
+            return;
+        }
         byte[] original;
         try(JarFile jar=new JarFile(args[0])) { original=jar.getInputStream(jar.getJarEntry("icyllis/modernui/text/SpanSet.class")).readAllBytes(); }
         ClassNode target=new ClassNode(), patch=new ClassNode();
@@ -29,7 +33,11 @@ public final class ActualSpanSetCheck {
                 Class<?> c=findLoadedClass(n);if(c==null)c=defineClass(n,fixed,0,fixed.length);if(resolve)resolveClass(c);return c;
             }
         };
-        Class<?> type=loader.loadClass("icyllis.modernui.text.SpanSet");Object set=type.getConstructor(Class.class).newInstance(MetricAffectingSpan.class);
+        check(loader.loadClass("icyllis.modernui.text.SpanSet"));
+    }
+
+    private static void check(Class<?> type) throws ReflectiveOperationException {
+        Object set=type.getConstructor(Class.class).newInstance(MetricAffectingSpan.class);
         var add=type.getDeclaredMethod("add",Object.class,int.class,int.class,int.class);add.setAccessible(true);
         Object[] spans=new Object[64];int checks=0;
         for(int i=0;i<64;i++) {
