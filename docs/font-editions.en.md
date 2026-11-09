@@ -9,7 +9,7 @@ Choose one edition matching your Minecraft version and loader. Both use mod ID `
 | `standard` | Inter Frozen Medium preferred, with fallbacks including Source Han Sans; preferred-font, fallback and font-registration settings | ModernUI Lumen |
 | `misans` | MiSans, MiSans Latin, MiSans TC and MiSans L3, with weight controls and a font-installation entry | ModernUI Lumen (MiSans) |
 
-With the current Core 3.13.0, the Minecraft text rendering path can display color emoji, while Core text controls (including TextView) and Canvas leave bitmap emoji blank. Switching between the standard and MiSans editions does not remove this limitation.
+Starting with Lumen 3.13.0.11, both editions display color emoji in native TextView and Canvas text.
 
 ## MiSans installation and weights
 
@@ -39,4 +39,4 @@ MiSans, MiSans Latin and MiSans TC offer the nine presets below, defaulting to *
 
 Both editions share `text.toml`, `common.toml` and bootstrap configuration. The standard edition’s custom font settings and MiSans’s fixed font set are different policies.
 
-See the [README](../README.en.md) for the build environment, artifact names and rendering-backend dependencies.
+See the [README](../README.md) for the build environment, artifact names and rendering-backend dependencies.
