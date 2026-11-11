@@ -2,6 +2,10 @@
 
 # 更新记录
 
+## ModernUI Lumen 3.13.0.13
+
+- Fabric Loader 的最低要求改为 0.20.1，各分支的 Fabric API 要求也与全量测试使用的版本对齐。
+
 ## ModernUI Lumen 3.13.0.12
 
 - 修复多段逐字歌词等场景中，替换 Span 测量后续段落时的越界崩溃。
