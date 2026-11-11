@@ -6,9 +6,9 @@ ModernUI Lumen 是 [Modern UI for Minecraft](https://github.com/BloCamLimb/Moder
 
 Modern UI 把自己的界面框架带进了 Minecraft，也为原版界面提供了新的文字排版和渲染。你可以换字体、调整背景和物品提示的样式，其他模组也可以用它来做界面。
 
-Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的文字抖动、tooltip、输入和不同渲染后端的问题。当前发布版本是 **3.13.0.11**。
+Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的文字抖动、tooltip、输入和不同渲染后端的问题。当前发布版本是 **3.13.0.12**。
 
-[下载](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.11) · [更新记录](changelogs.md) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
+[下载](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.12) · [更新记录](changelogs.md) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
 
 ## 功能
 
@@ -46,6 +46,19 @@ GitHub 提供普通版和 MiSans 版，向 CurseForge 提交的只有普通版�
 | 26.1–26.1.2 | `26.1` | Fabric / NeoForge | 25+ | 维护中 |
 | 26.2 | `26.2` | Fabric / NeoForge | 25+ | 维护中 |
 | 26.3 | `master` | Fabric / NeoForge | 25+ | 维护中 |
+
+Lumen **3.13.0.13** 起要求 Fabric Loader **0.20.1 或以上**。Fabric API 请按实际 Minecraft 版本选包。
+
+| Minecraft | 实测使用的 Fabric API 基线 |
+| --- | --- |
+| 1.21 / 1.21.1 | `0.102.0+1.21` / `0.116.17+1.21.1` |
+| 1.21.6 / 1.21.7 / 1.21.8 | `0.128.2+1.21.6` / `0.129.0+1.21.7` / `0.136.1+1.21.8` |
+| 1.21.9 | `0.134.1+1.21.9` |
+| 1.21.10 | `0.138.4+1.21.10` |
+| 1.21.11 | `0.141.6+1.21.11` |
+| 26.1–26.1.2 | `0.155.3+26.1.2` |
+| 26.2 | `0.161.0+26.2` |
+| 26.3 | `0.165.2+26.3` |
 
 ## Vulkan 和已知兼容问题
 

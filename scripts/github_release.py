@@ -16,6 +16,10 @@ _BUNDLE_SPEC = importlib.util.spec_from_file_location(
     'lumen_mixinextras_bundle', Path(__file__).with_name('check-mixinextras-bundle.py'))
 _BUNDLE_CHECK = importlib.util.module_from_spec(_BUNDLE_SPEC)
 _BUNDLE_SPEC.loader.exec_module(_BUNDLE_CHECK)
+_METADATA_SPEC = importlib.util.spec_from_file_location(
+    'lumen_fabric_metadata', Path(__file__).with_name('fabric_metadata.py'))
+_METADATA = importlib.util.module_from_spec(_METADATA_SPEC)
+_METADATA_SPEC.loader.exec_module(_METADATA)
 
 LOADERS = {'fabric': 'Fabric', 'neoforge': 'NeoForge'}
 EDITIONS = ('standard', 'misans')
@@ -54,6 +58,8 @@ def verify_source(source, plan, target):
     props = dict(l.split('=', 1) for l in (source / 'gradle.properties').read_text().splitlines()
                  if '=' in l and not l.lstrip().startswith('#'))
     require(props['mod_version'] == plan['version'] and props['minecraft_version'] == target['minecraft'], 'wrong source version')
+    require(_METADATA.fabric_dependencies(source, props) == target['metadata']['fabric']['depends'],
+            'source Fabric dependencies differ from plan')
 
 
 def validate(directory, plan, branch=None):

@@ -21,6 +21,10 @@ _BUNDLE_SPEC = importlib.util.spec_from_file_location(
     'lumen_mixinextras_bundle', Path(__file__).with_name('check-mixinextras-bundle.py'))
 _BUNDLE_CHECK = importlib.util.module_from_spec(_BUNDLE_SPEC)
 _BUNDLE_SPEC.loader.exec_module(_BUNDLE_CHECK)
+_METADATA_SPEC = importlib.util.spec_from_file_location(
+    'lumen_fabric_metadata', Path(__file__).with_name('fabric_metadata.py'))
+_METADATA = importlib.util.module_from_spec(_METADATA_SPEC)
+_METADATA_SPEC.loader.exec_module(_METADATA)
 
 API = 'https://minecraft.curseforge.com/api'
 LOADERS = {'fabric': 'Fabric', 'neoforge': 'NeoForge'}
@@ -167,11 +171,11 @@ def verify_source(directory, plan, branch):
                       if '=' in line and not line.lstrip().startswith('#'))
     require(properties['mod_version'] == plan['version'], 'source mod version mismatch')
     require(properties['minecraft_version'] == target['minecraft'], 'source Minecraft version mismatch')
-    fabric = json.loads((directory / 'fabric/src/main/resources/fabric.mod.json').read_text())
+    fabric = _METADATA.fabric_dependencies(directory, properties)
     neo = tomllib.loads((directory / 'neoforge/src/main/resources/META-INF/neoforge.mods.toml').read_text())
     mc_range = next(d['versionRange'] for d in neo['dependencies']['modernui'] if d['modId'] == 'minecraft')
-    require(target['metadata'] == {'fabric': {'minecraft': fabric['depends']['minecraft'],
-                                            'java': fabric['depends']['java'], 'depends': fabric['depends']},
+    require(target['metadata'] == {'fabric': {'minecraft': fabric['minecraft'],
+                                            'java': fabric['java'], 'depends': fabric},
                                    'neoforge': {'minecraft': mc_range}}, 'source metadata differs from plan')
 
 
