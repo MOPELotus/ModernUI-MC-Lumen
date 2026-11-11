@@ -205,11 +205,15 @@ if (project.hasProperty("keystore")) {
 }
 
 processResources {
-    inputs.property 'version', mod_version
-    inputs.property 'display_name', rootProject.fontVariantDisplayName
-
+    def metadata = [
+            version: mod_version,
+            display_name: rootProject.fontVariantDisplayName,
+            loader_version: fabric_loader_version,
+            api_min_version: fabric_api_min_version,
+    ]
+    inputs.properties metadata
     filesMatching("fabric.mod.json") {
-        expand 'version': mod_version, 'display_name': rootProject.fontVariantDisplayName
+        expand metadata
     }
 }
 
