@@ -2,6 +2,10 @@
 
 # Changelog
 
+## ModernUI Lumen 3.13.0.13
+
+- Require Fabric Loader 0.20.1 and align each branch’s Fabric API requirement with the versions used in full compatibility testing.
+
 ## ModernUI Lumen 3.13.0.12
 
 - Fix crashes when a replacement span measures text in later paragraphs, including word-by-word lyrics.
