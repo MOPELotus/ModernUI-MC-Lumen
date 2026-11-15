@@ -160,7 +160,7 @@
     },
     {
       "branch": "26.2",
-      "ref": "3606c2349a2ae5685148c47e5caaddeb137aa4dd",
+      "ref": "15743006a921cf45e3ad9981c895d6abe1015614",
       "minecraft": "26.2",
       "game_versions": [
         "26.2"
@@ -185,7 +185,7 @@
     },
     {
       "branch": "master",
-      "ref": "0353b4201c1b31b7ba6158d155dba7f9d5a96d46",
+      "ref": "208b9fb8bc330f80982b43947f059f137a343ba8",
       "minecraft": "26.3",
       "game_versions": [
         "26.3"
