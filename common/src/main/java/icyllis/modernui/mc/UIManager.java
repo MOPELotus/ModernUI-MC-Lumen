@@ -165,6 +165,7 @@ public abstract class UIManager implements LifecycleOwner {
     protected boolean mAlwaysClearMainTarget = false;
     private long mLastPurgeNanos;
 
+    private GlDrawBufferState mGlDrawBufferState;
     private GlTexture_Wrapped mLayerTexture;
     private GlTextureView mLayerTextureView;
 
@@ -1020,7 +1021,20 @@ public abstract class UIManager implements LifecycleOwner {
         } // other backends don't need manual maintenance
 
         if (recording != null) {
-            context.submit();
+            if (context.getDevice() instanceof GLDevice) {
+                if (mGlDrawBufferState == null) {
+                    mGlDrawBufferState = new GlDrawBufferState();
+                }
+                // Arc3D uses raw GL; restore the state that Minecraft and Iris have cached.
+                mGlDrawBufferState.capture();
+                try {
+                    context.submit();
+                } finally {
+                    mGlDrawBufferState.restore();
+                }
+            } else {
+                context.submit();
+            }
         } else {
             context.checkForFinishedWork();
         }
@@ -1035,11 +1049,6 @@ public abstract class UIManager implements LifecycleOwner {
             GL33C.glDisable(GL33C.GL_STENCIL_TEST);
             GlStateManager._disableScissorTest();
             GL33C.glDisable(GL33C.GL_SCISSOR_TEST);
-            GlStateManager._blendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
-            GL33C.glBlendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
-            GlStateManager._enableBlend(0);
-            GL33C.glEnable(GL33C.GL_BLEND);
-            GL33C.glBlendEquation(GL33C.GL_FUNC_ADD);
             GlStateManager._disableDepthTest();
             GL33C.glDisable(GL33C.GL_DEPTH_TEST);
             GlStateManager._depthFunc(GL33C.GL_LEQUAL);
