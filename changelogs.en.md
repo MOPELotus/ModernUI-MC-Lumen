@@ -4,6 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.13
 
+- Fix OpenGL shader packs rendering terrain incorrectly when ModernUI shares draw buffer state with Iris.
 - Require Fabric Loader 0.20.1 and align each branch’s Fabric API requirement with the versions used in full compatibility testing.
 
 ## ModernUI Lumen 3.13.0.12
