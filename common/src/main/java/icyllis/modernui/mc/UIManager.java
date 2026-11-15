@@ -1008,38 +1008,43 @@ public abstract class UIManager implements LifecycleOwner {
         @SharedPtr
         ImageProxy surface = frameTask.getRight();
 
-        if (recording != null) {
-            boolean added = context.addTask(recording);
-            recording.close();
-            if (!added) {
-                LOGGER.error("Failed to add draw commands");
-            }
-        }
-
-        if (context.getDevice() instanceof GLDevice glDevice) {
-            glDevice.flushRenderCalls();
-        } // other backends don't need manual maintenance
-
-        if (recording != null) {
-            if (context.getDevice() instanceof GLDevice) {
-                if (mGlDrawBufferState == null) {
-                    mGlDrawBufferState = new GlDrawBufferState();
+        var glDevice = context.getDevice() instanceof GLDevice device ? device : null;
+        GlDrawBufferState drawBufferState = null;
+        try {
+            if (recording != null) {
+                if (glDevice != null) {
+                    if (mGlDrawBufferState == null) {
+                        mGlDrawBufferState = new GlDrawBufferState();
+                    }
+                    // On OpenGL, addTask executes the draw commands before submit.
+                    mGlDrawBufferState.capture();
+                    drawBufferState = mGlDrawBufferState;
                 }
-                // Arc3D uses raw GL; restore the state that Minecraft and Iris have cached.
-                mGlDrawBufferState.capture();
+                boolean added;
                 try {
-                    context.submit();
+                    added = context.addTask(recording);
                 } finally {
-                    mGlDrawBufferState.restore();
+                    recording.close();
                 }
-            } else {
-                context.submit();
+                if (!added) {
+                    LOGGER.error("Failed to add draw commands");
+                }
             }
-        } else {
-            context.checkForFinishedWork();
+
+            if (glDevice != null) {
+                glDevice.flushRenderCalls();
+            }
+
+            if (recording != null) {
+                context.submit();
+            } else {
+                context.checkForFinishedWork();
+            }
+        } finally {
+            if (drawBufferState != null) {
+                drawBufferState.restore();
+            }
         }
-
-
 
         if (context.getDevice() instanceof GLDevice) {
             // force changing Blaze3D state
