@@ -2,6 +2,8 @@
 
 # Font editions
 
+Download both editions from the [3.13.0.13 release](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13). CurseForge carries the standard edition only.
+
 ModernUI Lumen provides standard and MiSans editions with the same UI and text features. They differ in font settings.
 
 | Item | Standard | MiSans |

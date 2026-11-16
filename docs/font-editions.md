@@ -2,6 +2,8 @@
 
 # 字体版本
 
+两种字体版均可从 [3.13.0.13 发布页](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13)下载。CurseForge 只提供普通版。
+
 ModernUI Lumen 提供普通版与 MiSans 版，二者的界面和文字功能相同，区别在字体设置。
 
 | 项目 | 普通版 | MiSans 版 |
