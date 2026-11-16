@@ -2,6 +2,8 @@
 
 # Standard and MiSans editions
 
+Download both editions from the [3.13.0.13 release](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13). CurseForge carries the standard edition only.
+
 Both editions share the Minecraft adaptations and fixes. Each maintained build target produces standard and MiSans artifacts for Fabric / NeoForge; exact compatibility is defined by the selected branch's metadata.
 
 | Edition | JAR suffix | In-game name |

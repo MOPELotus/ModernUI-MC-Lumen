@@ -4,8 +4,8 @@
 
 ## ModernUI Lumen 3.13.0.13
 
-- Fix terrain artifacts and black world rendering after opening a ModernUI screen with some Iris shader packs on OpenGL.
-- Require Fabric Loader 0.20.1 and align each branch’s Fabric API requirement with the versions used in full compatibility testing.
+- Require Fabric Loader 0.20.1 and set the Fabric API minimum to match the tested runtime.
+- Fix terrain artifacts, misdrawn sky regions, and black world rendering after opening a ModernUI screen with affected Iris shader packs on OpenGL.
 
 ## ModernUI Lumen 3.13.0.12
 

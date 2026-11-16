@@ -6,9 +6,9 @@ ModernUI Lumen 是 [Modern UI for Minecraft](https://github.com/BloCamLimb/Moder
 
 Modern UI 把自己的界面框架带进了 Minecraft，也为原版界面提供了新的文字排版和渲染。你可以换字体、调整背景和物品提示的样式，其他模组也可以用它来做界面。
 
-Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的文字抖动、tooltip、输入和不同渲染后端的问题。当前发布版本是 **3.13.0.12**。
+Lumen 主要继续维护下面这些 Minecraft 版本，并修复滚动歌词的文字抖动、tooltip、输入和不同渲染后端的问题。当前发布版本是 **3.13.0.13**。
 
-[下载](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.12) · [更新记录](changelogs.md) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
+[下载](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13) · [更新记录](changelogs.md) · [问题反馈](https://github.com/MOPELotus/ModernUI-MC-Lumen/issues)
 
 ## 功能
 
@@ -61,6 +61,8 @@ Lumen **3.13.0.13** 起要求 Fabric Loader **0.20.1 或以上**。Fabric API �
 | 26.3 | `0.165.2+26.3` |
 
 ## Vulkan 和已知兼容问题
+
+Lumen 3.13.0.13 修复了 Minecraft 26.2 和 26.3 下，部分 Iris 光影在 OpenGL 模式中出现的地形、天空错画，以及打开 ModernUI 菜单后世界画面变黑的问题。
 
 26.2 / 26.3 可以使用 Minecraft 自带的 Vulkan，不需要 VulkanMod。在启动器的**游戏参数**中填写 `--graphicsBackend VULKAN`；切回 OpenGL 用 `--graphicsBackend OPENGL`。不要把它们填进 JVM 参数。
 

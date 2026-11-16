@@ -4,8 +4,8 @@
 
 ## ModernUI Lumen 3.13.0.13
 
-- 修复 OpenGL 下 ModernUI 与 Iris 共用绘制状态时，部分光影出现地形发黑、打开 ModernUI 菜单后世界画面变黑的问题。
-- Fabric Loader 的最低要求改为 0.20.1，各分支的 Fabric API 要求也与全量测试使用的版本对齐。
+- Fabric Loader 的最低版本改为 0.20.1，Fabric API 的最低版本与实测环境对齐。
+- 修复 OpenGL 下部分 Iris 光影的地形和天空错画，以及打开 ModernUI 菜单后世界画面变黑的问题。
 
 ## ModernUI Lumen 3.13.0.12
 
