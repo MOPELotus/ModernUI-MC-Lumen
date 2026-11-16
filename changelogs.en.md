@@ -4,7 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.13
 
-- Require Fabric Loader 0.20.1 and align each branch’s Fabric API requirement with the versions used in full compatibility testing.
+- Require Fabric Loader 0.20.1 and set the Fabric API minimum to match the tested runtime.
 
 ## ModernUI Lumen 3.13.0.12
 

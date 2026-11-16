@@ -2,6 +2,8 @@
 
 # 普通版与 MiSans 版
 
+两种字体版均可从 [3.13.0.13 发布页](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13)下载。CurseForge 只提供普通版。
+
 两版使用相同的 Minecraft 适配、文字滚动、裁剪和输入修复。选择匹配游戏版本与加载器的文件，每次只安装其中一版，切换时替换原 JAR；两版的模组 ID 均为 `modernui`。
 
 | 版本 | 游戏内名称 | JAR 文件名结尾 | 字体策略 |

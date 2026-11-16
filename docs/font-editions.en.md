@@ -2,6 +2,8 @@
 
 # Standard and MiSans editions
 
+Download both editions from the [3.13.0.13 release](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13). CurseForge carries the standard edition only.
+
 Both editions use the same Minecraft adaptations and text scrolling, clipping and input fixes. Choose the matching game and loader file. Install one edition at a time and replace its JAR when switching; both use mod ID `modernui`.
 
 | Edition | In-game name | JAR filename suffix | Font policy |
