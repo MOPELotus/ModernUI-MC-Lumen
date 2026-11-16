@@ -2,6 +2,8 @@
 
 # Standard and MiSans editions
 
+Download both editions from the [3.13.0.13 release](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13). CurseForge carries the standard edition only.
+
 Fabric and NeoForge for Minecraft 1.21.10 each provide two font editions. They share UI, marquee, tooltip and input adaptations, with different font policies.
 
 | Edition | Filename ending | In-game name |
