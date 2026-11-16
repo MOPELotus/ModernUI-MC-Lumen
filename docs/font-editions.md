@@ -2,6 +2,8 @@
 
 # 普通版与 MiSans 版
 
+两种字体版均可从 [3.13.0.13 发布页](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13)下载。CurseForge 只提供普通版。
+
 两版提供相同的 Minecraft 适配与修复；每个已维护的构建目标分别生成 Fabric / NeoForge 普通版和 MiSans 版。准确兼容范围以所选分支元数据为准。
 
 | 字体版本 | JAR 后缀 | 游戏内名称 |
