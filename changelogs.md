@@ -4,7 +4,7 @@
 
 ## ModernUI Lumen 3.13.0.13
 
-- Fabric Loader 的最低要求改为 0.20.1，各分支的 Fabric API 要求也与全量测试使用的版本对齐。
+- Fabric Loader 的最低版本改为 0.20.1，Fabric API 的最低版本与实测环境对齐。
 
 ## ModernUI Lumen 3.13.0.12
 

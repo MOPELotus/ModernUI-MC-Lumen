@@ -2,6 +2,8 @@
 
 # Font editions
 
+Download both editions from the [3.13.0.13 release](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13). CurseForge carries the standard edition only.
+
 Choose one edition matching your Minecraft version and loader. Both use mod ID `modernui`; install only one edition at a time and replace its JAR when switching.
 
 | Edition | Current font policy | In-game name |

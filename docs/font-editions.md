@@ -2,6 +2,8 @@
 
 # 字体版本
 
+两种字体版均可从 [3.13.0.13 发布页](https://github.com/MOPELotus/ModernUI-MC-Lumen/releases/tag/v3.13.0.13)下载。CurseForge 只提供普通版。
+
 选择与 Minecraft 和加载器匹配的一个字体版本。两版使用相同的模组 ID `modernui`，每次只安装其中一版；切换时替换原 JAR。
 
 | 版本 | 当前字体策略 | 游戏内名称 |
